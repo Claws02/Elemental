@@ -53,3 +53,37 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
             mask: radial-gradient(circle, transparent 33px, #000 34px, #000 41px, transparent 42px); }
 .hold-ring.full { animation: ring-pulse .5s ease-in-out infinite alternate; }
 @keyframes ring-pulse { to { transform: scale(1.12); } }
+
+/* ---- story: objective, subtitles, lesson card, title ---- */
+.hud-objective { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 58px); transform: translateX(-50%);
+    padding: 6px 14px; border-radius: 10px; background: var(--panel); font-size: 13px; font-weight: 800;
+    letter-spacing: .03em; opacity: 0; transition: opacity .4s; text-align: center; min-width: 180px; }
+.hud-objective.on { opacity: 1; }
+.hud-objective .bar { display: block; height: 4px; margin-top: 5px; border-radius: 2px; background: rgba(244,236,220,.2); overflow: hidden; }
+.hud-objective .bar i { display: block; height: 100%; width: 0; background: var(--rune); transition: width .15s; }
+
+.hud-say { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 150px); transform: translateX(-50%);
+    width: min(560px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 12px; background: rgba(14,12,10,.72);
+    font-size: 15px; line-height: 1.45; opacity: 0; transition: opacity .25s; pointer-events: none; }
+.hud-say.on { opacity: 1; pointer-events: auto; }
+.hud-say .who { display: block; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #9fd0b0; margin-bottom: 2px; }
+@media (orientation: portrait) { .hud-say { bottom: calc(env(safe-area-inset-bottom) + 200px); } }
+
+.hud-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.96);
+    width: min(420px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 16px; background: rgba(14,12,10,.86);
+    opacity: 0; pointer-events: none; transition: opacity .5s, transform .5s; text-align: center; }
+.hud-card.on { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+.hud-card h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: .06em; }
+.hud-card p { margin: 6px 0; font-size: 14px; color: var(--ink-dim); }
+.hud-card .btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+.hud-card a, #title a { display: inline-block; padding: 10px 18px; border-radius: 999px; background: rgba(244,236,220,.12);
+    color: var(--ink); text-decoration: none; font-weight: 800; letter-spacing: .06em; }
+
+#title { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 16px; background: radial-gradient(ellipse at 50% 40%, #2a2218, #120f0c 70%); text-align: center; }
+#title.on { display: flex; }
+#title h1 { margin: 0 0 4px; font-size: 42px; letter-spacing: .32em; font-weight: 900; color: #f4ecdc; }
+#title .tag { margin: 0 0 18px; color: var(--ink-dim); font-size: 14px; }
+#title a { width: min(320px, 100%); padding: 14px 18px; }
+#title a small { display: block; font-weight: 600; color: var(--ink-dim); letter-spacing: 0; margin-top: 3px; }
+#title a.primary { background: rgba(255,179,71,.22); }

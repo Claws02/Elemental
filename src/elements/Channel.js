@@ -37,7 +37,8 @@ const _v2 = new THREE.Vector2();
 const _p = new THREE.Vector3();
 
 export class Channel {
-    constructor({ camera, hero }) {
+    constructor({ camera, hero, prog }) {
+        this.prog = prog;
         this.camera = camera;
         this.hero = hero;
         this.held = null;       // { entry, target, plane, element }
@@ -89,10 +90,19 @@ export class Channel {
             const dir = right.multiplyScalar(vx / len).addScaledVector(fwd, -vy / len);
             dir.y = 0.16;
             dir.normalize();
-            const speed = HOLD.throwMin + (HOLD.throwMax - HOLD.throwMin) * Math.min(1, Math.max(0, (len - 900) / 2600));
+            // Earth's throws grow with Earth's Power; the others throw at full reach.
+            const max = element === 'earth' ? this.prog.earth('throwMax') : HOLD.throwMax;
+            const speed = HOLD.throwMin + (max - HOLD.throwMin) * Math.min(1, Math.max(0, (len - 900) / 2600));
             this.throwEntry(entry, dir, speed, element);
         } else {
             entry.data.droppedAt = performance.now();
+            // A slow release is a set-down: it stops following the finger
+            // (without this, the wobble of low Control flings it sideways).
+            const v = entry.body.velocity;
+            v.x *= 0.15; v.z *= 0.15;
+            entry.body.angularVelocity.scale(0.2, entry.body.angularVelocity);
+            // Low Control: a stone let go slowly still lands hard.
+            if (element === 'earth') v.y -= this.prog.earth('slam');
         }
         this.let();
     }
@@ -141,7 +151,15 @@ export class Channel {
                 if (off.length() > HOLD.reach) target.copy(hand).addScaledVector(off.normalize(), HOLD.reach);
                 const r = entry.data.radius || 0.5;
                 if (target.y < r + 0.15) target.y = r + 0.15;
-                const want = target.clone().sub(b.position).multiplyScalar(9);
+                // Low Earth Control: the held stone drifts about the finger.
+                const aim = target.clone();
+                if (this.held.element === 'earth') {
+                    const w = this.prog.earth('wobble'), t = this.time;
+                    aim.x += Math.sin(t * 2.3) * w + Math.sin(t * 5.1) * w * 0.4;
+                    aim.y += Math.sin(t * 3.1 + 1) * w * 0.6;
+                    aim.z += Math.cos(t * 1.9) * w + Math.cos(t * 4.4) * w * 0.4;
+                }
+                const want = aim.sub(b.position).multiplyScalar(9);
                 if (want.length() > HOLD.holdSpeed) want.setLength(HOLD.holdSpeed);
                 const k = 1 - Math.exp(-14 * dt);
                 b.velocity.x += (want.x - b.velocity.x) * k;

@@ -8,6 +8,7 @@
     "check": "bash qa/parsecheck.sh src",
     "smoke": "node qa/smoke.js",
     "sheet": "node qa/modelsheet.js",
+    "lesson": "node qa/lesson.js",
     "build:web": "node scripts/build-web.js",
     "cap:sync": "npm run build:web && npx cap sync",
     "android": "npm run cap:sync && npx cap open android",

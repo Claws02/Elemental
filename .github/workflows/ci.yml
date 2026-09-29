@@ -24,6 +24,7 @@ jobs:
           npx --yes http-server -p 8140 -s -c-1 . &
           npx --yes wait-on -t 30000 http://127.0.0.1:8140/index.html
           node qa/smoke.js
+          node qa/lesson.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

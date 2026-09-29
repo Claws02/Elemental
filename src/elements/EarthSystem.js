@@ -18,11 +18,12 @@ import { ELEMENT } from '../art/Palette.js';
 
 export const EARTH = {
     range: 14,           // how far the hero can sense and grab
-    maxMass: 400,        // heavier than this does not move (yet)
+    // How heavy a stone Earth lifts is Earth's Power (data/growth.js).
 };
 
 export class EarthSystem {
-    constructor({ hero, rocks, channel }) {
+    constructor({ hero, rocks, channel, prog }) {
+        this.prog = prog;
         this.hero = hero;
         this.rocks = rocks;           // physics entries with .mesh
         this.channel = channel;
@@ -30,7 +31,9 @@ export class EarthSystem {
     }
 
     canMove(entry) {
-        return entry.body.position.distanceTo(this.hero.body.position) <= EARTH.range && entry.body.mass <= EARTH.maxMass;
+        // How heavy a stone Earth can lift grows with Earth's Power.
+        if (!this.prog.has('earth')) return false;
+        return entry.body.position.distanceTo(this.hero.body.position) <= EARTH.range && entry.body.mass <= this.prog.earth('maxMass');
     }
 
     update(dt) {

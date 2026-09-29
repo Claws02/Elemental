@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
-const BASE = process.env.QA_BASE || 'http://127.0.0.1:8140/index.html';
+const BASE = process.env.QA_BASE || 'http://127.0.0.1:8140/index.html?scene=sandbox';
 const SHOTS = path.join(__dirname, 'shots');
 
 const VIEWS = [

@@ -57,4 +57,8 @@ export const EV = {
     FIRE_FANNED:        'FireFanned',
     WIND:               'Wind',
     EXPLOSION:          'Explosion',
+    GROWTH:             'Growth',
+    WILD_BURST:         'WildBurst',
+    LESSON:             'Lesson',
+    PLATE:              'Plate',
 };

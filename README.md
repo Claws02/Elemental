@@ -6,6 +6,8 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 **Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, two braziers, two basins, a timber barricade, and all four elements. Earth: grab a rock with your finger and flick it through the barricade. Fire: pull a fireball from the coals, set timber alight, heat a rock in your grip. Water: draw a stream from a basin to put the fire out, or yank it free into an orb and throw it. Air: touch the hero and drag for wind, flick for a gust; it pushes, blows out young flames and fans old ones. There is no element selector: what you touch and how you touch it decide (`docs/CONTEXT_CONTROLS.md`). The world records what you did.
 
+**Begin** on the title screen plays **Lesson I**, Cael's first lesson: the story starts with Earth and a wild, untrained Fire, and powers grow in Power and Control (`docs/PROGRESSION.md`). **Sandbox** has every element, fully trained.
+
 ![The courtyard](docs/assets/courtyard.png)
 
 ## Run it
@@ -53,6 +55,7 @@ CI runs all three on every push (`.github/workflows/ci.yml`).
 |---|---|
 | [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md) | The full design document: story, systems, roadmap |
 | [`docs/CHECKLIST.md`](docs/CHECKLIST.md) | The master checklist. One task at a time |
+| [`docs/PROGRESSION.md`](docs/PROGRESSION.md) | Element states, Power and Control, Wild Fire, Lesson I |
 | [`docs/CONTEXT_CONTROLS.md`](docs/CONTEXT_CONTROLS.md) | How the element is chosen: material + gesture, hold times per material |
 | [`docs/TECH_ARCHITECTURE.md`](docs/TECH_ARCHITECTURE.md) | The stack, the Unity → web mapping, the frame, physics tiers, risks |
 | [`docs/ART_AND_MODELS.md`](docs/ART_AND_MODELS.md) | What Hundred Block Dash's 3D models teach, and the rules Elemental's models follow |

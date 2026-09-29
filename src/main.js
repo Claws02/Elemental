@@ -31,12 +31,20 @@ import { FireFx } from './art/FireFx.js';
 import { Intent } from './input/Intent.js';
 import { Gestures } from './input/Gestures.js';
 import { Hud } from './ui/Hud.js';
+import { Progression } from './core/Progression.js';
+import { Lesson1 } from './story/Lesson1.js';
 
-function boot() {
+// ?scene=lesson   Cael's first lesson (story progression: Earth, wild Fire)
+// ?scene=sandbox  every element, fully trained, the test obstacles
+// neither          the title screen
+function boot(mode) {
     const { renderer, scene, camera } = Renderer.init(document.getElementById('game'));
     Physics.init();
 
-    const room = buildTestRoom(scene);
+    const lessonMode = mode === 'lesson';
+    const prog = new Progression(lessonMode ? 'story' : 'sandbox');
+    if (lessonMode) prog.reset();                 // Lesson I is where the story starts
+    const room = buildTestRoom(scene, { layout: lessonMode ? 'lesson' : 'sandbox' });
     const player = new PlayerController(scene, room.spawn);
     const cam = new CameraRig(camera);
     cam.solids = room.solids;
@@ -44,20 +52,22 @@ function boot() {
     cam.focus.set(room.spawn.x, 1.6, room.spawn.z);
 
     const interactables = new Interactables();
-    const channel = new Channel({ camera, hero: player });
+    const channel = new Channel({ camera, hero: player, prog });
     scene.add(channel.tether);
-    const earth = new EarthSystem({ hero: player, rocks: room.rocks, channel });
+    const earth = new EarthSystem({ hero: player, rocks: room.rocks, channel, prog });
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
-    const fire = new FireSystem({ scene, fx, interactables, channel, hero: player });
+    const fire = new FireSystem({ scene, fx, interactables, channel, hero: player, prog });
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: room.solids });
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: room.solids });
     wireTestRoom(room, { interactables, fire, water });
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
     const hud = new Hud(document.getElementById('hud'));
+    const lesson = lessonMode ? new Lesson1({ scene, room, prog, channel, fire, hud, player }) : null;
+    if (lesson) hud.story();
 
     const input = new Gestures(document.getElementById('game'), {
         press: (x, y) => intent.press(x, y),
-        claims: (x, y) => air.onHero(x, y),
+        claims: (x, y) => prog.has('air') && air.onHero(x, y),
         drag: (x, y, t) => intent.drag(x, y, t),
         release: r => intent.release(r),
         orbit: (dx, dy) => cam.orbit(dx, dy),
@@ -86,6 +96,7 @@ function boot() {
         air.update(dt);
         room.barricade.update(dt);
         room.propReset.update(dt);
+        lesson?.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
@@ -104,7 +115,7 @@ function boot() {
     // through private state.
     window.__EL = {
         ready: true,
-        THREE, Physics, EventBus, room, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input,
+        THREE, Physics, EventBus, room, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, lesson, mode, hud,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = room.rocks[i];
@@ -115,7 +126,11 @@ function boot() {
     document.body.classList.add('ready');
 }
 
-try { boot(); }
+const mode = new URLSearchParams(location.search).get('scene');
+try {
+    if (mode === 'lesson' || mode === 'sandbox') boot(mode);
+    else document.getElementById('title').classList.add('on');
+}
 catch (e) {
     console.error(e);
     document.getElementById('boot-error').textContent = 'Elemental failed to start: ' + e.message;

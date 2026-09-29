@@ -33,6 +33,13 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [ ] **Save/load prototype.** Versioned JSON; the barricade reloads broken.
 - [ ] **Phase 1 review on a real phone.** *First pass 2026-09-29 (r128 build): 30–60 fps, grab and flick feel good for Earth; the move zone was too big (fixed).* Still to check: the r186 build's frame rate against those numbers, what drops it to 30, and thermal after 10 minutes.
 
+## Story: the first scenes
+
+- [x] **Progression.** Element states (locked / wild / trained), Power and Control per element, saved on the device (`PROGRESSION.md`). *Lesson test.*
+- [x] **Wild Fire.** Quick to catch, sparks, can't be taken back, unstable fireballs, Power without Control; Cael notices. *Lesson test.*
+- [x] **Lesson I: The Quiet Element.** Cael (placeholder model), subtitles, objectives, pressure plates, counterweight barricade; quiet and loud outcomes; end card; title screen with Begin and Sandbox. *Lesson test: 19 checks; screenshots. Not yet played on a phone.*
+- [ ] **The Veyra prologue** ← next story beat: the awakening, Fire bursting out, Cael appearing and defeating the player.
+
 ## Phase 2: elemental sandbox
 
 - [ ] Air: push, pull, gust, redirect a thrown rock

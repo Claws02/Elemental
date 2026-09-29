@@ -39,6 +39,7 @@ import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
+import { WILD } from '../data/growth.js';
 
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
@@ -65,8 +66,8 @@ const HOT = new THREE.Color(0xe0300a);
 const CHAR = 0.14;
 
 export class FireSystem {
-    constructor({ scene, fx, interactables, channel, hero }) {
-        Object.assign(this, { scene, fx, interactables, channel, hero });
+    constructor({ scene, fx, interactables, channel, hero, prog }) {
+        Object.assign(this, { scene, fx, interactables, channel, hero, prog });
         this.flammables = new Map();   // thing -> { thing, heat, burning, fuel, fuelMax, burned, cause, heatCause, onBurn }
         this.heatables = new Set();    // things (rocks) that heat but never burn
         this.sources = [];             // { thing, pos } always-lit coals
@@ -103,10 +104,15 @@ export class FireSystem {
 
     // ---- what the player does --------------------------------------------
 
-    /** Set a flammable alight. Returns false if it cannot burn (burned, already burning). */
-    ignite(thing, cause) {
+    /**
+     * Set a flammable alight. Returns false if it cannot burn (burned, already
+     * burning, wet). `direct`: the player lit it themselves; with WILD Fire
+     * that throws sparks, and a thing or two nearby catches as well.
+     */
+    ignite(thing, cause, { direct = false } = {}) {
         const f = this.flammables.get(thing);
         if (!f || f.burning || f.burned || f.wet > 0) return false;     // wet timber will not catch
+        if (direct && this.prog?.wild('fire')) this._sparks(thing, cause);
         f.burning = true;
         f.heat = 1;
         f.cause = cause;
@@ -215,6 +221,27 @@ export class FireSystem {
         return false;
     }
 
+    // Wild Fire does more than it was asked: sparks catch a thing or two nearby.
+    _sparks(thing, cause) {
+        const w = WILD.fire, p = thing.pos();
+        const near = [...this.flammables.values()].filter(o => o.thing !== thing && !o.burning && !o.burned && o.wet <= 0 && o.thing.pos().distanceTo(p) < w.sparkRadius);
+        const n = w.sparks[0] + Math.floor(Math.random() * (w.sparks[1] - w.sparks[0] + 1));
+        for (let i = 0; i < n && near.length; i++) {
+            const o = near.splice(Math.floor(Math.random() * near.length), 1)[0];
+            this.fx.burst(o.thing.pos(), 8, 0.3, 3);
+            this.ignite(o.thing, cause);
+        }
+    }
+
+    // A wild fireball bursting: everything flammable close by catches.
+    _wildBurst(p, cause) {
+        for (const o of this.flammables.values()) {
+            if (o.burning || o.burned || o.wet > 0) continue;
+            if (o.thing.pos().distanceTo(p) < WILD.fire.burstRadius) this.ignite(o.thing, cause);
+        }
+        this.fx.burst(p, 40, 0.7, 5);
+    }
+
     /** Heat a stone the player is holding in Fire. */
     heat(thing, dt, cause) {
         if (!this.heatables.has(thing)) return;
@@ -267,7 +294,9 @@ export class FireSystem {
         body.allowSleep = false;
         const entry = Physics.add({ body, mesh: grp, tier: TIER.ELEMENTAL, id: 'Fireball', data: { radius: R, fireball: true, cause } });
         const thing = this.interactables.add({ id: 'Fireball', mesh: grp, entry, material: 'flame' });
-        const fb = { thing, entry, born: this.time, created: this.time, origin, shell };
+        const wild = !!this.prog?.wild('fire');
+        const [a, b] = WILD.fire.burstAfter;
+        const fb = { thing, entry, born: this.time, created: this.time, origin, shell, wild, burstAt: this.time + a + Math.random() * (b - a) };
         // Held-or-not is judged at the moment of contact (see WaterSystem).
         body.addEventListener('collide', ev => this.queue.push({ kind: 'fireball', fb, other: ev.body.userData, held: this._held(entry) }));
         this.fireballs.add(fb);
@@ -374,7 +403,20 @@ export class FireSystem {
             const pos = e.mesh.position;
             this.fx.burn(pos, dt, { rate: 34, w: 0.22, h: 0.22, size: 0.5, smoke: 0.08 });
             fb.shell.scale.setScalar(1 + Math.sin(this.time * 23) * 0.12);
-            if (this._held(e)) { fb.born = this.time; continue; }
+            if (this._held(e)) {
+                fb.born = this.time;
+                // Untrained, a fireball won't stay: it flickers, then bursts in the hand.
+                if (fb.wild) {
+                    fb.shell.scale.multiplyScalar(1 + Math.sin(this.time * 41) * 0.15);
+                    if (this.time >= fb.burstAt) {
+                        this._wildBurst(pos.clone(), fb.entry.data.cause || 'player');
+                        this.channel.let();
+                        this._dissipate(fb);
+                        EventBus.emit(EV.WILD_BURST, { cause: 'player' });
+                    }
+                }
+                continue;
+            }
             // Fire is light: most of gravity is cancelled, so a thrown fireball flies flat.
             e.body.velocity.y += 22 * 0.8 * dt;
             const thrown = (e.data.thrownAt || 0) > (e.data.droppedAt || 0);
@@ -394,9 +436,15 @@ export class FireSystem {
                 if (other && other === fb.origin && this.time - fb.created < FIRE.originGrace) continue;
                 const held = c.held;
                 const cause = fb.entry.data.cause || 'player';
+                if (fb.wild && !held) {
+                    // A wild fireball bursts wide on whatever it hits.
+                    this._wildBurst(fb.entry.mesh.position.clone(), cause);
+                    this._dissipate(fb);
+                    continue;
+                }
                 if (other && this.flammables.has(other)) {
                     // Pressed into wood, or thrown at it: it catches.
-                    if (this.ignite(other, cause) || !held) this._dissipate(fb);
+                    if (this.ignite(other, cause, { direct: true }) || !held) this._dissipate(fb);
                     if (held && !this.fireballs.has(fb)) this.channel.let();
                 } else if (!held) {
                     if (other && this.heatables.has(other)) {

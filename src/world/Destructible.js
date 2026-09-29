@@ -120,6 +120,7 @@ export class Destructible {
     }
 
     update(dt = 0) {
+        this._raise(dt);
         this._regen(dt);
         if (!this.pending.length) return;
         this.quietFor = 0;
@@ -167,7 +168,7 @@ export class Destructible {
         const imp = vel.clone().multiplyScalar(this.pieceMass * 0.35);
         b.velocity.set(imp.x / this.pieceMass, imp.y / this.pieceMass + 1.5, imp.z / this.pieceMass);
         b.angularVelocity.set((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
-        EventBus.emit(EV.PIECE_BROKEN, { id: this.id, piece: piece.id, cause, pos: { x: b.position.x, y: b.position.y, z: b.position.z } });
+        EventBus.emit(EV.PIECE_BROKEN, { id: this.id, piece: piece.id, cause, burned: piece.burned, pos: { x: b.position.x, y: b.position.y, z: b.position.z } });
     }
 
     // Flood-fill from the ground row through intact pieces; whatever the fill
@@ -205,6 +206,31 @@ export class Destructible {
         }
     }
 
+    /**
+     * Lift every standing piece `dy` metres over `dur` seconds (a counterweight
+     * gate). Broken pieces stay where they fell.
+     */
+    raise(dy = 3.4, dur = 2.5) {
+        if (this.raising || this.raised) return;
+        this.raising = { t: 0, dy, dur, from: this.pieces.filter(p => !p.broken).map(p => ({ p, y: p.entry.body.position.y })) };
+        EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from: this.state, to: 'Raised', cause: 'counterweight' });
+    }
+
+    _raise(dt) {
+        const r = this.raising;
+        if (!r) return;
+        r.t = Math.min(r.dur, r.t + dt);
+        const k = r.t / r.dur, e = k * k * (3 - 2 * k);
+        for (const { p, y } of r.from) {
+            if (p.broken) continue;
+            const b = p.entry.body;
+            b.position.y = y + r.dy * e;
+            b.aabbNeedsUpdate = true;
+            p.mesh.position.y = b.position.y;
+        }
+        if (r.t >= r.dur) { this.raising = null; this.raised = true; }
+    }
+
     _regen(dt) {
         if (!this.regenAfter || this.state === STATE.INTACT) return;
         if (this.pieces.some(p => this.isBurning(p))) { this.quietFor = 0; return; }
@@ -224,6 +250,8 @@ export class Destructible {
         }
         this.pending.length = 0;
         this.quietFor = 0;
+        this.raised = false;
+        this.raising = null;
         const from = this.state;
         this.state = STATE.INTACT;
         this.onRebuild?.();

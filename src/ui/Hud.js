@@ -28,6 +28,9 @@ export class Hud {
             </div>
             <div class="hud-log" id="hud-log"></div>
             <div class="hud-debug" id="hud-debug"></div>
+            <div class="hud-objective" id="hud-objective"><span class="text"></span><span class="bar"><i></i></span></div>
+            <div class="hud-say" id="hud-say"><b class="who"></b><span class="line"></span></div>
+            <div class="hud-card" id="hud-card"></div>
             <div class="hold-ring" id="hold-ring"></div>
             <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>`;
         this.el = id => root.querySelector('#' + id);
@@ -35,6 +38,12 @@ export class Hud {
         this.stick({ active: false });
         addEventListener('resize', () => { if (this.el('stick-base').style.opacity !== '1') this.stick({ active: false }); });
         this.fps = 60; this._acc = 0; this._frames = 0;
+        this.skipLine = false;
+        this.el('hud-say').addEventListener('pointerdown', e => { e.stopPropagation(); this.skipLine = true; });
+        EventBus.on(EV.GROWTH, e => {
+            const name = { earth: 'Earth', fire: 'Fire', water: 'Water', air: 'Air' }[e.el];
+            this.log(`${name} · ${e.track === 'power' ? 'Power' : 'Control'} ${e.level}`);
+        });
 
         EventBus.on(EV.OBJECT_THROWN, () => this.el('hud-hint').classList.add('gone'));
         EventBus.on(EV.STRUCTURE_STATE, e => {
@@ -88,6 +97,38 @@ export class Hud {
         el.style.top = r.y + 'px';
         el.style.background = `conic-gradient(${col} ${r.progress * 360}deg, rgba(20,16,12,.25) 0)`;
         el.classList.toggle('full', r.progress >= 1);
+    }
+
+    /** Hide the free-play hint (a lesson has its own objectives). */
+    story() { this.el('hud-hint').classList.add('gone'); }
+
+    /** A subtitle: who is speaking, and the line. `null` clears it. */
+    say(who, line) {
+        const el = this.el('hud-say');
+        if (!who) { el.classList.remove('on'); return; }
+        el.querySelector('.who').textContent = who;
+        el.querySelector('.line').textContent = line;
+        el.classList.add('on');
+    }
+
+    /** The current objective, with an optional 0..1 progress bar. `null` clears it. */
+    objective(text, progress = null) {
+        const el = this.el('hud-objective');
+        el.classList.toggle('on', !!text);
+        if (!text) return;
+        el.querySelector('.text').textContent = text;
+        el.querySelector('.bar').style.display = progress === null ? 'none' : '';
+        if (progress !== null) el.querySelector('.bar i').style.width = (progress * 100).toFixed(0) + '%';
+    }
+
+    /** The end-of-lesson card. */
+    card({ title, lines, buttons }) {
+        const el = this.el('hud-card');
+        el.innerHTML = `<h2></h2>${lines.map(() => '<p></p>').join('')}<div class="btns">${buttons.map(() => '<a></a>').join('')}</div>`;
+        el.querySelector('h2').textContent = title;
+        el.querySelectorAll('p').forEach((p, i) => { p.textContent = lines[i]; });
+        el.querySelectorAll('a').forEach((a, i) => { a.textContent = buttons[i].label; a.href = buttons[i].href; });
+        el.classList.add('on');
     }
 
     log(text) {

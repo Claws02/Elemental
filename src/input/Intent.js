@@ -38,6 +38,7 @@
 // ============================================================
 
 import { changeVerb } from '../data/materials.js';
+import { WILD } from '../data/growth.js';
 
 const MOVE_PX = 10;          // finger travel that counts as a drag, not a hold
 const RANGE = 14;            // how far from the hero a touch can act
@@ -46,8 +47,8 @@ const YANK_PX = 2200;        // px/s away from the basin that tears the water fr
 const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water, air }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -59,9 +60,24 @@ export class Intent {
         this.element = 'earth';  // the element acting now, or last to act
     }
 
+    // The CHANGE verb a thing answers to now, given what the player has
+    // learned: none for a locked element; for WILD Fire, quicker to catch and
+    // no taking a fire back (pulling flame out of something burning).
+    _changeVerb(thing, burning) {
+        const cv = changeVerb(thing.mat, burning);
+        if (!cv) return null;
+        const st = this.prog.state(cv.element);
+        if (st === 'locked') return null;
+        if (st === 'wild') {
+            if (cv.verb === 'pull' && burning) return null;
+            return { ...cv, hold: cv.hold * WILD[cv.element].holdFactor };
+        }
+        return cv;
+    }
+
     _moveElement(thing) {
         const mv = thing.mat.move;
-        if (!mv) return null;
+        if (!mv || !this.prog.has(mv)) return null;
         if (mv === 'earth' && !this.earth.canMove(thing.entry)) return null;
         return mv;
     }
@@ -70,7 +86,8 @@ export class Intent {
 
     _usable(thing) {
         if (!this._inRange(thing)) return false;
-        return !!this._moveElement(thing) || !!changeVerb(thing.mat, this.fire.isBurning(thing));
+        if (thing.mat.source === 'water') return this.prog.has('water');
+        return !!this._moveElement(thing) || !!this._changeVerb(thing, this.fire.isBurning(thing));
     }
 
     // ---- inputs from Gestures --------------------------------------------
@@ -83,7 +100,7 @@ export class Intent {
         // steal a touch that lands squarely on a rock at their feet.
         const usable = t => this._usable(t);
         let thing = this.interactables.pick(x, y, this.camera, usable, { assist: false });
-        if (!thing && this.air.onHero(x, y)) {
+        if (!thing && this.prog.has('air') && this.air.onHero(x, y)) {
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'wind', blowing: false, element: 'air' });
             return true;
         }
@@ -104,7 +121,7 @@ export class Intent {
             this.element = mv;
             return true;
         }
-        this.verb = changeVerb(thing.mat, this.fire.isBurning(thing));
+        this.verb = this._changeVerb(thing, this.fire.isBurning(thing));
         this.state = 'pending';
         this.channel.aimAt(thing.pos(), this.verb.element);
         return true;
@@ -175,7 +192,7 @@ export class Intent {
     update(dt) {
         switch (this.state) {
         case 'pending': {
-            const cv = changeVerb(this.thing.mat, this.fire.isBurning(this.thing));
+            const cv = this._changeVerb(this.thing, this.fire.isBurning(this.thing));
             if (!this._inRange(this.thing) || !cv || cv.verb !== this.verb.verb) { this._cancel(); break; }
             this.channel.aimAt(this.thing.pos(), cv.element);
             this.t += dt;
@@ -184,7 +201,7 @@ export class Intent {
         }
         case 'holding': {
             if (!this.channel.held) { this._cancel(); break; }
-            const cv = changeVerb(this.thing.mat, false);
+            const cv = this._changeVerb(this.thing, false);
             this.still += dt;
             if (cv?.verb === 'heat' && this.still >= cv.hold) {
                 this.fire.heat(this.thing, dt, 'player');
@@ -234,7 +251,7 @@ export class Intent {
             this.channel.grab(fb.entry, 'fire', { lift: 0.4 });
             Object.assign(this, { state: 'holding', thing: fb, still: 0, ax: this.x, ay: this.y });
         } else if (cv.verb === 'ignite') {
-            this.fire.ignite(this.thing, 'player');
+            this.fire.ignite(this.thing, 'player', { direct: true });
             this.state = 'done';
             this.doneT = 0.4;
         } else {
@@ -246,7 +263,7 @@ export class Intent {
     ring() {
         if (this.state === 'pending') return { x: this.x, y: this.y, progress: Math.min(1, this.t / this.verb.hold), element: this.verb.element };
         if (this.state === 'holding') {
-            const cv = changeVerb(this.thing.mat, false);
+            const cv = this._changeVerb(this.thing, false);
             if (cv?.verb === 'heat' && this.still > RING_AFTER) return { x: this.x, y: this.y, progress: Math.min(1, this.still / cv.hold), element: cv.element };
         }
         return null;

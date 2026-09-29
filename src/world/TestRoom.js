@@ -37,7 +37,13 @@ import { Destructible } from './Destructible.js';
 
 export const ROOM = { half: 18, spawn: { x: 0, z: 9, facing: Math.PI } };
 
-export function buildTestRoom(scene) {
+/**
+ * `layout`: 'sandbox' (everything) or 'lesson' (Cael's first lesson: no
+ * basins or test obstacles, a barricade that stays broken, and the lesson's
+ * plates; see src/story/Lesson1.js).
+ */
+export function buildTestRoom(scene, { layout = 'sandbox' } = {}) {
+    const lesson = layout === 'lesson';
     const solids = [];      // meshes the camera must not pass through
     const rocks = [];
 
@@ -143,7 +149,7 @@ export function buildTestRoom(scene) {
         id: 'TestRoom_Barricade_01', scene,
         cols: COLS, rows: 3, pw: PW, ph: PH, pd: 0.16,
         origin: new THREE.Vector3(0, 0, BZ), rotY: 0, pieceMass: 5,
-        regenAfter: 60,       // testing aid: rebuilds a minute after the last damage
+        regenAfter: lesson ? 0 : 60,       // sandbox testing aid: rebuilds a minute after the last damage; the lesson remembers
         build: plankPanel,
     });
     for (const sx of [-1, 1]) {
@@ -167,7 +173,7 @@ export function buildTestRoom(scene) {
     // ---- two basins: water sources ---------------------------------------------
     // Mirroring the braziers: one to learn on, one within a stream's reach
     // (8 m) of the barricade, so a fire there can be fought.
-    const basins = [[-3.8, 6.2], [4.6, -11.2]].map(([x, z], i) => {
+    const basins = (lesson ? [] : [[-3.8, 6.2], [4.6, -11.2]]).map(([x, z], i) => {
         const b = basin(i + 3);
         b.group.position.set(x, 0, z);
         scene.add(b.group);
@@ -180,6 +186,7 @@ export function buildTestRoom(scene) {
     // and Water act on them; none can be carried (Earth moves only stone,
     // Air only blows); rocks, water and wind knock them about.
     const props = [];
+    if (lesson) return { solids, rocks, barricade, braziers, basins, props, scene, spawn: ROOM.spawn, layout };
     const dyn = (id, mesh, body, material, mass) => {
         scene.add(mesh);
         body.position.copy(mesh.position);
@@ -223,7 +230,7 @@ export function buildTestRoom(scene) {
         props.push({ id: `TestRoom_Hay_${String(++n).padStart(2, '0')}`, mesh: m, entry: null, material: 'hay', home: { p: m.position.clone(), q: m.quaternion.clone() } });
     }
 
-    return { solids, rocks, barricade, braziers, basins, props, scene, spawn: ROOM.spawn };
+    return { solids, rocks, barricade, braziers, basins, props, scene, spawn: ROOM.spawn, layout };
 }
 
 // The sealed door: a stone slab with the four elements' runes. Only Earth is
