@@ -195,3 +195,29 @@ export function timberPost(h) {
     k.box('body', 0.34, 0.14, 0.34, at(0, h + 0.07, 0), WORLD.timberDark, { ch: 0.04 });
     return k.build();
 }
+
+/**
+ * A brazier: a stone bowl of glowing coals on three iron legs. The coals are
+ * a fire source (materials: "coals"); FireSystem adds the flames. Returns the
+ * group, the coals' world-space offset for the flames, and its footprint.
+ */
+export function brazier(seed) {
+    const k = new Kit();
+    for (let i = 0; i < 3; i++) {
+        const a = i * Math.PI * 2 / 3 + seed;
+        k.box('body', 0.07, 0.95, 0.07, at(Math.cos(a) * 0.3, 0.45, Math.sin(a) * 0.3, Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25), WORLD.iron, { ch: 0.015 });
+    }
+    k.cyl('body', 0.36, 0.3, 0.06, 10, at(0, 0.08, 0), WORLD.iron);
+    k.cyl('body', 0.52, 0.34, 0.34, 12, at(0, 1.02, 0), WORLD.stoneDark, { flat: true });
+    k.cyl('body', 0.56, 0.56, 0.07, 12, at(0, 1.2, 0), WORLD.stone[2], { flat: true });
+    // Coals: a heap of faceted lumps, lit from within.
+    for (let i = 0; i < 9; i++) {
+        const a = seeded(seed * 7 + i) * Math.PI * 2, r = seeded(seed * 3 + i * 1.3) * 0.32;
+        const hot = seeded(seed + i * 2.7) > 0.35;
+        k.geo(hot ? 'glow' : 'body', new THREE.IcosahedronGeometry(0.09 + seeded(i + seed) * 0.05, 0),
+            at(Math.cos(a) * r, 1.22 + seeded(i * 5.1) * 0.05, Math.sin(a) * r, i, i * 2, 0), hot ? 0xff7a2a : 0x2a1a14, { flat: true });
+    }
+    // A band of Fire's colour: the one lit element in the room besides Earth.
+    k.cyl('glow', 0.53, 0.53, 0.035, 12, at(0, 0.98, 0), ELEMENT.fire.rune);
+    return { group: k.build(), flameY: 1.3, radius: 0.56, height: 1.25 };
+}

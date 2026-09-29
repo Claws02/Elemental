@@ -3,7 +3,9 @@
 // ============================================================
 //
 //   - the floating move stick, drawn where the thumb lands
-//   - the active element, as its rune colour (the wheel is Phase 3)
+//   - the element acting now, as its rune colour. Context picks it
+//     (docs/CONTEXT_CONTROLS.md); the badge only reports it
+//   - the hold ring: fills at the finger while a hold-still verb charges
 //   - a one-time hint, gone after the first throw
 //   - a quiet line when the world records something (the destruction log is
 //     the seed of consequence, so the prototype shows it)
@@ -21,11 +23,12 @@ export class Hud {
             <div class="hud-element" id="hud-element"><span class="rune"></span><span class="label"></span></div>
             <div class="hud-hint" id="hud-hint">
                 <div><b>Bottom-left thumb</b> move</div>
-                <div><b>Touch a rock</b> grab · <b>drag</b> hold</div>
-                <div><b>Flick</b> throw · <b>drag empty</b> look</div>
+                <div><b>Touch a rock</b> grab · <b>flick</b> throw</div>
+                <div><b>Hold still</b> on fire or wood · <b>drag empty</b> look</div>
             </div>
             <div class="hud-log" id="hud-log"></div>
             <div class="hud-debug" id="hud-debug"></div>
+            <div class="hold-ring" id="hold-ring"></div>
             <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>`;
         this.el = id => root.querySelector('#' + id);
         this.setElement('earth');
@@ -38,9 +41,19 @@ export class Hud {
             const who = e.cause === 'player' ? 'by you' : '';
             this.log(`Barricade · ${e.to} ${who}`.trim());
         });
+        // Fire is logged once per structure it takes hold of, not per plank.
+        this._onFire = new Set();
+        EventBus.on(EV.FIRE_STARTED, e => {
+            const key = e.id.replace(/_P\d+$/, '');
+            if (key === e.id || this._onFire.has(key)) return;
+            this._onFire.add(key);
+            this.log(`Barricade · on fire${e.cause === 'player' ? ' by you' : ''}`);
+        });
     }
 
     setElement(key) {
+        if (this._element === key) return;
+        this._element = key;
         const e = ELEMENT[key];
         const box = this.el('hud-element');
         box.style.setProperty('--rune', '#' + new THREE.Color(e.rune).getHexString());
@@ -64,6 +77,18 @@ export class Hud {
         knob.style.transform = `translate(${s.x * 60}px, ${-s.y * 60}px)`;
     }
 
+    /** The hold ring at the finger: { x, y, progress, element } or null. */
+    ring(r) {
+        const el = this.el('hold-ring');
+        if (!r) { el.style.opacity = 0; return; }
+        const col = '#' + new THREE.Color(ELEMENT[r.element].rune).getHexString();
+        el.style.opacity = 1;
+        el.style.left = r.x + 'px';
+        el.style.top = r.y + 'px';
+        el.style.background = `conic-gradient(${col} ${r.progress * 360}deg, rgba(20,16,12,.25) 0)`;
+        el.classList.toggle('full', r.progress >= 1);
+    }
+
     log(text) {
         const line = document.createElement('div');
         line.textContent = text;
@@ -82,6 +107,7 @@ export class Hud {
         this.el('hud-debug').textContent =
             `${this.fps.toFixed(0)} fps · ${info.calls} calls · ${(info.tris / 1000).toFixed(1)}k tris\n` +
             `bodies ${p.total} · awake ${p.awake} · debris ${p.debris}\n` +
-            `barricade ${info.barricade.state} ${info.barricade.broken}/${info.barricade.total}`;
+            `barricade ${info.barricade.state} ${info.barricade.broken}/${info.barricade.total}` +
+            (info.fire ? `\nfire ${info.fire.burning} burning · ${info.fire.burned} burned · particles ${info.fx.flame + info.fx.smoke}` : '');
     }
 }

@@ -45,3 +45,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 @media (orientation: portrait) {
     .hud-hint { bottom: calc(env(safe-area-inset-bottom) + 190px); }
 }
+
+/* The hold ring: fills around the finger while a hold-still verb charges. */
+.hold-ring { position: absolute; width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%;
+    opacity: 0; transition: opacity .12s;
+    -webkit-mask: radial-gradient(circle, transparent 33px, #000 34px, #000 41px, transparent 42px);
+            mask: radial-gradient(circle, transparent 33px, #000 34px, #000 41px, transparent 42px); }
+.hold-ring.full { animation: ring-pulse .5s ease-in-out infinite alternate; }
+@keyframes ring-pulse { to { transform: scale(1.12); } }

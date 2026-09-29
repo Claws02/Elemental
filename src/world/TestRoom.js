@@ -8,6 +8,7 @@
 //   - ten boulders of different sizes (§57 asks for 10 rocks)
 //   - one timber barricade blocking the archway: the destructible wall
 //   - pillars, two of them broken, for cover and for rocks to bounce off
+//   - two braziers (fire sources): one by the spawn, one near the barricade
 //   - behind the barricade, a sealed door carrying all four elements' runes,
 //     only Earth's lit. The first piece of environmental storytelling.
 //
@@ -29,7 +30,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
 import { ELEMENT, WORLD } from '../art/Palette.js';
-import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost } from '../art/PropModels.js';
+import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier } from '../art/PropModels.js';
 import { Destructible } from './Destructible.js';
 
 export const ROOM = { half: 18, spawn: { x: 0, z: 9, facing: Math.PI } };
@@ -149,7 +150,18 @@ export function buildTestRoom(scene) {
         box(sx * (COLS * PW / 2 + 0.15), 1.55, BZ, 0.3, 3.1, 0.3, 0, null, 'wood');
     }
 
-    return { solids, rocks, barricade, spawn: ROOM.spawn };
+    // ---- two braziers: fire sources ------------------------------------------
+    // One by the spawn, where the player finds it; one a few steps from the
+    // barricade, where the temptation is.
+    const braziers = [[3.6, 5.2], [-4.2, -11.8]].map(([x, z], i) => {
+        const b = brazier(i + 1);
+        b.group.position.set(x, 0, z);
+        scene.add(b.group);
+        box(x, b.height / 2, z, b.radius * 1.6, b.height, b.radius * 1.6, 0, b.group);
+        return { id: `TestRoom_Brazier_${String(i + 1).padStart(2, '0')}`, mesh: b.group, flame: new THREE.Vector3(x, b.flameY, z) };
+    });
+
+    return { solids, rocks, barricade, braziers, spawn: ROOM.spawn };
 }
 
 // The sealed door: a stone slab with the four elements' runes. Only Earth is
@@ -170,4 +182,21 @@ function _sealedDoor(w, h) {
         k.box(lit > 0.5 ? 'glow' : 'body', 0.26, 0.26, 0.04, at(dx, h / 2 + dy, 0.58, 0, 0, Math.PI / 4), c);
     }
     return k.build();
+}
+
+/**
+ * Tell the element systems what the room is made of: rocks are stone the
+ * player can move and heat, barricade panels are timber that burns, the
+ * braziers' coals are a fire source.
+ */
+export function wireTestRoom(room, { interactables, fire }) {
+    for (const e of room.rocks) fire.addHeatable(interactables.add({ id: e.id, mesh: e.mesh, entry: e, material: 'stone' }));
+    const byPiece = new Map();
+    for (const piece of room.barricade.pieces) {
+        const thing = interactables.add({ id: piece.id, mesh: piece.mesh, entry: piece.entry, material: 'wood' });
+        fire.addFlammable(thing, { onBurn: (amount, cause) => room.barricade.burn(piece, amount, cause) });
+        byPiece.set(piece, thing);
+    }
+    room.barricade.isBurning = piece => fire.isBurning(byPiece.get(piece));
+    for (const b of room.braziers) fire.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'coals' }), b.flame);
 }

@@ -1,12 +1,14 @@
 // ============================================================
-// ELEMENTAL — bootstrap (Phase 1 technical prototype)
+// ELEMENTAL — bootstrap
 // ============================================================
 //
 // Wires the independent systems together and runs the loop. Each system owns
 // its own state; this file only decides the ORDER things happen in a frame:
 //
-//   input → earth (forces) → player (velocity) → physics step
-//         → structures (apply hits recorded during the step) → camera → render
+//   intent (what the finger means) → channel (forces on what is held)
+//     → earth (sensing) → player (velocity) → physics step
+//     → fire (contacts recorded in the step, burning, spread)
+//     → structures (apply hits and burns) → particles → camera → render
 //
 // There is deliberately no GameManager here. When save, scenes and world
 // state arrive they are their own modules, and this file just calls them.
@@ -16,15 +18,20 @@ import { THREE } from './engine/lib.js';
 import * as Renderer from './engine/Renderer.js';
 import * as Physics from './engine/Physics.js';
 import { EventBus } from './core/EventBus.js';
-import { buildTestRoom } from './world/TestRoom.js';
+import { buildTestRoom, wireTestRoom } from './world/TestRoom.js';
+import { Interactables } from './world/Interactables.js';
 import { PlayerController } from './player/PlayerController.js';
 import { CameraRig } from './player/CameraRig.js';
+import { Channel } from './elements/Channel.js';
 import { EarthSystem } from './elements/EarthSystem.js';
+import { FireSystem } from './elements/FireSystem.js';
+import { FireFx } from './art/FireFx.js';
+import { Intent } from './input/Intent.js';
 import { Gestures } from './input/Gestures.js';
 import { Hud } from './ui/Hud.js';
 
 function boot() {
-    const { scene, camera } = Renderer.init(document.getElementById('game'));
+    const { renderer, scene, camera } = Renderer.init(document.getElementById('game'));
     Physics.init();
 
     const room = buildTestRoom(scene);
@@ -34,38 +41,53 @@ function boot() {
     cam.yaw = player.facing + Math.PI;
     cam.focus.set(room.spawn.x, 1.6, room.spawn.z);
 
-    const earth = new EarthSystem({ camera, hero: player, rocks: room.rocks });
-    scene.add(earth.tether);
+    const interactables = new Interactables();
+    const channel = new Channel({ camera, hero: player });
+    scene.add(channel.tether);
+    const earth = new EarthSystem({ hero: player, rocks: room.rocks, channel });
+    const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
+    const fire = new FireSystem({ scene, fx, interactables, channel, hero: player });
+    wireTestRoom(room, { interactables, fire });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth });
     const hud = new Hud(document.getElementById('hud'));
 
     const input = new Gestures(document.getElementById('game'), {
-        pickAt: (x, y) => earth.pickAt(x, y),
-        grab: t => earth.grab(t),
-        drag: (t, x, y) => earth.drag(t, x, y),
-        release: (t, r) => earth.release(t, r),
+        press: (x, y) => intent.press(x, y),
+        drag: (x, y) => intent.drag(x, y),
+        release: r => intent.release(r),
         orbit: (dx, dy) => cam.orbit(dx, dy),
         zoom: f => cam.zoom(f),
         stick: s => hud.stick(s),
     });
 
+    const _size = new THREE.Vector2();
     let last = performance.now();
     function frame(now) {
         // Capped at 0.1 s: Physics sub-steps cover that without slow motion, and
-        // a longer hitch is treated as a pause rather than a teleport.
-        const dt = Math.min(0.1, (now - last) / 1000);
+        // a longer hitch is treated as a pause rather than a teleport. Never
+        // negative: the first rAF timestamp can predate `last`.
+        const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
         last = now;
         EventBus.tick(dt);
 
+        intent.update(dt);
+        channel.update(dt);
         earth.update(dt);
-        player.update(dt, input.moveVector(), cam.moveYaw, earth.channelPose());
+        player.rig.setElement(intent.element);
+        player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
         Physics.step(dt);
+        fire.update(dt);
         room.barricade.update();
-        cam.update(dt, player.position, earth.held ? earth.held.entry.mesh.position : null);
+        fx.update(dt, renderer.getDrawingBufferSize(_size).y);
+        const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
+        cam.update(dt, player.position, held);
         Renderer.followSun(player.position);
         Renderer.render();
 
+        hud.setElement(intent.element);
+        hud.ring(intent.ring());
         const ri = Renderer.info();
-        hud.update(dt, { calls: ri.calls, tris: ri.triangles, physics: Physics.stats(), barricade: room.barricade.summary() });
+        hud.update(dt, { calls: ri.calls, tris: ri.triangles, physics: Physics.stats(), barricade: room.barricade.summary(), fire: fire.stats(), fx: fx.stats() });
         requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -74,12 +96,12 @@ function boot() {
     // through private state.
     window.__EL = {
         ready: true,
-        THREE, Physics, EventBus, room, player, earth, cam, input,
+        THREE, Physics, EventBus, room, player, channel, earth, fire, fx, intent, interactables, cam, input,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = room.rocks[i];
             const dir = new THREE.Vector3(target.x, target.y, target.z).sub(e.mesh.position).normalize();
-            earth.throwEntry(e, dir, speed);
+            channel.throwEntry(e, dir, speed);
         },
     };
     document.body.classList.add('ready');

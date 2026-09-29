@@ -6,7 +6,7 @@
 // a static body until it breaks, when it becomes budgeted debris. The
 // structure's state follows from how many pieces are gone:
 //
-//   Intact → Damaged → Critical → Collapsed
+//   Intact → Damaged → Critical → Collapsed  (or Burned, if fire took most of it)
 //
 // SUPPORT. After a piece breaks, every remaining piece must still connect to
 // the ground (row 0) through intact neighbours, up, down or sideways. Anything
@@ -28,7 +28,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 
-export const STATE = { INTACT: 'Intact', DAMAGED: 'Damaged', CRITICAL: 'Critical', COLLAPSED: 'Collapsed' };
+export const STATE = { INTACT: 'Intact', DAMAGED: 'Damaged', CRITICAL: 'Critical', COLLAPSED: 'Collapsed', BURNED: 'Burned' };
 
 const PIECE_HP = 100;
 const MIN_IMPACT = 3.0;          // m/s along the normal; below this a touch is not a hit
@@ -53,6 +53,7 @@ export class Destructible {
         this.state = STATE.INTACT;
         this.pieces = [];
         this.pending = [];           // hits collected during the physics step, applied after it
+        this.isBurning = () => false; // set by whoever wires fire to this structure
         const q = new CANNON.Quaternion();
         q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), o.rotY || 0);
         const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), o.rotY || 0);
@@ -67,7 +68,7 @@ export class Destructible {
             body.addShape(new CANNON.Box(new CANNON.Vec3(o.pw / 2 - 0.01, o.ph / 2 - 0.01, o.pd / 2)));
             body.position.set(pos.x, pos.y, pos.z);
             body.quaternion.copy(q);
-            const piece = { r, c, hp: PIECE_HP, broken: false, mesh, entry: null, id: `${o.id}_P${r}${c}` };
+            const piece = { r, c, hp: PIECE_HP, broken: false, burned: false, mesh, entry: null, id: `${o.id}_P${r}${c}` };
             piece.entry = Physics.add({ body, mesh, tier: TIER.DESTRUCTIBLE, id: piece.id, data: { piece, owner: this } });
             body.addEventListener('collide', e => this._onCollide(piece, e));
             this.pieces.push(piece);
@@ -98,12 +99,22 @@ export class Destructible {
         if (piece && !piece.broken) this.pending.push({ piece, amount, cause, vel });
     }
 
+    /** Fire damage: no splash and no knock, and a piece it finishes is Burned. */
+    burn(piece, amount, cause = 'environment') {
+        if (!piece.broken) this.pending.push({ piece, amount, cause, vel: new THREE.Vector3(), fire: true });
+    }
+
     update() {
         if (!this.pending.length) return;
         const hits = this.pending.splice(0);
         let cause = 'environment';
         for (const h of hits) {
             cause = h.cause;
+            if (h.fire) {
+                if (!h.piece.broken && h.piece.hp - h.amount <= 0) h.piece.burned = true;
+                this._damage(h.piece, h.amount, h.cause, h.vel, true);
+                continue;
+            }
             this._damage(h.piece, h.amount, h.cause, h.vel);
             for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
                 const n = this.at(h.piece.r + dr, h.piece.c + dc);
@@ -114,10 +125,11 @@ export class Destructible {
         this._updateState(cause);
     }
 
-    _damage(piece, amount, cause, vel) {
+    _damage(piece, amount, cause, vel, quiet = false) {
         if (piece.broken || amount <= 0) return;
         piece.hp -= amount;
-        EventBus.emit(EV.STRUCTURE_DAMAGED, { id: this.id, piece: piece.id, amount: Math.round(amount), cause });
+        // Fire damages every frame; it reports when the piece gives way, not 60 times a second.
+        if (!quiet) EventBus.emit(EV.STRUCTURE_DAMAGED, { id: this.id, piece: piece.id, amount: Math.round(amount), cause });
         if (piece.hp <= 0) { this._break(piece, cause, vel); return; }
         // Cracked: the panel darkens and sags a little on its fixings.
         const k = 1 - piece.hp / PIECE_HP;
@@ -128,6 +140,7 @@ export class Destructible {
 
     _break(piece, cause, vel) {
         piece.broken = true;
+        if (this.isBurning(piece)) piece.burned = true;     // it fell because it was on fire
         piece.hp = 0;
         const b = piece.entry.body;
         Physics.toDebris(piece.entry, this.pieceMass);
@@ -159,11 +172,15 @@ export class Destructible {
     }
 
     _updateState(cause) {
-        const gone = this.pieces.filter(p => p.broken).length / this.pieces.length;
+        const broken = this.pieces.filter(p => p.broken);
+        const gone = broken.length / this.pieces.length;
         let next = gone === 0 ? STATE.INTACT : gone < CRITICAL_AT ? STATE.DAMAGED : gone < COLLAPSE_AT ? STATE.CRITICAL : STATE.COLLAPSED;
         if (next === STATE.COLLAPSED) {
             for (const p of this.pieces) if (!p.broken) this._break(p, cause, new THREE.Vector3((Math.random() - 0.5) * 2, 0, (Math.random() - 0.5) * 2));
+            // Burned, not just collapsed, if fire took most of what fell.
+            if (broken.filter(p => p.burned).length * 2 >= broken.length) next = STATE.BURNED;
         }
+        if (this.state === STATE.BURNED) next = STATE.BURNED;     // burned is final
         if (next !== this.state) {
             const from = this.state;
             this.state = next;
@@ -172,6 +189,6 @@ export class Destructible {
     }
 
     summary() {
-        return { id: this.id, state: this.state, broken: this.pieces.filter(p => p.broken).length, total: this.pieces.length };
+        return { id: this.id, state: this.state, broken: this.pieces.filter(p => p.broken).length, burned: this.pieces.filter(p => p.burned).length, total: this.pieces.length };
     }
 }

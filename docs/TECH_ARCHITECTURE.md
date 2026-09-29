@@ -47,10 +47,16 @@ src/
   art/Palette.js        element and world colours
   art/HeroModel.js      the protagonist: jointed model and procedural animator
   art/PropModels.js     rock, floor, ruin wall, pillar, arch, planks, posts
-  input/Gestures.js     move stick, grab / drag / flick, orbit, pinch; WASD at a desk
+  input/Gestures.js     move stick, press / drag / release velocity, orbit, pinch; WASD at a desk
+  input/Intent.js       what a touch means: material + gesture → element and verb (CONTEXT_CONTROLS.md)
+  data/materials.js     which elements act on which material, and the hold times
   player/PlayerController.js   the hero's body, movement and facing
   player/CameraRig.js   third-person orbit, clip avoidance, target framing
-  elements/EarthSystem.js      sense, grab, hold, throw, drop
+  elements/Channel.js   the hero's hands: hold, move, throw, drop, aim; tether in the element's colour
+  elements/EarthSystem.js      Earth's sensing (rock highlight) and limits
+  elements/FireSystem.js       ignite, heat, spread, burn out, fireballs, hot stone
+  art/FireFx.js         pooled flame and smoke particles, two draw calls
+  world/Interactables.js       everything a touch can land on, with its material
   world/Destructible.js modular structures: pieces, support, states, cause
   world/TestRoom.js     the Phase 1 room
   ui/Hud.js             stick, element badge, hint, event log, debug readout
@@ -67,11 +73,13 @@ docs/                   brief, architecture, art, checklist
 `src/main.js` owns the order and nothing else:
 
 ```
-input → Earth (forces on held rock) → player (velocity) → physics step
-      → structures (apply hits recorded during the step) → camera → render → HUD
+intent (what the finger means) → channel (forces on what is held) → earth (sensing)
+      → player (velocity) → physics step
+      → fire (contacts recorded in the step, burning, spread)
+      → structures (apply hits and burns) → particles → camera → render → HUD
 ```
 
-Hits are **recorded** during the physics step and **applied** after it, because changing a body from static to dynamic inside cannon's collision callback corrupts the solver. `Destructible.update()` does the applying.
+Hits and contacts are **recorded** during the physics step and **applied** after it, because changing a body from static to dynamic inside cannon's collision callback corrupts the solver. `FireSystem.update()` and `Destructible.update()` do the applying.
 
 `dt` is capped at 0.1 s. Physics runs a fixed 1/60 step with up to 6 sub-steps, so a slow frame doesn't put the simulation into slow motion (a lesson from HBD's dice).
 
@@ -84,8 +92,9 @@ Hits are **recorded** during the physics step and **applied** after it, because 
 | `destructible` | barricade panels | Static until broken |
 | `debris` | broken panels | Dynamic, **budgeted**: past `BUDGET.debris` (40) the oldest are frozen where they lie (active → cached) |
 | `player` | the hero's sphere | Dynamic, rotation locked, never sleeps |
+| `elemental` | fireballs | Dynamic small sphere, mostly gravity-free; removed when spent |
 
-Elemental (water, fire) and cosmetic (grass, particles) tiers will not use cannon: they get their own cheap simulations when their systems arrive.
+Fire itself (heat, spread, burning) is FireSystem's own cheap simulation, not cannon's; only the fireball is a body. Flames and smoke are pooled particles: two draw calls whatever is burning, and emission is skipped when a pool is full (480 flame / 160 smoke on desktop, 320 / 120 on phones).
 
 The budget numbers are the brief's starting guesses. They must be profiled on real phones before anyone tunes them.
 
@@ -97,9 +106,9 @@ The brief's required systems, and where each stands. "Planned" means an unchecke
 |---|---|---|
 | GameBootstrap | **Phase 1** | `src/main.js` |
 | EventSystem | **Phase 1** (bus + log) | `src/core/EventBus.js` |
-| InputSystem | **Phase 1** (stick, grab, flick, orbit, pinch, WASD) | `src/input/Gestures.js` |
+| InputSystem | **Phase 1** (stick, press/drag/flick, orbit, pinch, WASD; context intent) | `src/input/Gestures.js`, `src/input/Intent.js` |
 | PlayerSystem | **Phase 1** (movement, facing, animation) | `src/player/` |
-| ElementSystem | **Phase 1: Earth only** | `src/elements/EarthSystem.js` |
+| ElementSystem | **Phase 1: Earth and Fire** | `src/elements/` (`Channel`, `EarthSystem`, `FireSystem`), `src/data/materials.js` |
 | PhysicsInteractionSystem | **Phase 1** (tiers, budget) | `src/engine/Physics.js` |
 | DestructionSystem | **Phase 1** (pieces, support, states, cause) | `src/world/Destructible.js` |
 | UISystem | **Phase 1** (minimal HUD) | `src/ui/Hud.js` |

@@ -6,13 +6,13 @@
 //
 //   bottom-left   MOVE. The bottom half of the left half of the screen. A
 //   quarter       floating stick appears wherever the thumb lands in it.
-//   everywhere    THE WORLD. What a touch means depends on what it lands on:
-//   else
-//                   on something grabbable → grab, drag to move it,
-//                                            release fast = FLICK (throw),
-//                                            release slow = drop
-//                   on empty world         → drag orbits the camera
-//                   two fingers            → pinch zooms
+//   everywhere    THE WORLD. Intent (src/input/Intent.js) decides what a touch
+//   else          on a thing means, from its material and whether the finger
+//                 drags or holds still. What Gestures owns:
+//                   press/drag/release    handed to Intent while it wants them
+//                   release velocity      fast = FLICK (throw), slow = drop
+//                   on empty world        drag orbits the camera
+//                   two fingers           pinch zooms
 //
 // The move zone is deliberately only a quarter of the screen: a rock in the
 // top left is as grabbable as one on the right (tested on a phone: a
@@ -29,9 +29,9 @@ const VEL_WINDOW = 90;        // ms of history used for release velocity
 export class Gestures {
     constructor(el, handlers) {
         this.el = el;
-        this.h = handlers;        // { pickAt(x,y) → target|null, grab, drag, release, orbit, zoom }
+        this.h = handlers;        // { press(x,y) → taken?, drag(x,y) → 'orbit'|null, release, orbit, zoom, stick }
         this.stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };   // x,y in -1..1
-        this.world = new Map();   // pointerId -> { mode, target, samples: [{x,y,t}] }
+        this.world = new Map();   // pointerId -> { mode: world|orbit|pinch, samples: [{x,y,t}] }
         this.keys = new Set();
         this.pinchD = 0;
         this.moveZone = { x: 0.5, y: 0.5 };   // stick lives left of x and below y (fractions of the screen)
@@ -72,10 +72,9 @@ export class Gestures {
             this.h.stick?.({ active: true, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             return;
         }
-        const s = { mode: 'orbit', target: null, samples: [{ x: e.clientX, y: e.clientY, t: e.timeStamp }], lx: e.clientX, ly: e.clientY };
+        const s = { mode: 'orbit', samples: [{ x: e.clientX, y: e.clientY, t: e.timeStamp }], lx: e.clientX, ly: e.clientY };
         if (this.world.size === 0) {
-            const target = this.h.pickAt?.(e.clientX, e.clientY);
-            if (target) { s.mode = 'grab'; s.target = target; this.h.grab?.(target, e.clientX, e.clientY); }
+            if (this.h.press?.(e.clientX, e.clientY)) s.mode = 'world';
         } else {
             // A second finger on the world turns it into a pinch.
             s.mode = 'pinch';
@@ -105,7 +104,7 @@ export class Gestures {
         while (s.samples.length > 2 && now - s.samples[0].t > VEL_WINDOW) s.samples.shift();
         const dx = e.clientX - s.lx, dy = e.clientY - s.ly;
         s.lx = e.clientX; s.ly = e.clientY;
-        if (s.mode === 'grab') this.h.drag?.(s.target, e.clientX, e.clientY);
+        if (s.mode === 'world') { if (this.h.drag?.(e.clientX, e.clientY) === 'orbit') s.mode = 'orbit'; }
         else if (s.mode === 'orbit') this.h.orbit?.(dx, dy);
         else if (s.mode === 'pinch' && this.world.size >= 2) {
             const [a, b] = [...this.world.values()];
@@ -124,10 +123,10 @@ export class Gestures {
         const s = this.world.get(e.pointerId);
         if (!s) return;
         this.world.delete(e.pointerId);
-        if (s.mode === 'grab') {
+        if (s.mode === 'world') {
             const v = this._velocity(s, e);
             const flick = !cancelled && Math.hypot(v.x, v.y) > FLICK_SPEED;
-            this.h.release?.(s.target, { flick, vx: v.x, vy: v.y, x: e.clientX, y: e.clientY });
+            this.h.release?.({ flick, vx: v.x, vy: v.y, x: e.clientX, y: e.clientY });
         }
     }
 

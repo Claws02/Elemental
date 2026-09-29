@@ -12,16 +12,18 @@
 //                 are frozen where they lie (the "cached world state" step).
 //   player        the hero's capsule.
 //
-// Elemental (water, fire) and cosmetic (grass, particles) tiers arrive with
-// their systems and never touch cannon: they are simulated by their own
-// cheap approximations.
+//   elemental     a fireball in flight or in the hand: a small dynamic
+//                 sphere, so it can hit things. Fire itself (heat, spread,
+//                 flames) is FireSystem's own cheap simulation, not cannon's.
+//
+// Cosmetic things (grass, particles) never touch cannon.
 //
 // cannon-es 0.20 (the maintained fork of cannon.js), from vendor/ via lib.js.
 // ============================================================
 
 import { CANNON } from './lib.js';
 
-export const TIER = { STATIC: 'static', INTERACTIVE: 'interactive', DESTRUCTIBLE: 'destructible', DEBRIS: 'debris', PLAYER: 'player' };
+export const TIER = { STATIC: 'static', INTERACTIVE: 'interactive', DESTRUCTIBLE: 'destructible', DEBRIS: 'debris', PLAYER: 'player', ELEMENTAL: 'elemental' };
 
 // The starting budget from §55. To be profiled on real phones, not trusted.
 export const BUDGET = {

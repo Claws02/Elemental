@@ -4,7 +4,7 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 > "The game never lied to me. I lied to myself."
 
-**Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, a timber barricade, and the Earth element: grab a rock with your finger, hold it, flick it, and watch the barricade come apart. The world records that you did it.
+**Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, two braziers, a timber barricade, and two elements. Earth: grab a rock with your finger and flick it through the barricade. Fire: pull a fireball from the coals, set timber alight, heat a rock in your grip. There is no element selector: what you touch and how you touch it decide (`docs/CONTEXT_CONTROLS.md`). The world records what you did.
 
 ![The courtyard](docs/assets/courtyard.png)
 
@@ -23,7 +23,11 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 |---|---|---|
 | Thumb in the bottom-left quarter | WASD / arrows (Shift: run) | Move |
 | Touch a rock | Click a rock | Grab it (Earth) |
-| Drag | Drag | Hold it and move it |
+| Keep holding a rock still (1.5 s) | Hold the mouse still | Heat it (Fire); a hot rock ignites wood |
+| Hold still on a brazier (0.25 s) | Hold on a brazier | Pull a fireball (Fire) |
+| Hold still on timber (0.6 s) | Hold on timber | Set it alight |
+| Hold still on a fire (0.25 s) | Hold on a fire | Pull the flame out; it goes out |
+| Drag | Drag | Move what you're holding |
 | Flick and let go | Flick the mouse and release | Throw it |
 | Let go slowly | Release slowly | Drop it |
 | Drag empty world | Drag empty world | Look around |
@@ -45,6 +49,7 @@ CI runs all three on every push (`.github/workflows/ci.yml`).
 |---|---|
 | [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md) | The full design document: story, systems, roadmap |
 | [`docs/CHECKLIST.md`](docs/CHECKLIST.md) | The master checklist. One task at a time |
+| [`docs/CONTEXT_CONTROLS.md`](docs/CONTEXT_CONTROLS.md) | How the element is chosen: material + gesture, hold times per material |
 | [`docs/TECH_ARCHITECTURE.md`](docs/TECH_ARCHITECTURE.md) | The stack, the Unity → web mapping, the frame, physics tiers, risks |
 | [`docs/ART_AND_MODELS.md`](docs/ART_AND_MODELS.md) | What Hundred Block Dash's 3D models teach, and the rules Elemental's models follow |
 

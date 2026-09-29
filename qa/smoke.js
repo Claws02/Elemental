@@ -77,7 +77,7 @@ const SHOTS = path.join(__dirname, 'shots');
         await page.mouse.move(target.x, target.y);
         await page.mouse.down();
         await wait(700);
-        const held = await page.evaluate(i => ({ held: __EL.earth.held?.entry === __EL.room.rocks[i], y: __EL.room.rocks[i].body.position.y }), target.i);
+        const held = await page.evaluate(i => ({ held: __EL.channel.held?.entry === __EL.room.rocks[i], y: __EL.room.rocks[i].body.position.y }), target.i);
         check(held.held, 'pressing a rock grabs it');
         check(held.y > target.y0 + 0.6, `a grabbed rock lifts (y ${target.y0.toFixed(2)} → ${held.y.toFixed(2)})`);
         // Drag it slowly to one side, then look.
@@ -101,7 +101,7 @@ const SHOTS = path.join(__dirname, 'shots');
         await wait(60);
         const thrown = await page.evaluate(i => {
             const v = __EL.room.rocks[i].body.velocity;
-            return { throws: __EL.earth.throws, held: !!__EL.earth.held, speed: Math.hypot(v.x, v.y, v.z) };
+            return { throws: __EL.channel.throws, held: !!__EL.channel.held, speed: Math.hypot(v.x, v.y, v.z) };
         }, target.i);
         check(thrown.throws === 1 && !thrown.held, `a flick throws (throws=${thrown.throws})`);
         check(thrown.speed > 10, `the throw is fast (${thrown.speed.toFixed(1)} m/s)`);
@@ -134,9 +134,9 @@ const SHOTS = path.join(__dirname, 'shots');
         const sx = (sp.x + 1) / 2 * W, sy = (1 - sp.y) / 2 * H;
         out.rockScreen = [Math.round(sx), Math.round(sy)];
         ev('pointerdown', 13, sx, sy);
-        out.grabTopLeft = __EL.earth.held?.entry === e;
+        out.grabTopLeft = __EL.channel.held?.entry === e;
         ev('pointerup', 13, sx, sy);
-        out.throwsAfter = __EL.earth.throws;
+        out.throwsAfter = __EL.channel.throws;
         return out;
     });
     check(zone.stickBottomLeft, 'a touch in the bottom-left quarter is the move stick');
@@ -155,7 +155,7 @@ const SHOTS = path.join(__dirname, 'shots');
     if (t2) {
         await page.mouse.move(t2.x, t2.y); await page.mouse.down(); await wait(500);
         await page.mouse.move(t2.x + 4, t2.y - 2); await wait(300); await page.mouse.up();
-        const r = await page.evaluate(() => ({ throws: __EL.earth.throws, held: !!__EL.earth.held }));
+        const r = await page.evaluate(() => ({ throws: __EL.channel.throws, held: !!__EL.channel.held }));
         check(r.throws <= 1 && !r.held, `a slow release drops without throwing (throws=${r.throws})`);
     }
 
@@ -197,6 +197,125 @@ const SHOTS = path.join(__dirname, 'shots');
         return { y: e.body.position.y, n: e.data.respawned || 0 };
     });
     check(back.n === 1 && back.y > 0, `a rock that leaves the world comes back (y=${back.y.toFixed(2)})`);
+
+
+    // ========================================================
+    // 7. FIRE, in a fresh room. Context decides the element: hold still on
+    // stone you carry (heat), on timber (ignite), on coals or fire (pull).
+    // ========================================================
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__EL?.ready, null, { timeout: 30000 });
+    await wait(1500);
+    // In-page touch helpers, so hold timings are real event timings.
+    await page.evaluate(() => {
+        const el = document.getElementById('game');
+        window.__touch = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
+        window.__piece = (r, c) => __EL.interactables.things.find(t => t.id === `TestRoom_Barricade_01_P${r}${c}`);
+    });
+    const waitFor = (fn, ms, arg) => page.waitForFunction(fn, arg, { timeout: ms }).then(() => true).catch(() => false);
+
+    // 7a. Hold a rock still: Earth holds it, then Fire heats it in the grip.
+    const hot = await page.evaluate(() => {
+        const hp = __EL.player.body.position;
+        const i = __EL.room.rocks.map((e, i) => ({ e, i })).filter(({ e }) => __screen(e.mesh.position).on && !__EL.input.inMoveZone(__screen(e.mesh.position).x, __screen(e.mesh.position).y))
+            .sort((a, b) => a.e.body.position.distanceTo(hp) - b.e.body.position.distanceTo(hp))[0]?.i;
+        if (i === undefined) return null;
+        const s = __screen(__EL.room.rocks[i].mesh.position);
+        __touch('pointerdown', 31, s.x, s.y);
+        return { i, s, held: __EL.channel.held?.element };
+    });
+    check(hot?.held === 'earth', `a rock grabs instantly with Earth (${hot?.held})`);
+    if (hot) {
+        const ringSeen = await waitFor(() => __EL.intent.ring()?.element === 'fire', 8000);
+        check(ringSeen, 'holding it still fills a Fire ring');
+        const heated = await waitFor(i => (__EL.room.rocks[i].data.heat || 0) >= 0.9, 20000, hot.i);
+        check(heated, 'held still long enough, the rock heats in the grip');
+        await page.evaluate(({ s }) => __touch('pointerup', 31, s.x, s.y), hot);
+        await shot('07-hot-rock');
+    }
+
+    // 7a'. Holding still on a brazier's coals pulls a fireball (0.25 s: coals answer Fire fast).
+    const br = await page.evaluate(() => {
+        const t = __EL.interactables.things.find(t => t.id === 'TestRoom_Brazier_01');
+        const s = __screen(__EL.fire.sources.find(x => x.thing === t).pos);
+        __touch('pointerdown', 35, s.x, s.y);
+        return s;
+    });
+    const fromBrazier = await waitFor(() => __EL.channel.held?.element === 'fire', 6000);
+    check(br.on && fromBrazier, 'holding still on a brazier pulls a fireball');
+    await page.evaluate(s => __touch('pointerup', 35, s.x, s.y), br);
+    const dropped = await waitFor(() => __EL.fire.fireballs.size === 0, 8000);
+    check(dropped, 'a dropped fireball dies out');
+
+    // Walk up to the barricade (the brazier there is 4 m in front of it).
+    await page.evaluate(() => { __EL.player.body.position.set(-1, 0.45, -8); __EL.player.body.velocity.set(0, 0, 0); __EL.cam.yaw = 0.15; __EL.cam.pitch = 0.3; });
+    await wait(1500);
+
+    // 7b. A drag across a plank is not a hold: nothing catches.
+    const dragged = await page.evaluate(async () => {
+        const s = __screen(__piece(0, 5).pos());
+        __touch('pointerdown', 32, s.x, s.y);
+        await new Promise(r => setTimeout(r, 80));
+        __touch('pointermove', 32, s.x + 45, s.y + 5);
+        await new Promise(r => setTimeout(r, 1500));
+        __touch('pointerup', 32, s.x + 45, s.y + 5);
+        return { burning: __EL.fire.isBurning(__piece(0, 5)), on: s.on };
+    });
+    check(dragged.on && !dragged.burning, 'dragging across timber does not ignite it');
+
+    // 7c. Holding still on timber sets it alight, on the spot, and it is the player's fire.
+    const lit = await page.evaluate(() => { const s = __screen(__piece(0, 5).pos()); __touch('pointerdown', 33, s.x, s.y); return s; });
+    const caught = await waitFor(() => __EL.fire.isBurning(__piece(0, 5)), 6000);
+    await page.evaluate(s => __touch('pointerup', 33, s.x, s.y), lit);
+    const started = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'FireStarted'));
+    check(caught, 'holding still on timber ignites it');
+    check(started.length > 0 && started[0].cause === 'player', `the fire is recorded as the player's (${started.map(e => e.cause).join(',')})`);
+
+    // 7d. Holding still on something burning pulls the flame out: a fireball in the hand, and the plank goes out.
+    const pull = await page.evaluate(() => { const s = __screen(__piece(0, 5).pos()); __touch('pointerdown', 34, s.x, s.y); return s; });
+    const pulled = await waitFor(() => __EL.channel.held?.element === 'fire', 6000);
+    const out = await page.evaluate(() => !__EL.fire.isBurning(__piece(0, 5)));
+    check(pulled, 'holding still on fire pulls a fireball into the hand');
+    check(out, 'pulling the fire out puts the plank out');
+    await shot('08-fireball');
+
+    // 7e. Let go and throw it at the middle of the wall: it catches there.
+    const before = await page.evaluate(p => {
+        __touch('pointerup', 34, p.x, p.y);
+        const fb = __EL.fire.fireballs.values().next().value;
+        if (!fb) return null;
+        const dir = __piece(1, 2).pos().sub(fb.entry.mesh.position).normalize();
+        __EL.channel.throwEntry(fb.entry, dir, 22, 'fire');
+        return { ignitions: __EL.fire.ignitions, burning: __EL.fire.burningCount() };
+    }, pull);
+    const byFireball = before && before.burning === 0 && await waitFor(n => __EL.fire.ignitions > n && __EL.fire.fireballs.size === 0, 8000, before.ignitions);
+    check(byFireball, `a thrown fireball sets the barricade alight (nothing was burning before: ${before?.burning === 0})`);
+
+    // 7f. A hot rock thrown into timber sets it alight too.
+    if (hot) {
+        const hr = await page.evaluate(i => {
+            const e = __EL.room.rocks[i];
+            e.data.heat = Math.max(e.data.heat || 0, 0.95);
+            e.body.position.set(3, 1.4, -10); e.body.velocity.set(0, 0, 0);
+            const before = __EL.fire.ignitions;
+            __EL.throwRockAt(i, __piece(2, 5).pos(), 16);
+            return before;
+        }, hot.i);
+        const ok = await waitFor(n => __EL.fire.ignitions > n, 6000, hr);
+        check(ok, 'a hot rock thrown into timber sets it alight');
+    }
+
+    // 7g. It spreads, and it burns through.
+    const spread = await waitFor(() => __EL.fire.burningCount() + __EL.fire.burnedCount() >= 4, 40000);
+    check(spread, `fire spreads plank to plank (${await page.evaluate(() => JSON.stringify(__EL.fire.stats()))})`);
+    await shot('09-burning');
+    const through = await waitFor(() => __EL.room.barricade.summary().burned >= 1, 60000);
+    const fsum = await page.evaluate(() => ({ s: __EL.room.barricade.summary(), fx: __EL.fx.stats(), states: __EL.EventBus.recent().filter(e => e.type === 'StructureStateChanged').map(e => e.to + ':' + e.cause) }));
+    check(through, `burning planks burn through and fall (${fsum.s.burned} burned, ${fsum.s.state}; ${fsum.states.join(', ')})`);
+    check(fsum.states.every(s => s.endsWith(':player')), 'the fire damage is blamed on the player');
+    check(fsum.fx.flame <= fsum.fx.flameMax && fsum.fx.smoke <= fsum.fx.smokeMax, `particles stay within their pools (${fsum.fx.flame}/${fsum.fx.flameMax} flame, ${fsum.fx.smoke}/${fsum.fx.smokeMax} smoke)`);
+    await shot('10-burned');
 
     const perf = await page.evaluate(() => __EL.renderInfo());
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));

@@ -49,4 +49,7 @@ export const EV = {
     STRUCTURE_DAMAGED:  'StructureDamaged',
     STRUCTURE_STATE:    'StructureStateChanged',
     PIECE_BROKEN:       'PieceBroken',
+    FIRE_STARTED:       'FireStarted',
+    FIRE_OUT:           'FireOut',
+    OBJECT_HEATED:      'ObjectHeated',
 };
