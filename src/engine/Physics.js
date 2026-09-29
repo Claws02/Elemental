@@ -37,6 +37,8 @@ const debrisQueue = [];     // oldest first
 let mats = null;
 
 export function init() {
+    entries.clear();
+    debrisQueue.length = 0;
     world = new CANNON.World();
     world.gravity.set(0, -22, 0);          // heavier than 9.8: throws read as weighty at game scale
     world.allowSleep = true;

@@ -1,0 +1,463 @@
+// ============================================================
+// CATALOG — how each scene object type is built (docs/SCENES.md)
+// ============================================================
+//
+// For every type in schema.js, two functions:
+//
+//   model(it)        the look alone, in the object's own frame. Elemental-
+//                    Editor draws the scene with exactly this, so what is
+//                    placed is what ships.
+//   spawn(ctx, it)   the look placed in the world, plus its colliders and
+//                    whatever it is to the game. Returns an INSTANCE:
+//
+//     { mesh, entries,            the root object and its physics entries
+//       wire(sys)?,               tell the element systems what it is
+//       update(dt, frame)?,       per frame ({ held, hero })
+//       signal(name)?,            true/false for wires and the script
+//       act(name)?,               raise, open, hintOn…
+//       anchor(from)?,            a point a plate's chain runs to
+//       top()? }                  the height of its top (for the marker)
+//
+// `it` is the scene object: { id, type, x, y, z, rotY, ...props }.
+// ============================================================
+
+import { THREE, CANNON } from '../engine/lib.js';
+import * as Physics from '../engine/Physics.js';
+import { TIER } from '../engine/Physics.js';
+import { Kit, at } from '../engine/Kit.js';
+import { WORLD, ELEMENT } from '../art/Palette.js';
+import { rock, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier, basin, crate, barrel, dummy, hay } from '../art/PropModels.js';
+import { buildingWall, buildingFloor, buildingRoof, buildingStairs, buildingFence, buildingPost, tree, stall, gate, groundPatch } from '../art/TownModels.js';
+import { Destructible, STATE } from '../world/Destructible.js';
+import { Plate } from '../world/Plates.js';
+import { Npc, npcModel } from '../story/Npc.js';
+import { buildHero } from '../art/HeroModel.js';
+import { PREFABS, expandPrefab } from '../data/prefabs.js';
+import { defaults } from './schema.js';
+
+// ---- helpers ------------------------------------------------------------------
+
+const _yAxis = new CANNON.Vec3(0, 1, 0);
+
+/** The object's props over its type's defaults. */
+export function withDefaults(it) { return { ...defaults(it.type), ...it }; }
+
+function _place(obj, it) {
+    obj.position.set(it.x || 0, it.y || 0, it.z || 0);
+    obj.rotation.y = it.rotY || 0;
+    return obj;
+}
+
+// Static colliders from boxes in the object's own frame ({ x,y,z,w,h,d,rx? }).
+function _boxes(ctx, it, boxes, { mat = 'stone', solid = null } = {}) {
+    const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), it.rotY || 0);
+    const base = new THREE.Vector3(it.x || 0, it.y || 0, it.z || 0);
+    const entries = [];
+    for (const b of boxes) {
+        const body = new CANNON.Body({ mass: 0, material: Physics.material(mat) });
+        body.addShape(new CANNON.Box(new CANNON.Vec3(b.w / 2, b.h / 2, b.d / 2)));
+        const p = new THREE.Vector3(b.x, b.y, b.z).applyQuaternion(q).add(base);
+        body.position.set(p.x, p.y, p.z);
+        const bq = q.clone();
+        if (b.rx) bq.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), b.rx));
+        body.quaternion.set(bq.x, bq.y, bq.z, bq.w);
+        entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id }));
+    }
+    if (solid) ctx.world.solids.push(solid);
+    return entries;
+}
+
+// A static thing: its model placed, its boxes as colliders, solid to the camera.
+function _static(ctx, it, { group, boxes }, opts = {}) {
+    _place(group, it);
+    ctx.scene.add(group);
+    const entries = _boxes(ctx, it, boxes, { solid: opts.solid === false ? null : group, mat: opts.mat });
+    return { mesh: group, entries };
+}
+
+function _toWorld(it, local) {
+    return local.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), it.rotY || 0).add(new THREE.Vector3(it.x || 0, it.y || 0, it.z || 0));
+}
+
+// A dynamic prop (crate, barrel, dummy): a body, reset to home by PropReset.
+function _dynamic(ctx, it, mesh, body, material, mass, { hidden } = {}) {
+    _place(mesh, it);
+    mesh.position.y += mesh.userData.restY || 0;          // it.y is where its base sits
+    ctx.scene.add(mesh);
+    body.position.set(mesh.position.x, mesh.position.y, mesh.position.z);
+    body.quaternion.set(mesh.quaternion.x, mesh.quaternion.y, mesh.quaternion.z, mesh.quaternion.w);
+    const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id: it.id, data: { radius: 0.5 } });
+    const prop = { id: it.id, mesh, entry, material, mass, home: { p: mesh.position.clone(), q: mesh.quaternion.clone() } };
+    ctx.world.props.push(prop);
+    return {
+        mesh, entries: [entry], prop,
+        wire(sys) { prop.thing = sys.interactables.add({ id: it.id, mesh, entry, material }); sys.fire.addFlammable(prop.thing); },
+        signal(name, sys) {
+            if (name === 'burning') return !!prop.thing && sys.fire.isBurning(prop.thing);
+            if (name === 'burned') return !!prop.thing && sys.fire.isBurned(prop.thing);
+            if (name === 'moved') return entry.body.position.distanceTo(prop.home.p) > 0.3;
+            return false;
+        },
+    };
+}
+const _dynBody = (mass, shape, damp = 0.3) => {
+    const b = new CANNON.Body({ mass, material: Physics.material('wood'), linearDamping: 0.05, angularDamping: damp, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+    b.addShape(shape);
+    return b;
+};
+
+// ---- editor-only looks ------------------------------------------------------------
+
+function _spawnMarker() {
+    const g = buildHero().root;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.7, 32), new THREE.MeshBasicMaterial({ color: ELEMENT.earth.rune, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.03;
+    g.add(ring);
+    return g;
+}
+
+function _zoneBox(w, h, d) {
+    const g = new THREE.Group();
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: 0x4fd6ff, transparent: true, opacity: 0.16, depthWrite: false }));
+    m.position.y = h / 2;
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d)), new THREE.LineBasicMaterial({ color: 0x4fd6ff }));
+    e.position.y = h / 2;
+    g.add(m, e);
+    return g;
+}
+
+// The sealed door: a stone slab with the four elements' runes, only Earth lit.
+function _sealedDoor(w, h) {
+    const k = new Kit();
+    k.box('body', w, h, 0.6, at(0, h / 2, 0), WORLD.stoneDark, { ch: 0.12 });
+    k.box('body', w - 0.8, h - 0.8, 0.2, at(0, h / 2 - 0.1, 0.35), WORLD.stone[2], { ch: 0.06 });
+    k.cyl('body', 0.9, 0.9, 0.12, 16, at(0, h / 2, 0.5, Math.PI / 2, 0, 0), WORLD.stone[3]);
+    const runes = [[ELEMENT.earth.rune, 1.0, 0, 0.55], [ELEMENT.water.deep, 0.25, 0.55, 0], [ELEMENT.fire.deep, 0.25, 0, -0.55], [ELEMENT.air.deep, 0.25, -0.55, 0]];
+    for (const [col, lit, dx, dy] of runes) {
+        const c = new THREE.Color(col).multiplyScalar(lit);
+        k.box(lit > 0.5 ? 'glow' : 'body', 0.26, 0.26, 0.04, at(dx, h / 2 + dy, 0.58, 0, 0, Math.PI / 4), c);
+    }
+    return k.build();
+}
+
+// Model + colliders for the static types whose model is all they are.
+const SHAPES = {
+    ruin_wall: it => {
+        const w = ruinWall(it.seed, it.length, it.height, { runes: it.runes });
+        return { group: w.group, boxes: [{ x: 0, y: w.height / 2, z: 0, w: it.length, h: w.height, d: w.depth }] };
+    },
+    pillar: it => {
+        const p = pillar(it.seed, it.height, { broken: it.broken });
+        return { group: p.group, boxes: [{ x: 0, y: p.height / 2, z: 0, w: p.radius * 2, h: p.height, d: p.radius * 2 }] };
+    },
+    drum: it => {
+        const g = new THREE.Group();
+        const d = fallenDrum(it.seed);
+        d.position.y = 0.45;
+        g.add(d);
+        return { group: g, boxes: [{ x: 0, y: 0.45, z: 0, w: 0.85, h: 0.9, d: 0.9 }] };
+    },
+    archway: it => {
+        const a = archway(it.width, it.height);
+        const boxes = [-1, 1].map(sx => ({ x: sx * (it.width / 2 + a.pierW / 2), y: it.height / 2, z: 0, w: a.pierW, h: it.height, d: a.depth }));
+        boxes.push({ x: 0, y: it.height + 0.4, z: 0, w: it.width + a.pierW * 2 + 0.3, h: 0.8, d: a.depth });
+        return { group: a.group, boxes };
+    },
+    sealed_door: it => ({ group: _sealedDoor(it.width, it.height), boxes: [{ x: 0, y: it.height / 2, z: -0.3, w: it.width, h: it.height, d: 0.8 }] }),
+    tree: it => tree(it),
+    stall: it => stall(it),
+    b_wall: it => buildingWall(it),
+    b_floor: it => buildingFloor(it),
+    b_roof: it => buildingRoof(it),
+    b_stairs: it => buildingStairs(it),
+    b_fence: it => buildingFence(it),
+    b_post: it => buildingPost(it),
+};
+const WOODEN = new Set(['b_fence', 'stall']);
+
+// ---- the catalog -----------------------------------------------------------------------
+
+const BZ_PANEL = { pw: 1.0, ph: 0.95, pd: 0.16 };
+const POST_H = 3.1;
+
+export const CATALOG = {
+    rock: {
+        model(it) {
+            const g = new THREE.Group(), m = rock(it.seed, it.radius);
+            m.group.position.y = m.radius;          // it.y is the ground it rests on
+            g.add(m.group);
+            return g;
+        },
+        spawn(ctx, it) {
+            const m = rock(it.seed, it.radius);
+            const mass = 40 * it.radius ** 3;
+            const b = new CANNON.Body({ mass, material: Physics.material('rock'), linearDamping: 0.02, angularDamping: 0.25, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+            b.addShape(new CANNON.Sphere(m.radius));
+            b.position.set(it.x, (it.y || 0) + m.radius, it.z);
+            b.quaternion.setFromAxisAngle(_yAxis, it.rotY || 0);
+            m.group.position.copy(b.position);
+            m.group.quaternion.copy(b.quaternion);
+            ctx.scene.add(m.group);
+            const entry = Physics.add({ body: b, mesh: m.group, tier: TIER.INTERACTIVE, id: it.id, data: { radius: m.radius } });
+            ctx.world.rocks.push(entry);
+            return {
+                mesh: m.group, entries: [entry], rises: true,
+                wire(sys) { sys.fire.addHeatable(sys.interactables.add({ id: it.id, mesh: m.group, entry, material: 'stone' })); },
+                top: () => entry.body.position.y + m.radius,
+            };
+        },
+    },
+
+    hay: {
+        model: it => hay(it.seed),
+        spawn(ctx, it) {
+            const m = _place(hay(it.seed), it);
+            ctx.scene.add(m);
+            const prop = { id: it.id, mesh: m, entry: null, material: 'hay', home: { p: m.position.clone(), q: m.quaternion.clone() } };
+            ctx.world.props.push(prop);
+            return {
+                mesh: m, entries: [], prop,
+                wire(sys) { prop.thing = sys.interactables.add({ id: it.id, mesh: m, material: 'hay' }); sys.fire.addFlammable(prop.thing); },
+                signal: (name, sys) => name === 'burning' ? !!prop.thing && sys.fire.isBurning(prop.thing) : name === 'burned' ? !!prop.thing && sys.fire.isBurned(prop.thing) : false,
+            };
+        },
+    },
+
+    brazier: {
+        model: it => brazier(it.seed).group,
+        spawn(ctx, it) {
+            const b = brazier(it.seed);
+            const inst = _static(ctx, it, { group: b.group, boxes: [{ x: 0, y: b.height / 2, z: 0, w: b.radius * 1.6, h: b.height, d: b.radius * 1.6 }] });
+            const flame = _toWorld(it, new THREE.Vector3(0, b.flameY, 0));
+            ctx.world.braziers.push({ id: it.id, mesh: b.group, flame });
+            inst.wire = sys => sys.fire.addSource(sys.interactables.add({ id: it.id, mesh: b.group, material: 'coals' }), flame);
+            return inst;
+        },
+    },
+
+    basin: {
+        model: it => basin(it.seed).group,
+        spawn(ctx, it) {
+            const b = basin(it.seed);
+            const inst = _static(ctx, it, { group: b.group, boxes: [{ x: 0, y: b.height / 2, z: 0, w: b.radius * 1.7, h: b.height, d: b.radius * 1.7 }] });
+            const surface = _toWorld(it, new THREE.Vector3(0, b.surfaceY, 0));
+            ctx.world.basins.push({ id: it.id, mesh: b.group, surface });
+            inst.wire = sys => sys.water.addSource(sys.interactables.add({ id: it.id, mesh: b.group, material: 'water' }), surface);
+            return inst;
+        },
+    },
+
+    crate: {
+        model: it => { const g = new THREE.Group(); const c = crate(it.seed, it.size); c.position.y = it.size / 2; g.add(c); return g; },
+        spawn(ctx, it) {
+            const m = crate(it.seed, it.size);
+            m.userData.restY = it.size / 2;
+            const b = _dynBody(4, new CANNON.Box(new CANNON.Vec3(it.size / 2, it.size / 2, it.size / 2)), 0.2);
+            return _dynamic(ctx, it, m, b, 'wood', 4);
+        },
+    },
+    barrel: {
+        model: it => { const g = new THREE.Group(); const c = barrel(it.seed); c.position.y = 0.52; g.add(c); return g; },
+        spawn(ctx, it) {
+            const m = barrel(it.seed);
+            m.userData.restY = 0.52;
+            return _dynamic(ctx, it, m, _dynBody(10, new CANNON.Cylinder(0.4, 0.4, 1.02, 10)), 'barrel', 10);
+        },
+    },
+    dummy: {
+        model: it => { const g = new THREE.Group(); const c = dummy(it.seed); c.position.y = 0.95; g.add(c); return g; },
+        spawn(ctx, it) {
+            const m = dummy(it.seed);
+            m.userData.restY = 0.95;
+            return _dynamic(ctx, it, m, _dynBody(15, new CANNON.Box(new CANNON.Vec3(0.28, 0.95, 0.2))), 'wood', 15);
+        },
+    },
+
+    barricade: {
+        model(it) {
+            const g = new THREE.Group();
+            for (let r = 0; r < it.rows; r++) for (let c = 0; c < it.cols; c++) {
+                const p = plankPanel(r * 31 + c * 7 + 1, BZ_PANEL.pw, BZ_PANEL.ph, BZ_PANEL.pd);
+                p.position.set((c - (it.cols - 1) / 2) * BZ_PANEL.pw, BZ_PANEL.ph / 2 + r * BZ_PANEL.ph, 0);
+                g.add(p);
+            }
+            if (it.posts) for (const sx of [-1, 1]) { const p = timberPost(POST_H); p.position.x = sx * (it.cols * BZ_PANEL.pw / 2 + 0.15); g.add(p); }
+            return g;
+        },
+        spawn(ctx, it) {
+            const d = new Destructible({
+                id: it.id, scene: ctx.scene, cols: it.cols, rows: it.rows, ...BZ_PANEL,
+                origin: new THREE.Vector3(it.x, it.y || 0, it.z), rotY: it.rotY || 0, pieceMass: 5,
+                regenAfter: it.regenAfter, build: plankPanel,
+            });
+            const mesh = new THREE.Group();
+            const entries = d.pieces.map(p => p.entry);
+            const posts = [];
+            if (it.posts) for (const sx of [-1, 1]) {
+                const post = timberPost(POST_H);
+                const x = sx * (it.cols * BZ_PANEL.pw / 2 + 0.15);
+                post.position.x = x;
+                mesh.add(post);
+                entries.push(..._boxes(ctx, it, [{ x, y: POST_H / 2, z: 0, w: 0.3, h: POST_H, d: 0.3 }], { mat: 'wood' }));
+                posts.push(_toWorld(it, new THREE.Vector3(x, POST_H, 0)));
+            }
+            _place(mesh, it);
+            ctx.scene.add(mesh);
+            ctx.world.barricades.push(d);
+            const byPiece = new Map();
+            return {
+                mesh, entries, destructible: d, pieces: d.pieces,
+                wire(sys) {
+                    for (const piece of d.pieces) {
+                        const thing = sys.interactables.add({ id: piece.id, mesh: piece.mesh, entry: piece.entry, material: 'wood' });
+                        sys.fire.addFlammable(thing, { onBurn: (amount, cause) => d.burn(piece, amount, cause) });
+                        byPiece.set(piece, thing);
+                    }
+                    d.isBurning = piece => sys.fire.isBurning(byPiece.get(piece));
+                    d.onRebuild = () => { for (const t of byPiece.values()) sys.fire.reset(t); };
+                },
+                update: dt => d.update(dt),
+                signal(name) {
+                    const s = d.summary();
+                    switch (name) {
+                    case 'intact': return d.state === STATE.INTACT && !d.raised;
+                    case 'damaged': return s.broken > 0;
+                    case 'broken': return [STATE.CRITICAL, STATE.COLLAPSED, STATE.BURNED].includes(d.state);
+                    case 'collapsed': return d.state === STATE.COLLAPSED || d.state === STATE.BURNED;
+                    case 'burned': return d.state === STATE.BURNED;
+                    case 'raised': return !!d.raised;
+                    }
+                    return false;
+                },
+                act(name) { if (name === 'raise') d.raise(); if (name === 'rebuild') d.rebuild(); },
+                count: what => d.summary()[what] || 0,
+                anchor: from => posts.slice().sort((a, b) => a.distanceTo(from) - b.distanceTo(from))[0] || _toWorld(it, new THREE.Vector3(0, POST_H, 0)),
+            };
+        },
+    },
+
+    gate: {
+        model(it) { const g = gate(it); g.group.add(g.grille); if (it.open) g.grille.position.y = it.height - 0.3; return g.group; },
+        spawn(ctx, it) {
+            const g = gate(it);
+            const inst = _static(ctx, it, g);
+            inst.mesh.add(g.grille);
+            const body = new CANNON.Body({ mass: 0, material: Physics.material('stone') });
+            body.addShape(new CANNON.Box(new CANNON.Vec3(g.grilleBox.w / 2, g.grilleBox.h / 2, g.grilleBox.d / 2)));
+            const base = _toWorld(it, new THREE.Vector3(0, g.grilleBox.y, 0));
+            body.quaternion.setFromAxisAngle(_yAxis, it.rotY || 0);
+            const lift = it.height - 0.3;
+            let k = it.open ? 1 : 0, want = k;
+            const set = () => { const e = k * k * (3 - 2 * k); g.grille.position.y = e * lift; body.position.set(base.x, base.y + e * lift, base.z); body.aabbNeedsUpdate = true; };
+            inst.entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Grille' }));
+            set();
+            return Object.assign(inst, {
+                update(dt) { if (k !== want) { k = want > k ? Math.min(want, k + dt / 1.6) : Math.max(want, k - dt / 1.2); set(); } },
+                signal: name => name === 'open' ? k >= 1 : name === 'closed' ? k <= 0 : false,
+                act(name) { if (name === 'open') want = 1; if (name === 'close') want = 0; if (name === 'toggle') want = want ? 0 : 1; },
+                anchor: from => g.posts.map(p => _toWorld(it, p)).sort((a, b) => a.distanceTo(from) - b.distanceTo(from))[0],
+            });
+        },
+    },
+
+    plate: {
+        model(it) {
+            // The same Plate, built into a throwaway scene, without its physics.
+            const tmp = new THREE.Group();
+            Plate.buildLook(tmp, { radius: it.radius, height: it.height });
+            return tmp;
+        },
+        spawn(ctx, it) {
+            const plate = new Plate(ctx.scene, { id: it.id, pos: new THREE.Vector3(it.x, it.y || 0, it.z), radius: it.radius, height: it.height, gentleHeight: it.gentleHeight });
+            ctx.world.plates.push(plate);
+            return {
+                mesh: plate.group, extra: [plate.ring], entries: [plate.entry], plate,
+                link(world) {
+                    const t = it.chainTo ? world.objects.get(it.chainTo) : null;   // ('' && … would be a string, with String#anchor)
+                    if (typeof t?.anchor === 'function') plate.chain(ctx.scene, t.anchor(plate.pos));
+                },
+                update: (dt, f) => plate.update(dt, ctx.world.rocks, f.held),
+                signal: name => name === 'weighted' ? !!plate.weighted : name === 'gentle' ? !!plate.weighted && plate.gentle : name === 'empty' ? !plate.weighted : false,
+                act(name) { if (name === 'hintOn') plate.hint = true; if (name === 'hintOff') plate.hint = false; },
+                top: () => plate.top,
+            };
+        },
+    },
+
+    trigger: {
+        model: it => _zoneBox(it.width, it.height, it.depth),
+        editorOnly: false,
+        spawn(ctx, it) {
+            const mesh = new THREE.Group();
+            _place(mesh, it);
+            let entered = false, inside = false;
+            const inv = new THREE.Matrix4();
+            return {
+                mesh, entries: [],
+                update(dt, f) {
+                    mesh.updateMatrixWorld();
+                    const p = f.hero.clone().applyMatrix4(inv.copy(mesh.matrixWorld).invert());
+                    inside = Math.abs(p.x) <= it.width / 2 && Math.abs(p.z) <= it.depth / 2 && p.y >= -0.5 && p.y <= it.height;
+                    if (inside) entered = true;
+                },
+                signal: name => name === 'entered' ? entered : name === 'inside' ? inside : false,
+            };
+        },
+    },
+
+    spawn: {
+        model: () => _spawnMarker(),
+        spawn(ctx, it) {
+            ctx.world.spawn = { x: it.x, z: it.z, facing: it.rotY || 0 };
+            return { mesh: null, entries: [] };
+        },
+    },
+
+    npc: {
+        model: it => npcModel(it.look).root,
+        spawn(ctx, it) {
+            const n = new Npc(ctx.scene, { id: it.id, name: it.name, look: it.look, pos: new THREE.Vector3(it.x, it.y || 0, it.z), facing: it.rotY || 0 });
+            ctx.world.npcs.push(n);
+            return { mesh: n.rig.root, entries: [n.entry], npc: n, update: (dt, f) => n.update(dt, f.hero), top: () => (it.y || 0) + 2 };
+        },
+    },
+
+    prefab: {
+        model(it) {
+            const g = new THREE.Group();
+            for (const pc of expandPrefab({ ...it, x: 0, y: 0, z: 0, rotY: 0 })) {
+                const m = modelOf(pc);
+                _place(m, pc);
+                g.add(m);
+            }
+            return g;
+        },
+        spawn() { throw new Error('prefabs are expanded by the loader'); },
+    },
+
+    patch: {
+        model: it => groundPatch(it, it.x * 7 + it.z * 3).group,
+        spawn(ctx, it) {
+            const g = _place(groundPatch(it, it.x * 7 + it.z * 3).group, it);
+            ctx.scene.add(g);
+            return { mesh: g, entries: [] };
+        },
+    },
+};
+
+for (const [type, shape] of Object.entries(SHAPES)) {
+    CATALOG[type] = {
+        model: it => shape(it).group,
+        spawn: (ctx, it) => _static(ctx, it, shape(it), { mat: WOODEN.has(type) ? 'wood' : 'stone', solid: type === 'b_floor' ? false : undefined }),
+    };
+}
+
+/** The look of scene object `it` (defaults filled in), in its own frame. */
+export function modelOf(it) {
+    const c = CATALOG[it.type];
+    if (!c) throw new Error(`unknown type "${it.type}"`);
+    return c.model(withDefaults(it));
+}
+
+export { PREFABS, expandPrefab };

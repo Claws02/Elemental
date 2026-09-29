@@ -78,6 +78,15 @@ export function followSun(p) {
     sunTarget.position.copy(p);
 }
 
+/** Let the GPU go (the editor's Play mode starts and stops the game). */
+export function dispose() {
+    removeEventListener('resize', resize);
+    scene?.traverse(o => { o.geometry?.dispose(); });
+    renderer?.dispose();
+    renderer?.forceContextLoss();
+    renderer = scene = camera = null;
+}
+
 export function render() { renderer.render(scene, camera); }
 export function info() { return renderer.info.render; }
 export function get() { return { renderer, scene, camera }; }

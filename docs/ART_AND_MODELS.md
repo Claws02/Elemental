@@ -63,7 +63,7 @@ Rule: **the world is muted so the elements can be loud.** Stone, timber and moss
 | Ruin wall | `PropModels.ruinWall` | 2 | Coursed stone with crumbling, mossy top rows; Earth runes on the inner face |
 | Pillar, broken pillar, fallen drum | `PropModels.pillar`, `fallenDrum` | 1–2 | Faceted drums, rune band under the capital |
 | Archway | `PropModels.archway` | 2 | Piers, lintel, keystone rune |
-| Sealed door | `TestRoom._sealedDoor` | 2 | Four element runes; only Earth lit. The first piece of environmental storytelling |
+| Sealed door | `Catalog._sealedDoor` | 2 | Four element runes; only Earth lit. The first piece of environmental storytelling |
 | Barricade panel ×18, posts ×2 | `PropModels.plankPanel`, `timberPost` | 1 each | Two planks, a batten, iron nails. Darkens and sags as it takes damage |
 
 | The hero | Holding a boulder with Earth |

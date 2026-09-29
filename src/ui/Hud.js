@@ -36,7 +36,9 @@ export class Hud {
         this.el = id => root.querySelector('#' + id);
         this.setElement('earth');
         this.stick({ active: false });
-        addEventListener('resize', () => { if (this.el('stick-base').style.opacity !== '1') this.stick({ active: false }); });
+        this._onResize = () => { if (this.el('stick-base').style.opacity !== '1') this.stick({ active: false }); };
+        addEventListener('resize', this._onResize);
+        this.onLink = null;          // set to catch the card's buttons instead of following them (the editor's Play mode)
         this.fps = 60; this._acc = 0; this._frames = 0;
         this.skipLine = false;
         this.el('hud-say').addEventListener('pointerdown', e => { e.stopPropagation(); this.skipLine = true; });
@@ -127,9 +129,15 @@ export class Hud {
         el.innerHTML = `<h2></h2>${lines.map(() => '<p></p>').join('')}<div class="btns">${buttons.map(() => '<a></a>').join('')}</div>`;
         el.querySelector('h2').textContent = title;
         el.querySelectorAll('p').forEach((p, i) => { p.textContent = lines[i]; });
-        el.querySelectorAll('a').forEach((a, i) => { a.textContent = buttons[i].label; a.href = buttons[i].href; });
+        el.querySelectorAll('a').forEach((a, i) => {
+            a.textContent = buttons[i].label;
+            a.href = buttons[i].href;
+            a.addEventListener('click', e => { if (this.onLink) { e.preventDefault(); this.onLink(buttons[i].href); } });
+        });
         el.classList.add('on');
     }
+
+    dispose() { removeEventListener('resize', this._onResize); this.root.innerHTML = ''; }
 
     log(text) {
         const line = document.createElement('div');
@@ -149,7 +157,7 @@ export class Hud {
         this.el('hud-debug').textContent =
             `${this.fps.toFixed(0)} fps · ${info.calls} calls · ${(info.tris / 1000).toFixed(1)}k tris\n` +
             `bodies ${p.total} · awake ${p.awake} · debris ${p.debris}\n` +
-            `barricade ${info.barricade.state} ${info.barricade.broken}/${info.barricade.total}` +
+            (info.barricade ? `barricade ${info.barricade.state} ${info.barricade.broken}/${info.barricade.total}` : 'no barricade') +
             (info.fire ? `\nfire ${info.fire.burning} burning · ${info.fire.burned} burned · particles ${info.fx.flame + info.fx.smoke}` : '');
     }
 }

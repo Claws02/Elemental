@@ -40,7 +40,7 @@ Cael reacts: "Put it out." Then, when the player can't: "You can't, can you. Tha
 
 ## Lesson I: The Quiet Element
 
-The first training scene (`src/story/Lesson1.js`), in the ruined courtyard. Title screen → **Begin**.
+The first training scene (`scenes/lesson1.json`, run by `src/story/Story.js`), in the ruined courtyard. Title screen → **Begin**.
 
 The story opens facing Cael, with only three stones out: the small one he points to and two too heavy to lift at Power 1. Touch a heavy one and Cael says so ("Too heavy. You're not ready for that one."); the fat-finger assist never swaps it for the small one.
 

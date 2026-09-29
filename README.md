@@ -6,6 +6,8 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 **Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, two braziers, two basins, a timber barricade, and all four elements. Earth: grab a rock with your finger and flick it through the barricade. Fire: pull a fireball from the coals, set timber alight, heat a rock in your grip. Water: draw a stream from a basin to put the fire out, or yank it free into an orb and throw it. Air: touch the hero and drag for wind, flick for a gust; it pushes, blows out young flames and fans old ones. There is no element selector: what you touch and how you touch it decide (`docs/CONTEXT_CONTROLS.md`). The world records what you did.
 
+Every place is a scene file in `scenes/` (`docs/SCENES.md`), made in [Elemental-Editor](https://github.com/Claws02/Elemental-Editor): `?scene=village` opens a sample village built from the building kit.
+
 **Begin** on the title screen plays **Lesson I**, Cael's first lesson: the story starts with Earth and a wild, untrained Fire, and powers grow in Power and Control (`docs/PROGRESSION.md`). **Sandbox** has every element, fully trained.
 
 ![The courtyard](docs/assets/courtyard.png)
@@ -43,6 +45,7 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 
 ```bash
 npm run check      # module parse + dead private-helper check
+npm run scenes     # every scenes/*.json against the scene schema
 npm run smoke      # the Phase 1 gate: boot, move, grab, flick, break, budget (needs a server on :8140)
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
 ```
@@ -55,6 +58,7 @@ CI runs all three on every push (`.github/workflows/ci.yml`).
 |---|---|
 | [`docs/DESIGN_BRIEF.md`](docs/DESIGN_BRIEF.md) | The full design document: story, systems, roadmap |
 | [`docs/CHECKLIST.md`](docs/CHECKLIST.md) | The master checklist. One task at a time |
+| [`docs/SCENES.md`](docs/SCENES.md) | The scene format: objects, puzzle wires, story scripts; how scenes come from the editor |
 | [`docs/PROGRESSION.md`](docs/PROGRESSION.md) | Element states, Power and Control, Wild Fire, Lesson I |
 | [`docs/CONTEXT_CONTROLS.md`](docs/CONTEXT_CONTROLS.md) | How the element is chosen: material + gesture, hold times per material |
 | [`docs/TECH_ARCHITECTURE.md`](docs/TECH_ARCHITECTURE.md) | The stack, the Unity → web mapping, the frame, physics tiers, risks |

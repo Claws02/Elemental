@@ -37,16 +37,21 @@ export class Gestures {
         this.moveZone = { x: 0.5, y: 0.5 };   // stick lives left of x and below y (fractions of the screen)
         this.stickRadius = 60;
 
-        el.addEventListener('pointerdown', e => this._down(e));
-        el.addEventListener('pointermove', e => this._move(e));
-        el.addEventListener('pointerup', e => this._up(e));
-        el.addEventListener('pointercancel', e => this._up(e, true));
-        el.addEventListener('contextmenu', e => e.preventDefault());
-        el.addEventListener('wheel', e => { e.preventDefault(); this.h.zoom?.(e.deltaY > 0 ? 1.1 : 0.9); }, { passive: false });
-        addEventListener('keydown', e => this.keys.add(e.code));
-        addEventListener('keyup', e => this.keys.delete(e.code));
-        addEventListener('blur', () => this.keys.clear());
+        this._off = [];
+        const on = (t, type, fn, opts) => { t.addEventListener(type, fn, opts); this._off.push(() => t.removeEventListener(type, fn, opts)); };
+        on(el, 'pointerdown', e => this._down(e));
+        on(el, 'pointermove', e => this._move(e));
+        on(el, 'pointerup', e => this._up(e));
+        on(el, 'pointercancel', e => this._up(e, true));
+        on(el, 'contextmenu', e => e.preventDefault());
+        on(el, 'wheel', e => { e.preventDefault(); this.h.zoom?.(e.deltaY > 0 ? 1.1 : 0.9); }, { passive: false });
+        on(window, 'keydown', e => this.keys.add(e.code));
+        on(window, 'keyup', e => this.keys.delete(e.code));
+        on(window, 'blur', () => this.keys.clear());
     }
+
+    /** Stop listening (the editor's Play mode starts and stops the game). */
+    dispose() { this._off.forEach(f => f()); this._off = []; this.keys.clear(); }
 
     /** Movement intent, -1..1 on each axis (x right, y forward). */
     moveVector() {

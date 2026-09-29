@@ -8,7 +8,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'www');
-const SHIP = ['index.html', 'css', 'src', 'vendor', 'assets'];
+const SHIP = ['index.html', 'css', 'src', 'vendor', 'assets', 'scenes'];
 const SKIP = [/\/\./, /\.md$/];
 
 fs.rmSync(OUT, { recursive: true, force: true });

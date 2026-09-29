@@ -15,6 +15,8 @@ jobs:
           node-version: 22
       - name: Static sweep (module parse, dead private helpers)
         run: bash qa/parsecheck.sh src
+      - name: Scenes (every scenes/*.json against the schema)
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-scenes.mjs
       - name: Web build for Capacitor
         run: node scripts/build-web.js
       - name: Install Playwright Chromium

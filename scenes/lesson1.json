@@ -1,0 +1,887 @@
+{
+ "format": 1,
+ "id": "lesson1",
+ "name": "Lesson I · The Quiet Element",
+ "settings": {
+  "ground": {
+   "half": 28,
+   "style": "flagstone"
+  },
+  "profile": "story",
+  "resetProgress": true,
+  "resetAfter": 0
+ },
+ "objects": [
+  {
+   "id": "Spawn",
+   "type": "spawn",
+   "x": 0,
+   "y": 0,
+   "z": 9,
+   "rotY": 3.142
+  },
+  {
+   "id": "TestRoom_Wall_11",
+   "type": "ruin_wall",
+   "x": -12,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 3,
+   "seed": 11,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_12",
+   "type": "ruin_wall",
+   "x": 0,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 2.4,
+   "seed": 12,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_13",
+   "type": "ruin_wall",
+   "x": 12,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 3.3,
+   "seed": 13,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_21",
+   "type": "ruin_wall",
+   "x": -18,
+   "y": 0,
+   "z": -9,
+   "rotY": 1.571,
+   "length": 18,
+   "height": 3.3,
+   "seed": 21,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_22",
+   "type": "ruin_wall",
+   "x": -18,
+   "y": 0,
+   "z": 9,
+   "rotY": 1.571,
+   "length": 18,
+   "height": 2.8,
+   "seed": 22,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_31",
+   "type": "ruin_wall",
+   "x": 18,
+   "y": 0,
+   "z": -9,
+   "rotY": -1.571,
+   "length": 18,
+   "height": 2.9,
+   "seed": 31,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_32",
+   "type": "ruin_wall",
+   "x": 18,
+   "y": 0,
+   "z": 9,
+   "rotY": -1.571,
+   "length": 18,
+   "height": 3.3,
+   "seed": 32,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_41",
+   "type": "ruin_wall",
+   "x": -10.8,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "length": 14.4,
+   "height": 3.6,
+   "seed": 41,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_42",
+   "type": "ruin_wall",
+   "x": 10.8,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "length": 14.4,
+   "height": 3.6,
+   "seed": 42,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Arch",
+   "type": "archway",
+   "x": 0,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "width": 5,
+   "height": 4.2
+  },
+  {
+   "id": "TestRoom_Wall_49",
+   "type": "ruin_wall",
+   "x": -3.1,
+   "y": 0,
+   "z": -22.5,
+   "rotY": 1.571,
+   "length": 8,
+   "height": 4,
+   "seed": 49,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_51",
+   "type": "ruin_wall",
+   "x": 3.1,
+   "y": 0,
+   "z": -22.5,
+   "rotY": -1.571,
+   "length": 8,
+   "height": 4,
+   "seed": 51,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_SealedDoor",
+   "type": "sealed_door",
+   "x": 0,
+   "y": 0,
+   "z": -26,
+   "rotY": 0,
+   "width": 6.4,
+   "height": 4.6
+  },
+  {
+   "id": "TestRoom_Pillar_1",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": -8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 60
+  },
+  {
+   "id": "TestRoom_Pillar_2",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": true,
+   "seed": 61
+  },
+  {
+   "id": "TestRoom_Pillar_3",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 62
+  },
+  {
+   "id": "TestRoom_Pillar_4",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": -8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 63
+  },
+  {
+   "id": "TestRoom_Pillar_5",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 64
+  },
+  {
+   "id": "TestRoom_Pillar_6",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": true,
+   "seed": 65
+  },
+  {
+   "id": "TestRoom_Drum",
+   "type": "drum",
+   "x": -7.4,
+   "y": 0,
+   "z": 1.6,
+   "rotY": 0.5,
+   "seed": 7
+  },
+  {
+   "id": "TestRoom_Rock_01",
+   "type": "rock",
+   "x": -3.5,
+   "y": 0,
+   "z": 3,
+   "rotY": 4.916,
+   "radius": 0.55,
+   "seed": 100,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_02",
+   "type": "rock",
+   "x": 2.5,
+   "y": 0,
+   "z": 4.5,
+   "rotY": 0.628,
+   "radius": 0.45,
+   "seed": 113
+  },
+  {
+   "id": "TestRoom_Rock_03",
+   "type": "rock",
+   "x": 1.3,
+   "y": 0,
+   "z": 3,
+   "rotY": 4.801,
+   "radius": 0.7,
+   "seed": 126
+  },
+  {
+   "id": "TestRoom_Rock_04",
+   "type": "rock",
+   "x": -5.6,
+   "y": 0,
+   "z": -2.5,
+   "rotY": 3.778,
+   "radius": 0.4,
+   "seed": 139,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_05",
+   "type": "rock",
+   "x": 0.8,
+   "y": 0,
+   "z": -1.5,
+   "rotY": 4.671,
+   "radius": 0.6,
+   "seed": 152,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_06",
+   "type": "rock",
+   "x": 4.6,
+   "y": 0,
+   "z": 3.2,
+   "rotY": 3.374,
+   "radius": 0.85,
+   "seed": 165
+  },
+  {
+   "id": "TestRoom_Rock_07",
+   "type": "rock",
+   "x": 6.2,
+   "y": 0,
+   "z": -4.8,
+   "rotY": 5.892,
+   "radius": 0.5,
+   "seed": 178,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_08",
+   "type": "rock",
+   "x": -6.8,
+   "y": 0,
+   "z": 6.5,
+   "rotY": 5.507,
+   "radius": 0.35,
+   "seed": 191,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_09",
+   "type": "rock",
+   "x": 3.4,
+   "y": 0,
+   "z": 9.5,
+   "rotY": 4.934,
+   "radius": 0.4,
+   "seed": 204,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Rock_10",
+   "type": "rock",
+   "x": -1.2,
+   "y": 0,
+   "z": 12.2,
+   "rotY": 5.693,
+   "radius": 0.65,
+   "seed": 217,
+   "hidden": true
+  },
+  {
+   "id": "TestRoom_Barricade_01",
+   "type": "barricade",
+   "x": 0,
+   "y": 0,
+   "z": -16.2,
+   "rotY": 0,
+   "cols": 6,
+   "rows": 3,
+   "posts": true,
+   "regenAfter": 0
+  },
+  {
+   "id": "TestRoom_Brazier_01",
+   "type": "brazier",
+   "x": 3.6,
+   "y": 0,
+   "z": 5.2,
+   "rotY": 0,
+   "seed": 1
+  },
+  {
+   "id": "TestRoom_Brazier_02",
+   "type": "brazier",
+   "x": -4.2,
+   "y": 0,
+   "z": -11.8,
+   "rotY": 0,
+   "seed": 2
+  },
+  {
+   "id": "Cael",
+   "type": "npc",
+   "x": -0.4,
+   "y": 0,
+   "z": 2.6,
+   "rotY": 3.141592653589793,
+   "name": "Cael",
+   "look": "cael"
+  },
+  {
+   "id": "Lesson1_Plate",
+   "type": "plate",
+   "x": -2.2,
+   "y": 0,
+   "z": 5.4,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.5,
+   "gentleHeight": 0.6,
+   "chainTo": ""
+  },
+  {
+   "id": "Lesson1_WeightL",
+   "type": "plate",
+   "x": -5.3,
+   "y": 0,
+   "z": -14.3,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.5,
+   "gentleHeight": 0.6,
+   "chainTo": "TestRoom_Barricade_01"
+  },
+  {
+   "id": "Lesson1_WeightR",
+   "type": "plate",
+   "x": 5.3,
+   "y": 0,
+   "z": -14.3,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.5,
+   "gentleHeight": 0.6,
+   "chainTo": "TestRoom_Barricade_01"
+  }
+ ],
+ "wires": [
+  {
+   "id": "Counterweights",
+   "mode": "all",
+   "once": true,
+   "inputs": [
+    {
+     "obj": "Lesson1_WeightL",
+     "signal": "weighted"
+    },
+    {
+     "obj": "Lesson1_WeightR",
+     "signal": "weighted"
+    }
+   ],
+   "do": [
+    {
+     "obj": "TestRoom_Barricade_01",
+     "action": "raise"
+    }
+   ]
+  }
+ ],
+ "script": {
+  "id": "Lesson1",
+  "speaker": "Cael",
+  "face": "Cael",
+  "flags": {
+   "caelTrust": 0
+  },
+  "reactions": [
+   {
+    "on": "playerFire",
+    "count": "fireSeen",
+    "flag": {
+     "name": "caelTrust",
+     "add": -1
+    },
+    "throttle": 12,
+    "lines": [
+     [
+      "Put it out."
+     ],
+     [
+      "Fire again."
+     ],
+     [
+      "Every time you reach for that, something burns that didn’t have to."
+     ],
+     [
+      "Stop."
+     ]
+    ],
+    "followUp": {
+     "after": 4,
+     "firstOnly": true,
+     "if": {
+      "burning": true
+     },
+     "say": [
+      "You can't, can you. That's why we don't start there."
+     ]
+    }
+   },
+   {
+    "on": "tooHeavy",
+    "count": "tooHeavy",
+    "throttle": 6,
+    "cycle": true,
+    "lines": [
+     [
+      "Too heavy. You're not ready for that one."
+     ],
+     [
+      "Not that one. It is beyond you, for now."
+     ]
+    ]
+   }
+  ],
+  "steps": [
+   {
+    "id": "intro",
+    "say": [
+     "So. The fire in Veyra. That was you.",
+     "Fire is the loudest thing in you. We are not starting there.",
+     "Earth. It doesn't rush. Neither will you.",
+     "That stone. Lift it."
+    ],
+    "until": {
+     "talking": false
+    }
+   },
+   {
+    "id": "lift",
+    "objective": "Lift the marked stone",
+    "mark": "TestRoom_Rock_02",
+    "until": {
+     "held": "TestRoom_Rock_02"
+    },
+    "then": {
+     "say": [
+      "Good. Now hold it. Don't fight it. Feel where it wants to fall."
+     ]
+    }
+   },
+   {
+    "id": "steady",
+    "objective": "Hold it steady · {held} / 3 s",
+    "until": {
+     "heldFor": {
+      "obj": "TestRoom_Rock_02",
+      "secs": 3,
+      "lost": [
+       "Again. Slower."
+      ]
+     }
+    },
+    "then": {
+     "do": [
+      {
+       "grant": {
+        "el": "earth",
+        "track": "control",
+        "amount": 0.15
+       }
+      }
+     ],
+     "say": [
+      "Steadier.",
+      "Now set it down on the plate. Set it. Don’t drop it."
+     ]
+    }
+   },
+   {
+    "id": "place",
+    "objective": "Set it down on the plate",
+    "mark": "Lesson1_Plate",
+    "do": [
+     {
+      "do": {
+       "obj": "Lesson1_Plate",
+       "action": "hintOn"
+      }
+     }
+    ],
+    "waiting": [
+     {
+      "when": {
+       "all": [
+        {
+         "signal": {
+          "obj": "Lesson1_Plate",
+          "name": "weighted"
+         }
+        },
+        {
+         "not": {
+          "signal": {
+           "obj": "Lesson1_Plate",
+           "name": "gentle"
+          }
+         }
+        }
+       ]
+      },
+      "say": [
+       "That was a drop. Pick it up. Again."
+      ]
+     }
+    ],
+    "until": {
+     "signal": {
+      "obj": "Lesson1_Plate",
+      "name": "gentle"
+     }
+    },
+    "then": {
+     "do": [
+      {
+       "do": {
+        "obj": "Lesson1_Plate",
+        "action": "hintOff"
+       }
+      },
+      {
+       "grant": {
+        "el": "earth",
+        "track": "control",
+        "amount": 0.15
+       }
+      },
+      {
+       "reveal": [
+        "TestRoom_Rock_01",
+        "TestRoom_Rock_04",
+        "TestRoom_Rock_05",
+        "TestRoom_Rock_07",
+        "TestRoom_Rock_08",
+        "TestRoom_Rock_09",
+        "TestRoom_Rock_10"
+       ]
+      }
+     ],
+     "say": [
+      "There.",
+      "Stone remembers how it was treated. So do people.",
+      "More stones. Some you can lift. Some you can’t, yet."
+     ]
+    }
+   },
+   {
+    "id": "trialIntro",
+    "until": {
+     "talking": false
+    }
+   },
+   {
+    "id": "trial",
+    "objective": "Open the sealed passage",
+    "say": [
+     "The passage is sealed. You could break it. You probably want to.",
+     "There's a way through that leaves it standing. Find it."
+    ],
+    "waiting": [
+     {
+      "when": {
+       "time": 20
+      },
+      "do": [
+       {
+        "do": {
+         "obj": "Lesson1_WeightL",
+         "action": "hintOn"
+        }
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightR",
+         "action": "hintOn"
+        }
+       }
+      ]
+     }
+    ],
+    "ends": [
+     {
+      "when": {
+       "all": [
+        {
+         "any": [
+          {
+           "signal": {
+            "obj": "TestRoom_Barricade_01",
+            "name": "raised"
+           }
+          },
+          {
+           "signal": {
+            "obj": "TestRoom_Barricade_01",
+            "name": "broken"
+           }
+          }
+         ]
+        },
+        {
+         "burned": {
+          "obj": "TestRoom_Barricade_01",
+          "min": 1
+         }
+        }
+       ]
+      },
+      "outcome": "burned",
+      "next": "close",
+      "do": [
+       {
+        "flag": {
+         "name": "caelTrust",
+         "add": -1
+        }
+       },
+       {
+        "saveFlag": "lesson1"
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightL",
+         "action": "hintOff"
+        }
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightR",
+         "action": "hintOff"
+        }
+       }
+      ],
+      "say": [
+       "I said we were not starting with fire.",
+       "Look at it. That's what untrained fire does. It doesn't open things. It ends them.",
+       "Rest. Tomorrow, we do it again."
+      ]
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "any": [
+          {
+           "signal": {
+            "obj": "TestRoom_Barricade_01",
+            "name": "raised"
+           }
+          },
+          {
+           "signal": {
+            "obj": "TestRoom_Barricade_01",
+            "name": "broken"
+           }
+          }
+         ]
+        },
+        {
+         "broken": {
+          "obj": "TestRoom_Barricade_01",
+          "min": 1
+         }
+        }
+       ]
+      },
+      "outcome": "loud",
+      "next": "close",
+      "do": [
+       {
+        "flag": {
+         "name": "caelTrust",
+         "add": -1
+        }
+       },
+       {
+        "saveFlag": "lesson1"
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightL",
+         "action": "hintOff"
+        }
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightR",
+         "action": "hintOff"
+        }
+       }
+      ],
+      "say": [
+       "It's open. So is everything else, now.",
+       "Power isn't the hard part. You'll find that out.",
+       "Rest. Tomorrow, we do it again."
+      ]
+     },
+     {
+      "when": {
+       "any": [
+        {
+         "signal": {
+          "obj": "TestRoom_Barricade_01",
+          "name": "raised"
+         }
+        },
+        {
+         "signal": {
+          "obj": "TestRoom_Barricade_01",
+          "name": "broken"
+         }
+        }
+       ]
+      },
+      "outcome": "quiet",
+      "next": "close",
+      "do": [
+       {
+        "grant": {
+         "el": "earth",
+         "track": "control",
+         "amount": 0.3
+        }
+       },
+       {
+        "flag": {
+         "name": "caelTrust",
+         "add": 2
+        }
+       },
+       {
+        "saveFlag": "lesson1"
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightL",
+         "action": "hintOff"
+        }
+       },
+       {
+        "do": {
+         "obj": "Lesson1_WeightR",
+         "action": "hintOff"
+        }
+       }
+      ],
+      "say": [
+       "It's still standing.",
+       "You opened a door without breaking it. Most Wielders never learn that.",
+       "Rest. Tomorrow, we do it again."
+      ]
+     }
+    ]
+   },
+   {
+    "id": "close",
+    "until": {
+     "talking": false
+    },
+    "then": {
+     "do": [
+      {
+       "card": true
+      }
+     ],
+     "next": "done"
+    }
+   }
+  ],
+  "card": {
+   "title": "Lesson I · The Quiet Element",
+   "lines": [
+    "{outcome|quiet=You opened it without breaking it.|loud=You broke it open.|burned=You burned it open.}",
+    "Earth · Power {earth.power} · Control {earth.control}",
+    "Fire · wild · Power {fire.power}",
+    "{fireSeen|0=You left the fire alone.|1=You reached for fire once. Cael noticed.|*=You reached for fire # times. Cael noticed.}"
+   ],
+   "buttons": [
+    {
+     "label": "Again",
+     "href": "?scene=lesson"
+    },
+    {
+     "label": "Sandbox",
+     "href": "?scene=sandbox"
+    }
+   ]
+  }
+ }
+}

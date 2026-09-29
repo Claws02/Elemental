@@ -16,7 +16,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Basic third-person controller.** Camera-relative movement, acceleration, facing. *Smoke.*
 - [x] **Camera.** Orbit, pinch/wheel zoom, clip avoidance against walls, frames the held rock. *Screenshots; clip avoidance checked by eye only.*
 - [x] **Mobile movement controls.** Floating stick in the bottom-left quarter of the screen, so the top left stays grabbable (changed after the first phone test). *Played on a phone: 30–60 fps; grab and flick feel good.*
-- [x] **One test environment.** The ruined courtyard (`src/world/TestRoom.js`).
+- [x] **One test environment.** The ruined courtyard (`scenes/courtyard.json`).
 - [x] **Grabbable rock.** Ten of them, 0.35–0.85 m. *Smoke.*
 - [x] **Physics grab.** Spring-held, follows the finger across a camera-facing plane, limited to reach. Fat-finger assist. *Smoke: press grabs, rock lifts.*
 - [x] **Physics throw.** Flick direction on screen → world direction; flick speed → 15–36 m/s. Slow release drops. *Smoke: flick throws at 26.6 m/s; slow release does not throw.*
@@ -24,7 +24,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Destructible wall.** 18-panel timber barricade: damage, splash, support flood-fill, Intact → Damaged → Critical → Collapsed, cause attribution, debris budget. *Smoke: thrown rocks break it and the events blame the player; debris stays ≤ 40.*
 - [x] **Context controls.** No element selector: the material and the gesture choose the element; hold times per material (`CONTEXT_CONTROLS.md`). *Smoke: drag on timber doesn't ignite, hold does; a rock still grabs instantly.*
 - [x] **Fire interaction.** Two braziers; pull a fireball from coals or anything burning (it goes out); ignite timber on the spot; heat a held rock (a hot rock ignites wood); fire spreads and climbs, burns through, and the barricade ends **Burned**, blamed on the player. Pooled flame and smoke particles. *Smoke: 15 fire checks; screenshots. Phone: hold times feel right; spread slowed at the start (builds over 5 s) so it can be stopped early but runs away if ignored.*
-- [x] **Barricade rebuilds 60 s after the last damage** (testing aid, `regenAfter` in `TestRoom.js`). *Smoke: rebuilds whole, in place, static.*
+- [x] **Barricade rebuilds 60 s after the last damage** (testing aid, the barricade's `regenAfter` in `scenes/courtyard.json`). *Smoke: rebuilds whole, in place, static.*
 - [x] **Water interaction.** Two basins. Touch the water and a stream comes (unlimited; lands up to 8 m from the basin, falls short beyond). Yank the finger away fast, or flick, and it tears free into an orb (one splash, throwable). Puts fire out, soaks timber (won't catch for 20 s), cools hot stone in steam, pushes rocks and debris, wears planks through, all blamed on the player. *Smoke: 11 water checks; screenshots. Phone: the stream feels distinct from dragging a rock; break-off changed from 8 m to a fast yank at the player's request.*
 - [x] **Air interaction.** From the hero: drag for wind, flick for a gust. Pushes things, deflects projectiles, blows out young flames, fans established ones downwind. *Phone: dousing young flames works well; it was far too strong (the barricade fell to 3 gusts) and carrying loose planks stole Fire's touch.* Now: gusts do at most 12 damage (finish off nearly-broken planks only), pushes halved, Air carries nothing, and a touch squarely on a thing beats the hero's touch area.
 - [x] **Test obstacles** (testing aid). A dry hay field (catches in 0.25 s, burns fast), a crate stack, three training dummies, and two oil barrels by the barricade that burst 2.5 s after catching, lighting and damaging what's near. All reset 60 s after the last disturbance, like the barricade.
@@ -39,6 +39,12 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Wild Fire.** Quick to catch, sparks, can't be taken back, unstable fireballs, Power without Control; Cael notices. *Lesson test.*
 - [x] **Lesson I: The Quiet Element.** Cael (placeholder model), subtitles, objectives, pressure plates, counterweight barricade; quiet and loud outcomes; end card; title screen with Begin and Sandbox. *Lesson test: 24 checks; screenshots. Played once: lines read well; changed after it: the wobble became a slow, small sway, untrained Fire can't heat a held stone, the story opens on Cael, three stones (two too heavy, Cael says so) until the first plate, and every plate is raised to eye level.*
 - [ ] **The Veyra prologue** ← next story beat: the awakening, Fire bursting out, Cael appearing and defeating the player.
+
+## Tools: scenes and the editor
+
+- [x] **Scenes as data.** Every place is a JSON file in `scenes/` (`SCENES.md`): objects, puzzle wires, and a story script of steps, lines, reactions and an end card. The courtyard and Lesson I were converted from code. *Smoke and lesson tests pass unchanged on the scene files (boot view: 195 draw calls, as before); `npm run scenes` validates every file.*
+- [x] **Building kit.** Walls (stone, half-timbered, plaster; door, window, two windows, arch), floors, roofs (thatch, slate, shingle), stairs, fences, posts, and five prefab buildings; trees, market stalls, a portcullis gate, ground patches, characters. *`scenes/village.json`; screenshots.*
+- [ ] **Elemental-Editor** ([Claws02/Elemental-Editor](https://github.com/Claws02/Elemental-Editor)): place and edit everything on an iPad, wire puzzles, write story steps, play the scene in the editor, save for Claude.
 
 ## Phase 2: elemental sandbox
 

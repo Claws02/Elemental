@@ -38,6 +38,9 @@ export const EventBus = {
     /** Advance game time. Called once a frame by the loop. */
     tick(dt) { _clock += dt; },
 
+    /** Forget every listener and event (a new game in the same page: the editor's Play). */
+    reset() { _subs.clear(); _log.length = 0; _clock = 0; },
+
     /** The most recent events, oldest first (debug and QA). */
     recent(n = LOG_MAX) { return _log.slice(-n); },
 };

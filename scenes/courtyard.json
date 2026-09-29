@@ -1,0 +1,686 @@
+{
+ "format": 1,
+ "id": "courtyard",
+ "name": "The Courtyard (sandbox)",
+ "settings": {
+  "ground": {
+   "half": 28,
+   "style": "flagstone"
+  },
+  "profile": "sandbox",
+  "resetProgress": false,
+  "resetAfter": 60
+ },
+ "objects": [
+  {
+   "id": "Spawn",
+   "type": "spawn",
+   "x": 0,
+   "y": 0,
+   "z": 9,
+   "rotY": 3.142
+  },
+  {
+   "id": "TestRoom_Wall_11",
+   "type": "ruin_wall",
+   "x": -12,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 3,
+   "seed": 11,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_12",
+   "type": "ruin_wall",
+   "x": 0,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 2.4,
+   "seed": 12,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_13",
+   "type": "ruin_wall",
+   "x": 12,
+   "y": 0,
+   "z": 18,
+   "rotY": 3.142,
+   "length": 12,
+   "height": 3.3,
+   "seed": 13,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_21",
+   "type": "ruin_wall",
+   "x": -18,
+   "y": 0,
+   "z": -9,
+   "rotY": 1.571,
+   "length": 18,
+   "height": 3.3,
+   "seed": 21,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_22",
+   "type": "ruin_wall",
+   "x": -18,
+   "y": 0,
+   "z": 9,
+   "rotY": 1.571,
+   "length": 18,
+   "height": 2.8,
+   "seed": 22,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_31",
+   "type": "ruin_wall",
+   "x": 18,
+   "y": 0,
+   "z": -9,
+   "rotY": -1.571,
+   "length": 18,
+   "height": 2.9,
+   "seed": 31,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_32",
+   "type": "ruin_wall",
+   "x": 18,
+   "y": 0,
+   "z": 9,
+   "rotY": -1.571,
+   "length": 18,
+   "height": 3.3,
+   "seed": 32,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_41",
+   "type": "ruin_wall",
+   "x": -10.8,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "length": 14.4,
+   "height": 3.6,
+   "seed": 41,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_42",
+   "type": "ruin_wall",
+   "x": 10.8,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "length": 14.4,
+   "height": 3.6,
+   "seed": 42,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Arch",
+   "type": "archway",
+   "x": 0,
+   "y": 0,
+   "z": -18,
+   "rotY": 0,
+   "width": 5,
+   "height": 4.2
+  },
+  {
+   "id": "TestRoom_Wall_49",
+   "type": "ruin_wall",
+   "x": -3.1,
+   "y": 0,
+   "z": -22.5,
+   "rotY": 1.571,
+   "length": 8,
+   "height": 4,
+   "seed": 49,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_Wall_51",
+   "type": "ruin_wall",
+   "x": 3.1,
+   "y": 0,
+   "z": -22.5,
+   "rotY": -1.571,
+   "length": 8,
+   "height": 4,
+   "seed": 51,
+   "runes": true
+  },
+  {
+   "id": "TestRoom_SealedDoor",
+   "type": "sealed_door",
+   "x": 0,
+   "y": 0,
+   "z": -26,
+   "rotY": 0,
+   "width": 6.4,
+   "height": 4.6
+  },
+  {
+   "id": "TestRoom_Pillar_1",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": -8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 60
+  },
+  {
+   "id": "TestRoom_Pillar_2",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": true,
+   "seed": 61
+  },
+  {
+   "id": "TestRoom_Pillar_3",
+   "type": "pillar",
+   "x": -9,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 62
+  },
+  {
+   "id": "TestRoom_Pillar_4",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": -8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 63
+  },
+  {
+   "id": "TestRoom_Pillar_5",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": false,
+   "seed": 64
+  },
+  {
+   "id": "TestRoom_Pillar_6",
+   "type": "pillar",
+   "x": 9,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "height": 5.2,
+   "broken": true,
+   "seed": 65
+  },
+  {
+   "id": "TestRoom_Drum",
+   "type": "drum",
+   "x": -7.4,
+   "y": 0,
+   "z": 1.6,
+   "rotY": 0.5,
+   "seed": 7
+  },
+  {
+   "id": "TestRoom_Rock_01",
+   "type": "rock",
+   "x": -3.5,
+   "y": 0,
+   "z": 3,
+   "rotY": 4.916,
+   "radius": 0.55,
+   "seed": 100
+  },
+  {
+   "id": "TestRoom_Rock_02",
+   "type": "rock",
+   "x": 2.5,
+   "y": 0,
+   "z": 4.5,
+   "rotY": 0.628,
+   "radius": 0.45,
+   "seed": 113
+  },
+  {
+   "id": "TestRoom_Rock_03",
+   "type": "rock",
+   "x": 4.8,
+   "y": 0,
+   "z": 0.5,
+   "rotY": 4.801,
+   "radius": 0.7,
+   "seed": 126
+  },
+  {
+   "id": "TestRoom_Rock_04",
+   "type": "rock",
+   "x": -5.6,
+   "y": 0,
+   "z": -2.5,
+   "rotY": 3.778,
+   "radius": 0.4,
+   "seed": 139
+  },
+  {
+   "id": "TestRoom_Rock_05",
+   "type": "rock",
+   "x": 0.8,
+   "y": 0,
+   "z": -1.5,
+   "rotY": 4.671,
+   "radius": 0.6,
+   "seed": 152
+  },
+  {
+   "id": "TestRoom_Rock_06",
+   "type": "rock",
+   "x": -2.2,
+   "y": 0,
+   "z": -5.5,
+   "rotY": 3.374,
+   "radius": 0.85,
+   "seed": 165
+  },
+  {
+   "id": "TestRoom_Rock_07",
+   "type": "rock",
+   "x": 6.2,
+   "y": 0,
+   "z": -4.8,
+   "rotY": 5.892,
+   "radius": 0.5,
+   "seed": 178
+  },
+  {
+   "id": "TestRoom_Rock_08",
+   "type": "rock",
+   "x": -6.8,
+   "y": 0,
+   "z": 6.5,
+   "rotY": 5.507,
+   "radius": 0.35,
+   "seed": 191
+  },
+  {
+   "id": "TestRoom_Rock_09",
+   "type": "rock",
+   "x": 3.4,
+   "y": 0,
+   "z": 9.5,
+   "rotY": 4.934,
+   "radius": 0.4,
+   "seed": 204
+  },
+  {
+   "id": "TestRoom_Rock_10",
+   "type": "rock",
+   "x": -1.2,
+   "y": 0,
+   "z": 12.2,
+   "rotY": 5.693,
+   "radius": 0.65,
+   "seed": 217
+  },
+  {
+   "id": "TestRoom_Barricade_01",
+   "type": "barricade",
+   "x": 0,
+   "y": 0,
+   "z": -16.2,
+   "rotY": 0,
+   "cols": 6,
+   "rows": 3,
+   "posts": true,
+   "regenAfter": 60
+  },
+  {
+   "id": "TestRoom_Brazier_01",
+   "type": "brazier",
+   "x": 3.6,
+   "y": 0,
+   "z": 5.2,
+   "rotY": 0,
+   "seed": 1
+  },
+  {
+   "id": "TestRoom_Brazier_02",
+   "type": "brazier",
+   "x": -4.2,
+   "y": 0,
+   "z": -11.8,
+   "rotY": 0,
+   "seed": 2
+  },
+  {
+   "id": "TestRoom_Basin_01",
+   "type": "basin",
+   "x": -3.8,
+   "y": 0,
+   "z": 6.2,
+   "rotY": 0,
+   "seed": 3
+  },
+  {
+   "id": "TestRoom_Basin_02",
+   "type": "basin",
+   "x": 4.6,
+   "y": 0,
+   "z": -11.2,
+   "rotY": 0,
+   "seed": 4
+  },
+  {
+   "id": "TestRoom_Crate_01",
+   "type": "crate",
+   "x": 12,
+   "y": 0,
+   "z": 3,
+   "rotY": 0.048,
+   "size": 0.9,
+   "seed": 7
+  },
+  {
+   "id": "TestRoom_Crate_02",
+   "type": "crate",
+   "x": 12.95,
+   "y": 0,
+   "z": 3,
+   "rotY": 0.018,
+   "size": 0.9,
+   "seed": 8
+  },
+  {
+   "id": "TestRoom_Crate_03",
+   "type": "crate",
+   "x": 13.9,
+   "y": 0,
+   "z": 3,
+   "rotY": 0.013,
+   "size": 0.9,
+   "seed": 9
+  },
+  {
+   "id": "TestRoom_Crate_04",
+   "type": "crate",
+   "x": 12.47,
+   "y": 0.9,
+   "z": 3,
+   "rotY": -0.006,
+   "size": 0.9,
+   "seed": 10
+  },
+  {
+   "id": "TestRoom_Crate_05",
+   "type": "crate",
+   "x": 13.42,
+   "y": 0.9,
+   "z": 3,
+   "rotY": 0.023,
+   "size": 0.9,
+   "seed": 11
+  },
+  {
+   "id": "TestRoom_Crate_06",
+   "type": "crate",
+   "x": 12.95,
+   "y": 1.8,
+   "z": 3,
+   "rotY": 0.024,
+   "size": 0.9,
+   "seed": 12
+  },
+  {
+   "id": "TestRoom_Dummy_01",
+   "type": "dummy",
+   "x": 13.5,
+   "y": 0,
+   "z": -3,
+   "rotY": -1.571,
+   "seed": 2
+  },
+  {
+   "id": "TestRoom_Dummy_02",
+   "type": "dummy",
+   "x": 13.5,
+   "y": 0,
+   "z": -5.5,
+   "rotY": -1.571,
+   "seed": 3
+  },
+  {
+   "id": "TestRoom_Dummy_03",
+   "type": "dummy",
+   "x": 13.5,
+   "y": 0,
+   "z": -8,
+   "rotY": -1.571,
+   "seed": 4
+  },
+  {
+   "id": "TestRoom_Barrel_01",
+   "type": "barrel",
+   "x": -2.6,
+   "y": 0,
+   "z": -14.3,
+   "rotY": 0,
+   "seed": 0
+  },
+  {
+   "id": "TestRoom_Barrel_02",
+   "type": "barrel",
+   "x": 2.9,
+   "y": 0,
+   "z": -14.5,
+   "rotY": 0,
+   "seed": 1
+  },
+  {
+   "id": "TestRoom_Hay_01",
+   "type": "hay",
+   "x": -14.92,
+   "y": 0,
+   "z": -1.27,
+   "rotY": 0,
+   "seed": 1
+  },
+  {
+   "id": "TestRoom_Hay_02",
+   "type": "hay",
+   "x": -15.078,
+   "y": 0,
+   "z": -0.508,
+   "rotY": 0,
+   "seed": 2
+  },
+  {
+   "id": "TestRoom_Hay_03",
+   "type": "hay",
+   "x": -15.109,
+   "y": 0,
+   "z": 0.474,
+   "rotY": 0,
+   "seed": 3
+  },
+  {
+   "id": "TestRoom_Hay_04",
+   "type": "hay",
+   "x": -15.104,
+   "y": 0,
+   "z": 1.281,
+   "rotY": 0,
+   "seed": 4
+  },
+  {
+   "id": "TestRoom_Hay_05",
+   "type": "hay",
+   "x": -14.12,
+   "y": 0,
+   "z": -1.439,
+   "rotY": 0,
+   "seed": 5
+  },
+  {
+   "id": "TestRoom_Hay_06",
+   "type": "hay",
+   "x": -14.004,
+   "y": 0,
+   "z": -0.428,
+   "rotY": 0,
+   "seed": 6
+  },
+  {
+   "id": "TestRoom_Hay_07",
+   "type": "hay",
+   "x": -14.105,
+   "y": 0,
+   "z": 0.495,
+   "rotY": 0,
+   "seed": 7
+  },
+  {
+   "id": "TestRoom_Hay_08",
+   "type": "hay",
+   "x": -14.016,
+   "y": 0,
+   "z": 1.342,
+   "rotY": 0,
+   "seed": 8
+  },
+  {
+   "id": "TestRoom_Hay_09",
+   "type": "hay",
+   "x": -13.076,
+   "y": 0,
+   "z": -1.257,
+   "rotY": 0,
+   "seed": 9
+  },
+  {
+   "id": "TestRoom_Hay_10",
+   "type": "hay",
+   "x": -13.272,
+   "y": 0,
+   "z": -0.512,
+   "rotY": 0,
+   "seed": 10
+  },
+  {
+   "id": "TestRoom_Hay_11",
+   "type": "hay",
+   "x": -13.112,
+   "y": 0,
+   "z": 0.466,
+   "rotY": 0,
+   "seed": 11
+  },
+  {
+   "id": "TestRoom_Hay_12",
+   "type": "hay",
+   "x": -13.15,
+   "y": 0,
+   "z": 1.317,
+   "rotY": 0,
+   "seed": 12
+  },
+  {
+   "id": "TestRoom_Hay_13",
+   "type": "hay",
+   "x": -12.188,
+   "y": 0,
+   "z": -1.26,
+   "rotY": 0,
+   "seed": 13
+  },
+  {
+   "id": "TestRoom_Hay_14",
+   "type": "hay",
+   "x": -12.383,
+   "y": 0,
+   "z": -0.359,
+   "rotY": 0,
+   "seed": 14
+  },
+  {
+   "id": "TestRoom_Hay_15",
+   "type": "hay",
+   "x": -12.372,
+   "y": 0,
+   "z": 0.504,
+   "rotY": 0,
+   "seed": 15
+  },
+  {
+   "id": "TestRoom_Hay_16",
+   "type": "hay",
+   "x": -12.413,
+   "y": 0,
+   "z": 1.241,
+   "rotY": 0,
+   "seed": 16
+  },
+  {
+   "id": "TestRoom_Hay_17",
+   "type": "hay",
+   "x": -11.48,
+   "y": 0,
+   "z": -1.389,
+   "rotY": 0,
+   "seed": 17
+  },
+  {
+   "id": "TestRoom_Hay_18",
+   "type": "hay",
+   "x": -11.297,
+   "y": 0,
+   "z": -0.48,
+   "rotY": 0,
+   "seed": 18
+  },
+  {
+   "id": "TestRoom_Hay_19",
+   "type": "hay",
+   "x": -11.328,
+   "y": 0,
+   "z": 0.408,
+   "rotY": 0,
+   "seed": 19
+  },
+  {
+   "id": "TestRoom_Hay_20",
+   "type": "hay",
+   "x": -11.278,
+   "y": 0,
+   "z": 1.261,
+   "rotY": 0,
+   "seed": 20
+  }
+ ],
+ "wires": [],
+ "script": null
+}

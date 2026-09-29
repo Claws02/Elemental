@@ -34,11 +34,13 @@ The design brief was written for Unity. Elemental runs on Hundred Block Dash's s
 
 ```
 index.html              loads src/main.js as a module
+scenes/                 every place in the game, as data (docs/SCENES.md)
 css/styles.css          HUD only
 vendor/                 three.js r186, cannon-es 0.20 (ES modules; see vendor/README.md)
 assets/fonts/           Nunito (OFL)
 src/
-  main.js               bootstrap and the frame order (no GameManager)
+  main.js               picks the scene from the address (?scene=…) and plays it
+  Game.js               startGame(): wires the systems, the frame order (no GameManager), stop()
   core/EventBus.js      world events (§40), with a recent-event log
   engine/lib.js         the only importer of vendor/: re-exports THREE and CANNON
   engine/Kit.js         the model accumulator (from HBD's CityKit)
@@ -47,6 +49,7 @@ src/
   art/Palette.js        element and world colours
   art/HeroModel.js      the protagonist: jointed model and procedural animator
   art/PropModels.js     rock, floor, ruin wall, pillar, arch, planks, posts
+  art/TownModels.js     the building kit (walls, floors, roofs, stairs, fences, posts), trees, stalls, gates, ground
   input/Gestures.js     move stick, press / drag / release velocity, orbit, pinch; WASD at a desk
   input/Intent.js       what a touch means: material + gesture → element and verb (CONTEXT_CONTROLS.md)
   data/materials.js     which elements act on which material, and the hold times
@@ -60,7 +63,15 @@ src/
   art/FireFx.js         pooled flame and smoke particles, two draw calls
   world/Interactables.js       everything a touch can land on, with its material
   world/Destructible.js modular structures: pieces, support, states, cause
-  world/TestRoom.js     the Phase 1 room
+  world/Plates.js       pressure plates: what rests on them, and how it arrived
+  scene/schema.js       what a scene may contain: types, props, signals, actions, conditions (no three.js)
+  scene/Catalog.js      how each type is built: its model (the editor draws this) and its place in the game
+  scene/Loader.js       a scene file becomes a world; hide and reveal
+  scene/Wires.js        puzzle logic: signals in, actions out
+  scene/validate.js     scene checks (the game, the editor, CI)
+  data/prefabs.js       ready-made buildings as groups of kit pieces
+  story/Story.js        runs a scene's script: steps, lines, reactions, the end card
+  story/Npc.js          characters (Cael and others), placeholder models
   ui/Hud.js             stick, element badge, hint, event log, debug readout
 qa/
   parsecheck.sh         module parse + dead private-helper check (from HBD)
@@ -72,7 +83,7 @@ docs/                   brief, architecture, art, checklist
 
 ## 4. The frame
 
-`src/main.js` owns the order and nothing else:
+`src/Game.js` owns the order and nothing else:
 
 ```
 intent (what the finger means) → channel (forces on what is held) → earth (sensing)
@@ -106,7 +117,7 @@ The brief's required systems, and where each stands. "Planned" means an unchecke
 
 | System | Status | Where |
 |---|---|---|
-| GameBootstrap | **Phase 1** | `src/main.js` |
+| GameBootstrap | **Phase 1** | `src/main.js`, `src/Game.js` |
 | EventSystem | **Phase 1** (bus + log) | `src/core/EventBus.js` |
 | InputSystem | **Phase 1** (stick, press/drag/flick, orbit, pinch, WASD; context intent) | `src/input/Gestures.js`, `src/input/Intent.js` |
 | PlayerSystem | **Phase 1** (movement, facing, animation) | `src/player/` |
@@ -152,4 +163,4 @@ Done in Phase 1, while the codebase was twelve files, because every month of new
 | `PCFSoftShadowMap` removed (r180) | Now `PCFShadowMap`, which is soft in r186 |
 | `renderer.info` now counts the shadow pass | The HUD's draw calls went 77 → 116 with no change in cost: the camera view is still 77, and 39 are shadow-map draws r128 didn't report |
 
-**A bug the upgrade found.** The north wall runs were built with an undefined rotation. r128 quietly drew nothing for them and gave them colliders turned 90°: invisible walls inside the courtyard, and a gap either side of the arch (visible in the first phone screenshot). r186's raycaster returned NaN distances for them, which put the camera at NaN. Fixed (`rotY = 0` default in `TestRoom.js`).
+**A bug the upgrade found.** The north wall runs were built with an undefined rotation. r128 quietly drew nothing for them and gave them colliders turned 90°: invisible walls inside the courtyard, and a gap either side of the arch (visible in the first phone screenshot). r186's raycaster returned NaN distances for them, which put the camera at NaN. Fixed (`rotY = 0` default; the courtyard is now `scenes/courtyard.json`).

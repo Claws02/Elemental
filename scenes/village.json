@@ -1,0 +1,481 @@
+{
+ "format": 1,
+ "id": "village",
+ "name": "Village (building kit sample)",
+ "settings": {
+  "ground": {
+   "half": 30,
+   "style": "grass"
+  },
+  "profile": "sandbox",
+  "resetProgress": false,
+  "resetAfter": 60
+ },
+ "objects": [
+  {
+   "id": "Spawn",
+   "type": "spawn",
+   "x": 0,
+   "y": 0,
+   "z": 16,
+   "rotY": 3.141592653589793
+  },
+  {
+   "id": "Square",
+   "type": "patch",
+   "x": 0,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "width": 16,
+   "depth": 14,
+   "style": "cobble",
+   "round": false
+  },
+  {
+   "id": "Road_South",
+   "type": "patch",
+   "x": 0,
+   "y": 0,
+   "z": 16,
+   "rotY": 0,
+   "width": 4,
+   "depth": 18,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "Road_East",
+   "type": "patch",
+   "x": 17,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "width": 18,
+   "depth": 4,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "Green",
+   "type": "patch",
+   "x": -17,
+   "y": 0,
+   "z": 12,
+   "rotY": 0,
+   "width": 10,
+   "depth": 8,
+   "style": "grass",
+   "round": true
+  },
+  {
+   "id": "House_01",
+   "type": "prefab",
+   "x": -5,
+   "y": 0,
+   "z": -12,
+   "rotY": 0,
+   "prefab": "house",
+   "style": "prefab",
+   "seed": 3
+  },
+  {
+   "id": "Cottage_01",
+   "type": "prefab",
+   "x": 5.5,
+   "y": 0,
+   "z": -11.5,
+   "rotY": 0,
+   "prefab": "cottage",
+   "style": "prefab",
+   "seed": 5
+  },
+  {
+   "id": "Cottage_02",
+   "type": "prefab",
+   "x": -13,
+   "y": 0,
+   "z": 1,
+   "rotY": 1.5707963267948966,
+   "prefab": "cottage",
+   "style": "plaster",
+   "seed": 9
+  },
+  {
+   "id": "Smithy",
+   "type": "prefab",
+   "x": 13,
+   "y": 0,
+   "z": 7.5,
+   "rotY": -1.5707963267948966,
+   "prefab": "smithy",
+   "style": "prefab",
+   "seed": 2
+  },
+  {
+   "id": "Tower",
+   "type": "prefab",
+   "x": -14,
+   "y": 0,
+   "z": -12,
+   "rotY": 0.7853981633974483,
+   "prefab": "tower",
+   "style": "prefab",
+   "seed": 4
+  },
+  {
+   "id": "Shed_01",
+   "type": "prefab",
+   "x": 12.5,
+   "y": 0,
+   "z": -8.5,
+   "rotY": -1.5707963267948966,
+   "prefab": "shed",
+   "style": "prefab",
+   "seed": 6
+  },
+  {
+   "id": "Well",
+   "type": "basin",
+   "x": 0,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "seed": 3
+  },
+  {
+   "id": "Stall_01",
+   "type": "stall",
+   "x": -4.5,
+   "y": 0,
+   "z": 4,
+   "rotY": 3.141592653589793,
+   "width": 2.4,
+   "awning": "red",
+   "seed": 1
+  },
+  {
+   "id": "Stall_02",
+   "type": "stall",
+   "x": 4.5,
+   "y": 0,
+   "z": 4,
+   "rotY": 3.141592653589793,
+   "width": 2.4,
+   "awning": "blue",
+   "seed": 2
+  },
+  {
+   "id": "Stall_03",
+   "type": "stall",
+   "x": 6.5,
+   "y": 0,
+   "z": -3.5,
+   "rotY": -1.5707963267948966,
+   "width": 2,
+   "awning": "ochre",
+   "seed": 3
+  },
+  {
+   "id": "Brazier_01",
+   "type": "brazier",
+   "x": -3,
+   "y": 0,
+   "z": -4,
+   "rotY": 0,
+   "seed": 5
+  },
+  {
+   "id": "Tree_01",
+   "type": "tree",
+   "x": -20,
+   "y": 0,
+   "z": -2,
+   "rotY": 0,
+   "height": 5,
+   "kind": "oak",
+   "seed": 1
+  },
+  {
+   "id": "Tree_02",
+   "type": "tree",
+   "x": -22,
+   "y": 0,
+   "z": 6,
+   "rotY": 1,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 2
+  },
+  {
+   "id": "Tree_03",
+   "type": "tree",
+   "x": -19,
+   "y": 0,
+   "z": 18,
+   "rotY": 2,
+   "height": 5,
+   "kind": "oak",
+   "seed": 3
+  },
+  {
+   "id": "Tree_04",
+   "type": "tree",
+   "x": 20,
+   "y": 0,
+   "z": 14,
+   "rotY": 3,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 4
+  },
+  {
+   "id": "Tree_05",
+   "type": "tree",
+   "x": 22,
+   "y": 0,
+   "z": -6,
+   "rotY": 4,
+   "height": 5,
+   "kind": "oak",
+   "seed": 5
+  },
+  {
+   "id": "Tree_06",
+   "type": "tree",
+   "x": 18,
+   "y": 0,
+   "z": -16,
+   "rotY": 5,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 6
+  },
+  {
+   "id": "Tree_07",
+   "type": "tree",
+   "x": -4,
+   "y": 0,
+   "z": 22,
+   "rotY": 6,
+   "height": 5,
+   "kind": "oak",
+   "seed": 7
+  },
+  {
+   "id": "Tree_08",
+   "type": "tree",
+   "x": 7,
+   "y": 0,
+   "z": 21,
+   "rotY": 7,
+   "height": 5,
+   "kind": "dead",
+   "seed": 8
+  },
+  {
+   "id": "Tree_09",
+   "type": "tree",
+   "x": -24,
+   "y": 0,
+   "z": -18,
+   "rotY": 8,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 9
+  },
+  {
+   "id": "Fence_01",
+   "type": "b_fence",
+   "x": -17,
+   "y": 0,
+   "z": 7.5,
+   "rotY": 0,
+   "length": 8,
+   "height": 1.1,
+   "seed": 1
+  },
+  {
+   "id": "Fence_02",
+   "type": "b_fence",
+   "x": -21,
+   "y": 0,
+   "z": 11.5,
+   "rotY": 1.5707963267948966,
+   "length": 8,
+   "height": 1.1,
+   "seed": 2
+  },
+  {
+   "id": "Crate_01",
+   "type": "crate",
+   "x": 8,
+   "y": 0,
+   "z": 1,
+   "rotY": 0,
+   "size": 0.9,
+   "seed": 3
+  },
+  {
+   "id": "Crate_02",
+   "type": "crate",
+   "x": 8.9,
+   "y": 0,
+   "z": 1.1,
+   "rotY": 0.3,
+   "size": 0.9,
+   "seed": 4
+  },
+  {
+   "id": "Crate_03",
+   "type": "crate",
+   "x": 8.4,
+   "y": 0,
+   "z": 1.9,
+   "rotY": 0.6,
+   "size": 0.9,
+   "seed": 5
+  },
+  {
+   "id": "Barrel_01",
+   "type": "barrel",
+   "x": 10,
+   "y": 0,
+   "z": 3.2,
+   "rotY": 0,
+   "seed": 1
+  },
+  {
+   "id": "Villager_01",
+   "type": "npc",
+   "x": -3,
+   "y": 0,
+   "z": 6,
+   "rotY": 3.141592653589793,
+   "name": "Marta",
+   "look": "villager"
+  },
+  {
+   "id": "Elder_01",
+   "type": "npc",
+   "x": 2,
+   "y": 0,
+   "z": -6,
+   "rotY": 0,
+   "name": "Old Brannoc",
+   "look": "elder"
+  },
+  {
+   "id": "Guard_01",
+   "type": "npc",
+   "x": 0,
+   "y": 0,
+   "z": 25,
+   "rotY": 3.141592653589793,
+   "name": "Gate guard",
+   "look": "guard"
+  },
+  {
+   "id": "YardGate",
+   "type": "gate",
+   "x": -10,
+   "y": 0,
+   "z": -5.5,
+   "rotY": 0.7853981633974483,
+   "width": 3,
+   "height": 3,
+   "open": false
+  },
+  {
+   "id": "YardPlate",
+   "type": "plate",
+   "x": -6.5,
+   "y": 0,
+   "z": -3.5,
+   "rotY": 0,
+   "radius": 0.7,
+   "height": 0.15,
+   "gentleHeight": 0.6,
+   "chainTo": "YardGate"
+  },
+  {
+   "id": "Rock_01",
+   "type": "rock",
+   "x": -5,
+   "y": 0,
+   "z": -1.5,
+   "rotY": 0.4,
+   "radius": 0.4,
+   "seed": 21
+  },
+  {
+   "id": "Rock_02",
+   "type": "rock",
+   "x": 2,
+   "y": 0,
+   "z": 9,
+   "rotY": 1.2,
+   "radius": 0.6,
+   "seed": 34
+  },
+  {
+   "id": "Rock_03",
+   "type": "rock",
+   "x": -8,
+   "y": 0,
+   "z": 10,
+   "rotY": 2.1,
+   "radius": 0.5,
+   "seed": 47
+  },
+  {
+   "id": "TownWall_1",
+   "type": "ruin_wall",
+   "x": -6,
+   "y": 0,
+   "z": 28,
+   "rotY": 0,
+   "length": 8,
+   "height": 2.6,
+   "seed": 70,
+   "runes": false
+  },
+  {
+   "id": "TownWall_2",
+   "type": "ruin_wall",
+   "x": 6,
+   "y": 0,
+   "z": 28,
+   "rotY": 0,
+   "length": 8,
+   "height": 2.6,
+   "seed": 71,
+   "runes": false
+  }
+ ],
+ "wires": [
+  {
+   "id": "YardGate",
+   "mode": "all",
+   "inputs": [
+    {
+     "obj": "YardPlate",
+     "signal": "weighted"
+    }
+   ],
+   "do": [
+    {
+     "obj": "YardGate",
+     "action": "open"
+    }
+   ],
+   "undo": [
+    {
+     "obj": "YardGate",
+     "action": "close"
+    }
+   ]
+  }
+ ],
+ "script": null
+}

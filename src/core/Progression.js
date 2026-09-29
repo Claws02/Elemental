@@ -87,6 +87,6 @@ export class Progression {
     reset() {
         this.els = JSON.parse(JSON.stringify(PROFILES[this.profile]));
         this.flags = {};
-        try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* nothing saved */ }
+        if (this.persist) try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* nothing saved */ }
     }
 }

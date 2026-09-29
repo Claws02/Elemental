@@ -33,22 +33,13 @@ export class Plate {
      */
     constructor(scene, { id, pos, radius = 0.75, height = 0.15, chainTo = null, gentleHeight = 0.6 }) {
         Object.assign(this, { id, pos: pos.clone(), radius, gentleHeight });
-        this.top = height;           // y of the surface a stone rests on
+        this.top = pos.y + height;   // y of the surface a stone rests on
         this.weighted = null;        // the rock entry resting on it, or null
         this.letGo = new Map();      // rock entry -> how it was let go near this plate ({ h, thrown }), null while held
         this.gentle = false;         // did that rock arrive gently?
-        const k = new Kit();
-        const H = this.top;
-        if (H > 0.3) {
-            // A pedestal: a plinth, a fluted shaft, and a capital under the plate.
-            k.cyl('body', radius + 0.25, radius + 0.32, 0.25, 12, at(0, 0.125, 0), WORLD.stoneDark, { flat: true });
-            k.cyl('body', radius * 0.55, radius * 0.62, H - 0.4, 10, at(0, 0.25 + (H - 0.4) / 2, 0), WORLD.stone[1], { flat: true });
-            k.cyl('body', radius + 0.18, radius * 0.6, 0.18, 12, at(0, H - 0.14, 0), WORLD.stone[2], { flat: true });
-        }
-        k.cyl('body', radius + 0.12, radius + 0.14, 0.1, 16, at(0, H - 0.05, 0), WORLD.stoneDark, { flat: true });
-        // A low rim, so a stone set on a raised plate stays on it.
-        k.geo('body', new THREE.TorusGeometry(radius + 0.08, 0.06, 6, 20), at(0, H + 0.02, 0, Math.PI / 2, 0, 0), WORLD.stoneTop, { flat: true });
-        this.group = k.build({ own: true });
+        const H = height;
+        this.group = new THREE.Group();
+        Plate.buildLook(this.group, { radius, height });
         this.group.position.copy(pos);
         scene.add(this.group);
         // Solid: a stone rests on the plate, not through it; the rim holds it.
@@ -61,32 +52,52 @@ export class Plate {
             body.addShape(new CANNON.Box(new CANNON.Vec3(0.06, 0.08, (radius + 0.1) * Math.PI / lip)),
                 new CANNON.Vec3(Math.cos(a) * (radius + 0.08), H / 2 + 0.06, Math.sin(a) * (radius + 0.08)), q);
         }
-        body.position.set(pos.x, H / 2, pos.z);
-        Physics.add({ body, tier: TIER.STATIC, id: this.id });
+        body.position.set(pos.x, pos.y + H / 2, pos.z);
+        this.entry = Physics.add({ body, tier: TIER.STATIC, id: this.id });
         // The rune: a ring of Earth light on the surface, dim until weighted.
         this.runeMat = new THREE.MeshBasicMaterial({ color: ELEMENT.earth.deep, transparent: true, opacity: 0.9 });
         const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.55, radius * 0.7, 24), this.runeMat);
         ring.rotation.x = -Math.PI / 2;
-        ring.position.set(pos.x, H + 0.012, pos.z);
+        ring.position.set(pos.x, this.top + 0.012, pos.z);
         scene.add(ring);
         this.ring = ring;
         this.solid = this.group;
-        if (chainTo) this._chain(scene, chainTo);
+        if (chainTo) this.chain(scene, chainTo);
         this.hint = false;
         this.time = 0;
+    }
+
+    /** The plate's look (plinth, pedestal, rim), into `group`, in its own frame. */
+    static buildLook(group, { radius = 0.75, height = 0.15 } = {}) {
+        const k = new Kit();
+        const H = height;
+        if (H > 0.3) {
+            // A pedestal: a plinth, a fluted shaft, and a capital under the plate.
+            k.cyl('body', radius + 0.25, radius + 0.32, 0.25, 12, at(0, 0.125, 0), WORLD.stoneDark, { flat: true });
+            k.cyl('body', radius * 0.55, radius * 0.62, H - 0.4, 10, at(0, 0.25 + (H - 0.4) / 2, 0), WORLD.stone[1], { flat: true });
+            k.cyl('body', radius + 0.18, radius * 0.6, 0.18, 12, at(0, H - 0.14, 0), WORLD.stone[2], { flat: true });
+        }
+        k.cyl('body', radius + 0.12, radius + 0.14, 0.1, 16, at(0, H - 0.05, 0), WORLD.stoneDark, { flat: true });
+        // A low rim, so a stone set on a raised plate stays on it.
+        k.geo('body', new THREE.TorusGeometry(radius + 0.08, 0.06, 6, 20), at(0, H + 0.02, 0, Math.PI / 2, 0, 0), WORLD.stoneTop, { flat: true });
+        // The rune ring, dim (the game's own ring lights; this one is for the editor).
+        k.geo('glow', new THREE.RingGeometry(radius * 0.55, radius * 0.7, 24), at(0, H + 0.011, 0, -Math.PI / 2, 0, 0), ELEMENT.earth.deep);
+        group.add(k.build({ own: true }));
+        return group;
     }
 
     /** The centre of the plate's surface. */
     get surface() { return new THREE.Vector3(this.pos.x, this.top, this.pos.z); }
 
-    _chain(scene, to) {
+    /** A chain from under the plate up to `to` (a counterweight's post). */
+    chain(scene, to) {
         const k = new Kit();
-        const from = this.pos.clone().setY(Math.max(0.2, this.top - 0.3));
+        const from = this.pos.clone().setY(Math.max(this.pos.y + 0.2, this.top - 0.3));
         const d = to.clone().sub(from);
         const n = Math.ceil(d.length() / 0.22);
         for (let i = 0; i < n; i++) {
             const p = from.clone().addScaledVector(d, (i + 0.5) / n);
-            k.box('body', 0.07, 0.16, 0.04, at(p.x - this.pos.x, p.y, p.z - this.pos.z, 0, Math.atan2(d.x, d.z), i % 2 ? Math.PI / 2 : 0), WORLD.iron);
+            k.box('body', 0.07, 0.16, 0.04, at(p.x - this.pos.x, p.y - this.pos.y, p.z - this.pos.z, 0, Math.atan2(d.x, d.z), i % 2 ? Math.PI / 2 : 0), WORLD.iron);
         }
         const g = k.build();
         g.position.copy(this.pos);
