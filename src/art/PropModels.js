@@ -243,7 +243,8 @@ export function basin(seed) {
 export function crate(seed, size = 0.9) {
     const k = new Kit();
     const h = size / 2;
-    k.box('body', size, size, size, at(0, 0, 0), pick(WORLD.timber, seed), { ch: 0.03 });
+    // skipBottom off: a crate tumbles, so its underside gets seen.
+    k.box('body', size, size, size, at(0, 0, 0), pick(WORLD.timber, seed), { ch: 0.03, skipBottom: false });
     // Frame battens on every face, proud of the planks: a border and a diagonal brace.
     const f = h + 0.015, D = WORLD.timberDark;
     for (const rot of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
