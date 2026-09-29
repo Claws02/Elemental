@@ -155,9 +155,10 @@ export class Channel {
                 const aim = target.clone();
                 if (this.held.element === 'earth') {
                     const w = this.prog.earth('wobble'), t = this.time;
-                    aim.x += Math.sin(t * 2.3) * w + Math.sin(t * 5.1) * w * 0.4;
-                    aim.y += Math.sin(t * 3.1 + 1) * w * 0.6;
-                    aim.z += Math.cos(t * 1.9) * w + Math.cos(t * 4.4) * w * 0.4;
+                    // A slow sway, not a jitter: it asks for patience, not reflexes.
+                    aim.x += Math.sin(t * 1.1) * w;
+                    aim.y += Math.sin(t * 1.6 + 1) * w * 0.5;
+                    aim.z += Math.cos(t * 0.9) * w;
                 }
                 const want = aim.sub(b.position).multiplyScalar(9);
                 if (want.length() > HOLD.holdSpeed) want.setLength(HOLD.holdSpeed);

@@ -17,7 +17,7 @@ export const GROWTH = {
     earth: {
         maxMass:  p => 4 + 21 * p,          // kg-ish: 4 lifts only the smallest stones; 25 lifts every rock in the room
         throwMax: p => 24 + 12 * p,         // m/s at the fastest flick
-        wobble:   c => 0.4 * (1 - c),       // metres a held stone drifts about the finger
+        wobble:   c => 0.12 * (1 - c),      // metres a held stone sways about the finger (was 0.4: annoying, not tense)
         slam:     c => 7 * (1 - c),         // m/s a slow release is driven into the ground
     },
 };

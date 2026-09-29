@@ -5,7 +5,10 @@
 //   1. the title screen, and ?scene=lesson starts the story
 //   2. only what has been learned answers: Water and Air locked, Earth too
 //      weak (Power 1) for the big rocks
-//   3. the lesson beats: lift, hold steady, set down (a drop doesn't count)
+//   3. the lesson beats: the story opens on Cael; three stones, two too
+//      heavy (Cael says so); lift, hold steady (no heat: untrained Fire
+//      can't warm it), set down on a raised plate (a drop doesn't count);
+//      then the rest of the stones rise
 //   4. the trial, both ways: quiet (counterweights) and loud (break it)
 //   5. wild Fire: quick to catch, throws sparks, can't be taken back,
 //      fireballs burst in the hand; Cael notices
@@ -73,11 +76,28 @@ const SHOTS = path.join(__dirname, 'shots');
         return st;
     });
     check(heroTouch !== 'wind', `Air is locked: touching the hero isn't wind (${heroTouch})`);
+    const opening = await page.evaluate(() => {
+        const c = __EL.lesson.cael.position, s = __screen(new __EL.THREE.Vector3(c.x, 1.5, c.z));
+        const inWorld = __EL.room.rocks.map((e, i) => e.body.world ? i : -1).filter(i => i >= 0);
+        return { on: s.on, dx: Math.round(Math.abs(s.x - innerWidth / 2)), inWorld, plate: __EL.lesson.plateA.top };
+    });
+    check(opening.on && opening.dx < 844 * 0.25, `the story opens looking at Cael (${opening.dx} px off centre)`);
+    check(opening.inWorld.join() === '1,2,5' && opening.plate >= 1.4, `three stones for the first test, the plate at eye level (${JSON.stringify(opening)})`);
 
     // 3. The lesson beats.
     const intro = await waitFor(() => __EL.lesson.step === 'lift', 30000);
     check(intro, 'Cael introduces the lesson, then: lift the marked stone');
     await shot('L1-intro');
+    const heavy = await page.evaluate(async () => {
+        const e = __EL.room.rocks[2], s = __screen(e.mesh.position);
+        __touch('pointerdown', 76, s.x, s.y);
+        await new Promise(r => setTimeout(r, 150));
+        const held = !!__EL.channel.held;
+        __touch('pointerup', 76, s.x, s.y);
+        return { held, told: __EL.lesson.heavyN, liftable: __EL.earth.canMove(e) };
+    });
+    check(!heavy.held && !heavy.liftable && heavy.told > 0, `a heavy stone won't lift, and Cael says it's too heavy (${JSON.stringify(heavy)})`);
+    await wait(300);
     const lifted = await page.evaluate(async () => {
         const s = __screen(__EL.room.rocks[1].mesh.position);
         window.__s71 = s;                              // lift off where it went down: no flick
@@ -89,13 +109,16 @@ const SHOTS = path.join(__dirname, 'shots');
     const c0 = await page.evaluate(() => __EL.prog.control('earth'));
     const steadied = await waitFor(() => __EL.lesson.step === 'place', 15000);
     const c1 = await page.evaluate(() => __EL.prog.control('earth'));
+    const heat = await page.evaluate(() => __EL.room.rocks[1].data.heat || 0);
     check(steadied && c1 > c0, `holding it steady for 3 s raises Earth Control (${c0.toFixed(2)} → ${c1.toFixed(2)})`);
+    check(heat === 0, `holding it still doesn't heat it: untrained Fire can't warm stone (heat ${heat})`);
     await shot('L2-steady');
 
     // A drop onto the plate doesn't count…
     const dropped = await page.evaluate(async () => {
         const L = __EL.lesson, h = __EL.channel.held, p = L.plateA.pos;
-        h.target.set(p.x, 3.2, p.z);                   // high over the plate
+        if (!h) return { lost: true, step: L.step, intent: __EL.intent.state, pos: __EL.room.rocks[1].body.position.toArray?.() };
+        h.target.set(p.x, L.plateA.top + 2.2, p.z);   // high over the plate
         await new Promise(r => setTimeout(r, 1500));
         __touch('pointerup', 71, __s71.x, __s71.y);   // let go from up there (no flick: same spot it went down)
         await new Promise(r => setTimeout(r, 2500));
@@ -112,13 +135,16 @@ const SHOTS = path.join(__dirname, 'shots');
         __touch('pointerdown', 72, s.x, s.y);
         await new Promise(r => setTimeout(r, 200));
         const p = L.plateA.pos;
-        __EL.channel.held.target.set(p.x, 0.62, p.z);  // lowered right onto it
+        __EL.channel.held.target.set(p.x, L.plateA.top + e.data.radius + 0.1, p.z);  // lowered right onto it
         await new Promise(r => setTimeout(r, 1800));
         __touch('pointerup', 72, s.x, s.y);
         await new Promise(r => setTimeout(r, 2500));
         return { step: L.step, gentle: L.plateA.gentle };
     });
-    check(['trialIntro', 'trial'].includes(placed.step) && placed.gentle, `setting it down gently on the plate passes (${JSON.stringify(placed)})`);
+    check(['trialIntro', 'trial'].includes(placed.step) && placed.gentle, `setting it down gently on the raised plate passes (${JSON.stringify(placed)})`);
+    await wait(1000);
+    const risen = await page.evaluate(() => __EL.room.rocks.filter(e => e.body.world).length);
+    check(risen === 10, `after the test, the rest of the stones rise (${risen} / 10 out)`);
 
     // 4a. The quiet way: stones on both counterweights lift the barricade.
     await waitFor(() => __EL.lesson.step === 'trial', 20000);
@@ -126,7 +152,7 @@ const SHOTS = path.join(__dirname, 'shots');
     await page.evaluate(() => {
         const L = __EL.lesson, rocks = __EL.room.rocks;
         [[3, L.weights[0].pos], [7, L.weights[1].pos]].forEach(([i, p]) => {
-            const b = rocks[i].body; b.position.set(p.x, 0.9, p.z); b.velocity.set(0, 0, 0); b.angularVelocity.set(0, 0, 0); b.wakeUp();
+            const b = rocks[i].body; b.position.set(p.x, L.weights[0].top + rocks[i].data.radius + 0.2, p.z); b.velocity.set(0, 0, 0); b.angularVelocity.set(0, 0, 0); b.wakeUp();
         });
     });
     const raised = await waitFor(() => __EL.room.barricade.raised, 15000);
@@ -143,8 +169,8 @@ const SHOTS = path.join(__dirname, 'shots');
 
     // 4b. The loud way: break it open. It passes too, and Cael remembers.
     await open();
-    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._go('trial'); __EL.player.body.position.set(0, 0.45, -8); });
-    await wait(600);
+    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._reveal(); __EL.lesson._go('trial'); __EL.player.body.position.set(0, 0.45, -8); });
+    await wait(1600);
     for (let i = 0; i < 5; i++) {
         await page.evaluate(i => {
             const e = __EL.room.rocks[i];
@@ -159,7 +185,7 @@ const SHOTS = path.join(__dirname, 'shots');
 
     // 5. Wild Fire.
     await open();
-    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._go('trial'); __EL.player.body.position.set(-1, 0.45, -9); __EL.cam.yaw = 0.15; __EL.cam.pitch = 0.3; });
+    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._reveal(); __EL.lesson._go('trial'); __EL.player.body.position.set(-1, 0.45, -9); __EL.cam.yaw = 0.15; __EL.cam.pitch = 0.3; });
     await wait(1500);
     const quick = await page.evaluate(() => {
         const s = __screen(__piece(0, 2).pos());
@@ -186,7 +212,7 @@ const SHOTS = path.join(__dirname, 'shots');
 
     // A wild fireball bursts in the hand.
     await open();
-    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._go('trial'); __EL.player.body.position.set(1.5, 0.45, 7.5); __EL.cam.yaw = 0.6; __EL.cam.pitch = 0.3; });
+    await page.evaluate(() => { __EL.lesson.queue.length = 0; __EL.lesson._reveal(); __EL.lesson._go('trial'); __EL.player.body.position.set(1.5, 0.45, 7.5); __EL.cam.yaw = 0.6; __EL.cam.pitch = 0.3; });
     await wait(1500);
     const fb = await page.evaluate(() => {
         const b = __EL.fire.sources[0], s = __screen(b.pos);

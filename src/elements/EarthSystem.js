@@ -32,7 +32,7 @@ export class EarthSystem {
 
     canMove(entry) {
         // How heavy a stone Earth can lift grows with Earth's Power.
-        if (!this.prog.has('earth')) return false;
+        if (!this.prog.has('earth') || !entry.body.world) return false;   // not yet in the world (Lesson I raises stones later)
         return entry.body.position.distanceTo(this.hero.body.position) <= EARTH.range && entry.body.mass <= this.prog.earth('maxMass');
     }
 

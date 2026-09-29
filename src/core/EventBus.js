@@ -61,4 +61,5 @@ export const EV = {
     WILD_BURST:         'WildBurst',
     LESSON:             'Lesson',
     PLATE:              'Plate',
+    TOO_HEAVY:          'TooHeavy',
 };

@@ -37,7 +37,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 
 - [x] **Progression.** Element states (locked / wild / trained), Power and Control per element, saved on the device (`PROGRESSION.md`). *Lesson test.*
 - [x] **Wild Fire.** Quick to catch, sparks, can't be taken back, unstable fireballs, Power without Control; Cael notices. *Lesson test.*
-- [x] **Lesson I: The Quiet Element.** Cael (placeholder model), subtitles, objectives, pressure plates, counterweight barricade; quiet and loud outcomes; end card; title screen with Begin and Sandbox. *Lesson test: 19 checks; screenshots. Not yet played on a phone.*
+- [x] **Lesson I: The Quiet Element.** Cael (placeholder model), subtitles, objectives, pressure plates, counterweight barricade; quiet and loud outcomes; end card; title screen with Begin and Sandbox. *Lesson test: 24 checks; screenshots. Played once: lines read well; changed after it: the wobble became a slow, small sway, untrained Fire can't heat a held stone, the story opens on Cael, three stones (two too heavy, Cael says so) until the first plate, and every plate is raised to eye level.*
 - [ ] **The Veyra prologue** ← next story beat: the awakening, Fire bursting out, Cael appearing and defeating the player.
 
 ## Phase 2: elemental sandbox

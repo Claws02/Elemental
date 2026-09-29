@@ -63,7 +63,17 @@ function boot(mode) {
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
     const hud = new Hud(document.getElementById('hud'));
     const lesson = lessonMode ? new Lesson1({ scene, room, prog, channel, fire, hud, player }) : null;
-    if (lesson) hud.story();
+    if (lesson) {
+        hud.story();
+        // The story opens looking at Cael.
+        const c = lesson.cael.position, p = player.body.position;   // the mesh has not synced yet
+        player.facing = Math.atan2(c.x - p.x, c.z - p.z);
+        player.rig.root.rotation.y = player.facing;
+        cam.yaw = player.facing + Math.PI;
+        cam.pitch = 0.22;
+        cam.dist = 5.5;
+        cam.focus.set(p.x, 1.6, p.z);
+    }
 
     const input = new Gestures(document.getElementById('game'), {
         press: (x, y) => intent.press(x, y),

@@ -39,6 +39,7 @@
 
 import { changeVerb } from '../data/materials.js';
 import { WILD } from '../data/growth.js';
+import { EventBus, EV } from '../core/EventBus.js';
 
 const MOVE_PX = 10;          // finger travel that counts as a drag, not a hold
 const RANGE = 14;            // how far from the hero a touch can act
@@ -70,6 +71,9 @@ export class Intent {
         if (st === 'locked') return null;
         if (st === 'wild') {
             if (cv.verb === 'pull' && burning) return null;
+            // Heating stone in the grip takes trained Fire: untrained, holding
+            // a stone still is just holding it (Lesson I's "hold it steady").
+            if (cv.verb === 'heat') return null;
             return { ...cv, hold: cv.hold * WILD[cv.element].holdFactor };
         }
         return cv;
@@ -100,6 +104,13 @@ export class Intent {
         // steal a touch that lands squarely on a rock at their feet.
         const usable = t => this._usable(t);
         let thing = this.interactables.pick(x, y, this.camera, usable, { assist: false });
+        if (!thing && this.prog.has('earth')) {
+            // Squarely on a stone Earth can't lift yet: say so (Cael answers it
+            // in the lesson), and don't let the assist hand over a smaller one.
+            const stone = this.interactables.pick(x, y, this.camera,
+                t => t.mat.move === 'earth' && t.entry?.body.world && this._inRange(t), { assist: false });
+            if (stone) { EventBus.emit(EV.TOO_HEAVY, { id: stone.id, mass: stone.entry.body.mass }); return false; }
+        }
         if (!thing && this.prog.has('air') && this.air.onHero(x, y)) {
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'wind', blowing: false, element: 'air' });
             return true;
