@@ -340,7 +340,8 @@ const SHOTS = path.join(__dirname, 'shots');
         window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
         window.__piece = (r, c) => __EL.interactables.things.find(t => t.id === `TestRoom_Barricade_01_P${r}${c}`);
         // Drag the finger from the basin to a world point, in steps.
-        window.__streamTo = (id, p) => { const a = __screen(__EL.room.basins[1].surface), b = __screen(p); for (let k = 1; k <= 6; k++) __touch('pointermove', id, a.x + (b.x - a.x) * k / 6, a.y + (b.y - a.y) * k / 6); return b; };
+        // Drag the finger from the basin to a world point at a human pace (~0.5 s), so it aims rather than yanks.
+        window.__streamTo = async (id, p) => { const a = __screen(__EL.room.basins[1].surface), b = __screen(p); for (let k = 1; k <= 8; k++) { __touch('pointermove', id, a.x + (b.x - a.x) * k / 8, a.y + (b.y - a.y) * k / 8); await new Promise(r => setTimeout(r, 60)); } return b; };
         __EL.player.body.position.set(1.5, 0.45, -7.5); __EL.cam.yaw = 0.35; __EL.cam.pitch = 0.3;
     });
     await wait(1800);
@@ -350,7 +351,7 @@ const SHOTS = path.join(__dirname, 'shots');
     check(bs.s.on && bs.st === 'stream' && bs.vis, `touching a basin draws a stream (${bs.st})`);
 
     // 8b. Aim it at a burning plank: the fire goes out and the plank is soaked.
-    const aimed = await page.evaluate(() => __streamTo(41, __piece(0, 4).pos()));
+    const aimed = await page.evaluate(async () => await __streamTo(41, __piece(0, 4).pos()));
     const doused = await waitFor(() => !__EL.fire.isBurning(__piece(0, 4)) && __EL.fire.isWet(__piece(0, 4)), 8000);
     const dousedBy = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'FireOut' && e.doused).map(e => e.cause));
     check(doused, 'the stream puts a burning plank out and soaks it');
@@ -366,26 +367,53 @@ const SHOTS = path.join(__dirname, 'shots');
         e.body.position.set(3.2, 0.62, -14.2); e.body.velocity.set(0, 0, 0); e.body.wakeUp();
         await new Promise(r => setTimeout(r, 300));
         const p0 = e.body.position.clone();
-        __streamTo(41, e.mesh.position);
-        await new Promise(r => setTimeout(r, 2500));
-        return e.body.position.distanceTo(p0);
+        await __streamTo(41, e.mesh.position);
+        // Keep the stream on it as it moves, as a player would.
+        for (let k = 0; k < 8; k++) { const q = __screen(e.mesh.position); __touch('pointermove', 41, q.x, q.y); await new Promise(r => setTimeout(r, 300)); }
+        const w = __EL.water.stream;
+        return { d: e.body.position.distanceTo(p0), st: __EL.intent.state, end: w && w.cur.toArray().map(v => +v.toFixed(2)), rock: e.body.position.toArray().map(v => +v.toFixed(2)) };
     });
-    check(pushed > 0.5, `the stream pushes a rock (${pushed.toFixed(2)} m)`);
+    check(pushed.d > 0.5, `the stream pushes a rock (${pushed.d.toFixed(2)} m; ${JSON.stringify(pushed)})`);
 
     // 8d. Hot stone in the water cools, in steam.
     const cooled = await page.evaluate(async () => {
-        const e = __EL.room.rocks[4];
+        // The heaviest rock, up against the wall, so the stream can't wash it out of its own spray.
+        const e = __EL.room.rocks[5];
+        e.body.position.set(2.2, 0.86, -15.1); e.body.velocity.set(0, 0, 0); e.body.wakeUp();
+        await new Promise(r => setTimeout(r, 300));
         e.data.heat = 0.9;
-        __streamTo(41, e.mesh.position);
-        await new Promise(r => setTimeout(r, 2000));
+        await __streamTo(41, e.mesh.position);
+        for (let k = 0; k < 7; k++) { const q = __screen(e.mesh.position); __touch('pointermove', 41, q.x, q.y); await new Promise(r => setTimeout(r, 300)); }
         return e.data.heat;
     });
     check(cooled < 0.4, `water cools hot stone (heat 0.90 → ${cooled.toFixed(2)})`);
 
-    // 8e. Point past its reach: it snaps off into an orb in the hand.
-    await page.evaluate(() => { const s = __screen(__EL.room.basins[1].surface); __touch('pointermove', 41, s.x - 120, 12); });
-    const snapped = await waitFor(() => __EL.intent.state === 'holding' && __EL.channel.held?.element === 'water', 6000);
-    check(snapped, 'stretched past its reach, the stream snaps into an orb in the hand');
+    // 8e. Pointed past its reach, it stays a stream and falls short.
+    await page.evaluate(async () => {
+        const s = __screen(__EL.room.basins[1].surface), from = { x: __EL.intent.x, y: __EL.intent.y };
+        for (let k = 1; k <= 8; k++) { __touch('pointermove', 41, from.x + (s.x - 120 - from.x) * k / 8, from.y + (12 - from.y) * k / 8); await new Promise(r => setTimeout(r, 60)); }
+    });
+    await wait(1500);
+    const short = await page.evaluate(() => {
+        const w = __EL.water.stream;
+        return w ? { st: __EL.intent.state, reach: +w.cur.distanceTo(w.source.surface).toFixed(2), y: +w.cur.y.toFixed(2) } : { st: __EL.intent.state };
+    });
+    check(short.st === 'stream' && short.reach <= 8.05 && short.y < 2, `pointed past its reach, it stays a stream and falls short (${JSON.stringify(short)})`);
+    await shot('12-falls-short');
+
+    // 8e'. A quick yank away from the basin tears the water free: an orb in the hand.
+    await page.evaluate(() => {
+        const b = __screen(__EL.room.basins[1].surface);
+        __touch('pointermove', 41, b.x, b.y);                  // back over the basin
+    });
+    await wait(600);
+    await page.evaluate(() => {
+        const b = __screen(__EL.room.basins[1].surface);
+        const spin = ms => { const t = performance.now(); while (performance.now() - t < ms); };
+        for (let k = 1; k <= 6; k++) { __touch('pointermove', 41, b.x - k * 45, b.y - k * 18); spin(10); }
+    });
+    const torn = await waitFor(() => __EL.intent.state === 'holding' && __EL.channel.held?.element === 'water' && !__EL.water.stream, 4000);
+    check(torn, 'a quick yank away from the basin tears the water free into an orb');
     await shot('12-orb');
 
     // 8f. Throw the orb at a burning plank: it bursts and puts it out.

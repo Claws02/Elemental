@@ -28,7 +28,7 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 | Hold still on timber (0.6 s) | Hold on timber | Set it alight |
 | Hold still on a fire (0.25 s) | Hold on a fire | Pull the flame out; it goes out |
 | Touch a basin and drag | Click a basin and drag | A stream of water to where you point: puts fire out, soaks, pushes |
-| Point the stream past its reach, or flick | Same | It breaks off into an orb you hold and throw |
+| Yank away from the basin fast, or flick | Same | The water tears free into an orb you hold and throw |
 | Drag | Drag | Move what you're holding |
 | Flick and let go | Flick the mouse and release | Throw it |
 | Let go slowly | Release slowly | Drop it |

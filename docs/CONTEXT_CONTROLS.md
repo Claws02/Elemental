@@ -54,15 +54,17 @@ Agreed 2026-09-29. Water acts from the player's hand, never by holding still on 
 
 | | Stream (still connected to the basin) | Orb (broken off) |
 |---|---|---|
-| How | Touch the basin: the water comes at once, arcing from the basin to whatever the finger points at | Point past the stream's reach for 0.25 s and it snaps into an orb in the hand; or flick while streaming |
+| How | Touch the basin: the water comes at once, arcing from the basin to whatever the finger points at | **Yank** the finger away from the basin, fast (over 2200 px/s), and it tears free into an orb in the hand; still moving fast when the finger lifts, it's thrown in the same motion. A flick on release does the same |
 | Water | Unlimited: the basin feeds it | One splash |
-| Reach | 8 m from the source; pulled further it thins and strains | Carried and thrown anywhere |
+| Reach | 8 m from the source. Pointed further it **does not break**: it thins, gives out and falls short where its reach ends, so you can see you need to get closer | Carried and thrown anywhere |
 | Does | Sprays where it lands: puts fire out, soaks timber, cools hot stone (steam), pushes rocks and debris, wears timber down (~8 s to break a plank) | Bursts on whatever it hits: the same, in a 2 m radius |
 | Slow release | Collapses: a small splash where it ended | Dropped: bursts where it lands |
 
 - **Soaked timber** won't catch or take heat from nearby fire for 20 s, and looks darker. Soaking ahead of a fire makes a firebreak.
 - **Water can do damage** (the player's choice): pushing rocks into the wall and wearing planks through are recorded as the player's doing.
-- **Aiming:** the stream's end goes to what the finger points at in the world (walls, planks, rocks, ground), so it can reach a wall behind the basin.
+- **Aiming:** the stream's end goes to what the finger points at in the world (walls, planks, rocks, ground), never its own basin, so it can reach past the basin to what's behind it.
+- **Why a yank, not distance** (changed after the phone test): breaking off at 8 m meant a stream could never be tried on anything further, and every far target needed an orb or a way to move the water source. Now distance only limits how far the stream lands, and breaking off is a deliberate gesture.
+- **Watch on the phone:** 2200 px/s is set so a quick aim toward a far target stays a stream. If yanks don't register, or aims tear free, tune `YANK_PX` in `Intent.js`.
 
 ## Where the Phase 3 element wheel fits
 

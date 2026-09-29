@@ -29,7 +29,7 @@ const VEL_WINDOW = 90;        // ms of history used for release velocity
 export class Gestures {
     constructor(el, handlers) {
         this.el = el;
-        this.h = handlers;        // { press(x,y) → taken?, drag(x,y) → 'orbit'|null, release, orbit, zoom, stick }
+        this.h = handlers;        // { press(x,y) → taken?, drag(x,y,t) → 'orbit'|null, release, orbit, zoom, stick }
         this.stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };   // x,y in -1..1
         this.world = new Map();   // pointerId -> { mode: world|orbit|pinch, samples: [{x,y,t}] }
         this.keys = new Set();
@@ -104,7 +104,7 @@ export class Gestures {
         while (s.samples.length > 2 && now - s.samples[0].t > VEL_WINDOW) s.samples.shift();
         const dx = e.clientX - s.lx, dy = e.clientY - s.ly;
         s.lx = e.clientX; s.ly = e.clientY;
-        if (s.mode === 'world') { if (this.h.drag?.(e.clientX, e.clientY) === 'orbit') s.mode = 'orbit'; }
+        if (s.mode === 'world') { if (this.h.drag?.(e.clientX, e.clientY, e.timeStamp) === 'orbit') s.mode = 'orbit'; }
         else if (s.mode === 'orbit') this.h.orbit?.(dx, dy);
         else if (s.mode === 'pinch' && this.world.size >= 2) {
             const [a, b] = [...this.world.values()];

@@ -6,15 +6,19 @@
 //
 //   STREAM   Touch a basin and the water comes: it rises and arcs from the
 //            source to whatever the finger points at. While it stays
-//            connected it is endless, and short: it reaches 8 m from its
-//            source and no further. Where it lands it sprays:
+//            connected it is endless, but it reaches only 8 m from its
+//            source: pointed further, it stretches thin and falls short,
+//            dropping to the ground where it gives out. Where it lands it
+//            sprays:
 //              puts fire out and soaks timber (wet timber won't catch, 20 s)
 //              cools hot stone in a hiss of steam
 //              pushes rocks and debris along the stream
 //              wears through timber it is held on: water is not harmless
-//   ORB      Point past the reach for a moment, or flick, and the water
-//            snaps off into an orb in the hand: limited (one splash), but
-//            carried and thrown anywhere. It bursts on whatever it hits.
+//   ORB      Yank the finger away from the basin, fast, and the water tears
+//            free into an orb in the hand (Intent decides what a yank is);
+//            still moving fast when the finger lifts, it is thrown. Limited
+//            (one splash), but carried and thrown anywhere. It bursts on
+//            whatever it hits.
 //
 // The stream is a tube mesh along a curve plus pooled droplets. There is no
 // fluid simulation: water does not pool or run across the ground (that is
@@ -32,10 +36,9 @@ import { Pool } from '../art/FireFx.js';
 
 export const WATER = {
     reach: 8,             // metres from the source the stream can stretch
-    snapAfter: 0.25,      // seconds pointed past the reach before it snaps
     range: 16,            // hero this far from the source: the stream lets go
     spray: 1.1,           // radius of the stream's spray, metres
-    push: 18,             // m/s² given to light things in the spray
+    push: 30,             // m/s² given to light things in the spray (heavier move less)
     wear: 12,             // damage/s to timber held in the spray (~8 s to break a plank)
     splash: 2.0,          // radius of an orb's burst
     splashPush: 6,        // m/s given to things in a burst
@@ -78,7 +81,7 @@ export class WaterSystem {
         const source = this.sources.find(s => s.thing === thing);
         if (!source) return false;
         const start = source.surface.clone();
-        this.stream = { source, want: start.clone().setY(start.y + 1.5), target: start.clone().setY(start.y + 1.5), cur: start.clone(), over: 0, dir: new THREE.Vector3(0, 1, 0) };
+        this.stream = { source, want: start.clone().setY(start.y + 1.5), target: start.clone().setY(start.y + 1.5), cur: start.clone(), dir: new THREE.Vector3(0, 1, 0) };
         this.tube.visible = true;
         this.draws++;
         EventBus.emit(EV.WATER_DRAWN, { id: thing.id, cause: 'player' });
@@ -91,7 +94,11 @@ export class WaterSystem {
         if (!s) return;
         _v2.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
         _ray.setFromCamera(_v2, this.camera);
-        const meshes = this.solids.concat(this.interactables.things.filter(t => t.material !== 'waterOrb').map(t => t.mesh));
+        // Never its own basin: aiming the water back at where it comes from is
+        // never meant, and the basin often sits between the hero and the target.
+        const own = s.source.thing.mesh;
+        const meshes = this.solids.filter(m => m !== own)
+            .concat(this.interactables.things.filter(t => t.material !== 'waterOrb' && t.mesh !== own).map(t => t.mesh));
         const hit = _ray.intersectObjects(meshes, true)[0];
         const g = _ray.ray.intersectPlane(_ground, new THREE.Vector3());
         let p = hit ? hit.point.clone() : g;
@@ -101,11 +108,14 @@ export class WaterSystem {
         s.want.copy(p);
         const from = s.source.surface;
         const off = p.clone().sub(from);
-        s.target.copy(off.length() > WATER.reach ? from.clone().addScaledVector(off.normalize(), WATER.reach) : p);
+        if (off.length() > WATER.reach) {
+            // Too far: it gives out at its reach and falls, landing short.
+            s.target.copy(from).addScaledVector(off.normalize(), WATER.reach);
+            s.target.y = Math.max(0.15, s.target.y * 0.35);
+        } else {
+            s.target.copy(p);
+        }
     }
-
-    /** The finger has held the stream past its reach long enough: it wants to break off. */
-    get strained() { return !!this.stream && this.stream.over >= WATER.snapAfter; }
 
     /** Break the stream off into an orb at its end. Returns the orb (an interactable). */
     snap() {
@@ -227,7 +237,6 @@ export class WaterSystem {
             else {
                 s.cur.lerp(s.target, 1 - Math.exp(-10 * dt));
                 const beyond = s.want.distanceTo(s.source.surface) > WATER.reach;
-                s.over = beyond ? s.over + dt : 0;
                 this._shapeTube(s, beyond);
                 this._wet(s.cur, WATER.spray, dt, s.dir);
                 // Spray at the end, and drops shed along the way.
@@ -294,7 +303,7 @@ export class WaterSystem {
         C.y = Math.max(S.y, E.y) + 0.8 + len * 0.12;
         const pos = this.tube.geometry.attributes.position.array, nor = this.tube.geometry.attributes.normal.array;
         const P = new THREE.Vector3(), T = new THREE.Vector3(), N1 = new THREE.Vector3(), N2 = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-        // A stream pulled past its reach thins: the player can see it straining.
+        // A stream pointed past its reach thins: the player can see it straining.
         const thick = strained ? 0.55 + 0.1 * Math.sin(this.time * 40) : 1;
         for (let i = 0; i <= SEG; i++) {
             const t = i / SEG, u = 1 - t;

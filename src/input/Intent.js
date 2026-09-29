@@ -16,9 +16,11 @@
 //   holding    —              move the object;      stone: heat after its      throw / drop     let go → idle
 //                             restart stillness     hold time                  → idle
 //   done       —              → orbit (idle)        aim fades after 0.4 s      → idle           —
-//   stream     —              aim the stream at     past its reach 0.25 s:     flick: snap to   hero walks off:
-//                             what is under the     snap to an orb → holding   an orb, throw it collapse → idle
-//                             finger                                           slow: collapse
+//   stream     —              aim the stream at     —                          flick: snap to   hero walks off:
+//                             the finger; a fast                               an orb, throw it collapse → idle
+//                             yank away from the                               slow: collapse
+//                             basin tears it into
+//                             an orb → holding
 //
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
@@ -35,6 +37,8 @@ import { changeVerb } from '../data/materials.js';
 const MOVE_PX = 10;          // finger travel that counts as a drag, not a hold
 const RANGE = 14;            // how far from the hero a touch can act
 const RING_AFTER = 0.2;      // seconds of stillness before a holding ring appears
+const YANK_PX = 2200;        // px/s away from the basin that tears the water free (deliberate, not a quick aim)
+const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
     constructor({ camera, hero, channel, interactables, fire, earth, water }) {
@@ -72,6 +76,7 @@ export class Intent {
         const thing = this.interactables.pick(x, y, this.camera, t => this._usable(t));
         if (!thing) return false;
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
+        this.trail = [];
         if (thing.mat.source === 'water' && this.water.beginStream(thing)) {
             this.state = 'stream';
             this.element = 'water';
@@ -92,7 +97,7 @@ export class Intent {
     }
 
     /** The finger moves. Returns 'orbit' when the gesture should become a camera drag. */
-    drag(x, y) {
+    drag(x, y, t = performance.now()) {
         this.x = x; this.y = y;
         const moved = Math.hypot(x - this.ax, y - this.ay) > MOVE_PX;
         switch (this.state) {
@@ -108,6 +113,7 @@ export class Intent {
             return 'orbit';
         case 'stream':
             this.water.aimStream(x, y);
+            if (this._yanked(x, y, t)) this._tearFree();
             return null;
         default:
             return null;
@@ -168,15 +174,30 @@ export class Intent {
             break;
         case 'stream':
             if (!this.water.stream) { this._cancel(); break; }            // it let go (hero walked off)
-            if (this.water.strained) {
-                // Stretched past its reach: it breaks off into an orb in the hand.
-                const orb = this.water.snap();
-                this.channel.grab(orb.entry, 'water', { lift: 0 });
-                Object.assign(this, { state: 'holding', thing: orb, still: 0, ax: this.x, ay: this.y });
-                this.channel.drag(this.x, this.y);
-            }
             break;
         }
+    }
+
+    // A yank: the finger moving fast, and away from the basin on screen.
+    _yanked(x, y, t) {
+        const tr = this.trail;
+        tr.push({ x, y, t });
+        while (tr.length > 2 && t - tr[0].t > YANK_WINDOW) tr.shift();
+        const a = tr[0];
+        const dt = Math.max(16, t - a.t) / 1000;
+        if (Math.hypot(x - a.x, y - a.y) / dt < YANK_PX) return false;
+        const q = this.water.stream.source.surface.clone().project(this.camera);
+        const bx = (q.x + 1) / 2 * innerWidth, by = (1 - q.y) / 2 * innerHeight;
+        return Math.hypot(x - bx, y - by) > Math.hypot(a.x - bx, a.y - by) + 20;
+    }
+
+    // The water tears free of its source: an orb in the hand, still following the finger.
+    _tearFree() {
+        const orb = this.water.snap();
+        if (!orb) return;
+        this.channel.grab(orb.entry, 'water', { lift: 0 });
+        Object.assign(this, { state: 'holding', thing: orb, still: 0, ax: this.x, ay: this.y });
+        this.channel.drag(this.x, this.y);
     }
 
     _commit(cv) {

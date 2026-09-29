@@ -55,7 +55,7 @@ function boot() {
 
     const input = new Gestures(document.getElementById('game'), {
         press: (x, y) => intent.press(x, y),
-        drag: (x, y) => intent.drag(x, y),
+        drag: (x, y, t) => intent.drag(x, y, t),
         release: r => intent.release(r),
         orbit: (dx, dy) => cam.orbit(dx, dy),
         zoom: f => cam.zoom(f),
