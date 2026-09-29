@@ -67,6 +67,22 @@ Agreed 2026-09-29. Water acts from the player's hand, never by holding still on 
 - **Why a yank, not distance** (changed after the phone test): breaking off at 8 m meant a stream could never be tried on anything further, and every far target needed an orb or a way to move the water source. Now distance only limits how far the stream lands, and breaking off is a deliberate gesture.
 - **Watch on the phone:** 2200 px/s is set so a quick aim toward a far target stays a stream. If yanks don't register, or aims tear free, tune `YANK_PX` in `Intent.js`.
 
+## Air: the Conduit's own breath
+
+Agreed 2026-09-29. Air is the one element with no source in the world, so it comes from the hero.
+
+| Gesture | What happens |
+|---|---|
+| Touch **the hero** and drag | Steady **wind** from the hero toward what the finger points at: a ~7 m cone, pale-jade streaks. Keeps blowing while the finger stays down |
+| Touch the hero and **flick** | A **gust** toward what's under the finger where it lifts (screen direction alone aims badly: depth is squashed on a phone) |
+| Drag a **loose, light thing** (a plank knocked out of the barricade) | Air lifts it: the MOVE verb for loose timber, as Earth is for stone |
+
+What moving air does:
+- **Pushes:** light things fly, rocks roll (heavy ones barely), a fireball or orb in flight is deflected.
+- **Fans fire, both ways:** a young flame (under 2.5 s old) blows out after about 0.35 s of wind; an established fire flares for 3 s, burns faster, and spreads further and faster **downwind**. Blowing on a fire too late drives it across the wall.
+- **Hurts** (the player's choice): a gust cracks timber in its path, about 30 to 45 damage per plank at 5 m; it breaks planks that were already damaged, and three gusts bring a sound barricade down. Steady wind doesn't break things.
+- **Touching the hero wins over the move stick:** in portrait the hero stands at the move zone's edge, so a touch on the hero is Air even inside the bottom-left quarter. The hero's touch area is at least 60 px.
+
 ## Where the Phase 3 element wheel fits
 
 It stops being how you choose an element. It becomes an **override** for the rare case context gets wrong, for example using Air on a stone to shove it rather than let Earth lift it.

@@ -459,6 +459,103 @@ const SHOTS = path.join(__dirname, 'shots');
     });
     check(flung.threw === 1 && !flung.streaming, `a flick breaks the stream off and throws it (${JSON.stringify(flung)})`);
 
+
+    // ========================================================
+    // 9. AIR, in a fresh room: it comes from the hero. Touch the hero and
+    // drag for wind, flick for a gust. Loose light things answer to Air.
+    // ========================================================
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__EL?.ready, null, { timeout: 30000 });
+    await page.evaluate(() => {
+        const el = document.getElementById('game');
+        window.__touch = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
+        window.__piece = (r, c) => __EL.interactables.things.find(t => t.id === `TestRoom_Barricade_01_P${r}${c}`);
+        window.__hero = () => { const p = __EL.player.position; return __screen(new __EL.THREE.Vector3(p.x, p.y + 1.0, p.z)); };
+        // Touch the hero, then drag toward a world point at a human pace, and keep blowing.
+        window.__windAt = async (id, p, ms) => {
+            const h = __hero(); __touch('pointerdown', id, h.x, h.y);
+            const b = __screen(p);
+            for (let k = 1; k <= 6; k++) { __touch('pointermove', id, h.x + (b.x - h.x) * k / 6, h.y + (b.y - h.y) * k / 6); await new Promise(r => setTimeout(r, 50)); }
+            const t0 = performance.now();
+            while (performance.now() - t0 < ms) { const q = __screen(p); __touch('pointermove', id, q.x, q.y); await new Promise(r => setTimeout(r, 150)); }
+            return b;
+        };
+        __EL.player.body.position.set(0, 0.45, -11); __EL.cam.yaw = 0.2; __EL.cam.pitch = 0.3;
+    });
+    await wait(1800);
+
+    // 9a. Touching the hero is Air, not the stick, even at the move zone's edge.
+    const hz = await page.evaluate(() => {
+        const h = __hero(); __touch('pointerdown', 51, h.x, h.y);
+        const r = { st: __EL.intent.state, stick: __EL.input.stick.id === 51, inZone: __EL.input.inMoveZone(h.x, h.y) };
+        __touch('pointerup', 51, h.x, h.y);
+        return r;
+    });
+    check(hz.st === 'wind' && !hz.stick, `touching the hero is Air (${JSON.stringify(hz)})`);
+
+    // 9b. Wind pushes a light rock.
+    const blown = await page.evaluate(async () => {
+        const e = __EL.room.rocks[7];                       // the smallest rock
+        e.body.position.set(0.3, 0.36, -14); e.body.velocity.set(0, 0, 0); e.body.wakeUp();
+        await new Promise(r => setTimeout(r, 300));
+        const p0 = e.body.position.clone();
+        const b = await __windAt(52, new __EL.THREE.Vector3(0.3, 0.4, -14), 1500);
+        const r = { d: e.body.position.distanceTo(p0), blowing: __EL.air.wind !== null };
+        __touch('pointerup', 52, b.x, b.y);
+        return r;
+    });
+    check(blown.blowing && blown.d > 0.5, `the wind pushes a light rock (${blown.d.toFixed(2)} m)`);
+
+    // 9c. Wind blows a young flame out.
+    const young = await page.evaluate(async () => {
+        const t = __piece(1, 2);
+        __EL.fire.ignite(t, 'player');
+        const b = await __windAt(53, t.pos(), 1200);
+        __touch('pointerup', 53, b.x, b.y);
+        return { burning: __EL.fire.isBurning(t), blown: __EL.EventBus.recent().some(e => e.type === 'FireOut' && e.blown) };
+    });
+    check(!young.burning && young.blown, 'wind blows a young flame out');
+
+    // 9d. …but it fans an established fire, which spreads downwind.
+    const fanned = await page.evaluate(async () => {
+        const t = __piece(0, 1);
+        __EL.fire.ignite(t, 'player');
+        __EL.fire.flammables.get(t).age = 6;               // established
+        const b = await __windAt(54, t.pos(), 1200);
+        __touch('pointerup', 54, b.x, b.y);
+        return { burning: __EL.fire.isBurning(t), fanned: __EL.EventBus.recent().some(e => e.type === 'FireFanned' && e.cause === 'player') };
+    });
+    check(fanned.burning && fanned.fanned, 'wind fans an established fire instead of putting it out');
+    await shot('13-wind');
+
+    // 9e. A gust (flick from the hero) knocks a damaged plank loose, blamed on the player.
+    const gusted = await page.evaluate(() => {
+        const t = __piece(0, 4), piece = t.entry.data.piece;
+        piece.hp = 30;
+        const h = __hero(), q = __screen(t.pos());
+        const n = __EL.air.gusts;
+        __touch('pointerdown', 55, h.x, h.y);
+        const spin = ms => { const s = performance.now(); while (performance.now() - s < ms); };
+        for (let k = 1; k <= 5; k++) { __touch('pointermove', 55, h.x + (q.x - h.x) * k / 5, h.y + (q.y - h.y) * k / 5); spin(8); }
+        __touch('pointerup', 55, q.x, q.y);
+        return { gusts: __EL.air.gusts - n };
+    });
+    const loose = await waitFor(() => __piece(0, 4).entry.data.piece.broken, 4000);
+    const blame = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'PieceBroken' && e.piece.endsWith('_P04')).map(e => e.cause));
+    check(gusted.gusts === 1 && loose && blame[0] === 'player', `a gust knocks a damaged plank loose, blamed on the player (${JSON.stringify({ ...gusted, loose, blame })})`);
+
+    // 9f. A loose plank is light: Air lifts it.
+    await wait(1500);
+    const lifted = await page.evaluate(() => {
+        const t = __piece(0, 4), s = __screen(t.pos());
+        __touch('pointerdown', 56, s.x, s.y);
+        const r = { held: __EL.channel.held?.element, on: s.on };
+        __touch('pointerup', 56, s.x, s.y);
+        return r;
+    });
+    check(lifted.held === 'air', `a loose plank is lifted by Air (${JSON.stringify(lifted)})`);
+
     const perf = await page.evaluate(() => __EL.renderInfo());
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
 

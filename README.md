@@ -4,7 +4,7 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 > "The game never lied to me. I lied to myself."
 
-**Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, two braziers, two basins, a timber barricade, and three elements. Earth: grab a rock with your finger and flick it through the barricade. Fire: pull a fireball from the coals, set timber alight, heat a rock in your grip. Water: draw a stream from a basin to put the fire out, or break it off into an orb and throw it. There is no element selector: what you touch and how you touch it decide (`docs/CONTEXT_CONTROLS.md`). The world records what you did.
+**Status: Phase 1 technical prototype.** One ruined courtyard, ten boulders, two braziers, two basins, a timber barricade, and all four elements. Earth: grab a rock with your finger and flick it through the barricade. Fire: pull a fireball from the coals, set timber alight, heat a rock in your grip. Water: draw a stream from a basin to put the fire out, or yank it free into an orb and throw it. Air: touch the hero and drag for wind, flick for a gust; it pushes, blows out young flames and fans old ones. There is no element selector: what you touch and how you touch it decide (`docs/CONTEXT_CONTROLS.md`). The world records what you did.
 
 ![The courtyard](docs/assets/courtyard.png)
 
@@ -29,6 +29,9 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 | Hold still on a fire (0.25 s) | Hold on a fire | Pull the flame out; it goes out |
 | Touch a basin and drag | Click a basin and drag | A stream of water to where you point: puts fire out, soaks, pushes |
 | Yank away from the basin fast, or flick | Same | The water tears free into an orb you hold and throw |
+| Touch the hero and drag | Click the hero and drag | Wind toward where you point (Air) |
+| Touch the hero and flick | Same | A gust |
+| Touch a loose plank | Click it | Lift it (Air) |
 | Drag | Drag | Move what you're holding |
 | Flick and let go | Flick the mouse and release | Throw it |
 | Let go slowly | Release slowly | Drop it |

@@ -67,7 +67,9 @@ export class Gestures {
     _down(e) {
         // Capture can refuse (a pointer already gone); input must not die with it.
         try { this.el.setPointerCapture?.(e.pointerId); } catch (err) { /* keep going uncaptured */ }
-        if (this.inMoveZone(e.clientX, e.clientY) && e.pointerType !== 'mouse' && this.stick.id === null) {
+        // The move zone, unless the touch is on something that claims it (the
+        // hero stands at the zone's edge in portrait; touching the hero is Air).
+        if (this.inMoveZone(e.clientX, e.clientY) && e.pointerType !== 'mouse' && this.stick.id === null && !this.h.claims?.(e.clientX, e.clientY)) {
             Object.assign(this.stick, { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             this.h.stick?.({ active: true, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             return;

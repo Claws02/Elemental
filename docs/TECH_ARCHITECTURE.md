@@ -56,6 +56,7 @@ src/
   elements/EarthSystem.js      Earth's sensing (rock highlight) and limits
   elements/FireSystem.js       ignite, heat, spread, burn out, fireballs, hot stone; douse, soak, quench
   elements/WaterSystem.js      stream (tube + spray) while connected to a basin, orbs once broken off
+  elements/AirSystem.js        wind and gusts from the hero: push, fan or blow out fire, crack timber
   art/FireFx.js         pooled flame and smoke particles, two draw calls
   world/Interactables.js       everything a touch can land on, with its material
   world/Destructible.js modular structures: pieces, support, states, cause
@@ -109,7 +110,7 @@ The brief's required systems, and where each stands. "Planned" means an unchecke
 | EventSystem | **Phase 1** (bus + log) | `src/core/EventBus.js` |
 | InputSystem | **Phase 1** (stick, press/drag/flick, orbit, pinch, WASD; context intent) | `src/input/Gestures.js`, `src/input/Intent.js` |
 | PlayerSystem | **Phase 1** (movement, facing, animation) | `src/player/` |
-| ElementSystem | **Phase 1: Earth, Fire and Water** | `src/elements/` (`Channel`, `EarthSystem`, `FireSystem`), `src/data/materials.js` |
+| ElementSystem | **Phase 1: Earth, Fire, Water and Air** | `src/elements/` (`Channel`, `EarthSystem`, `FireSystem`), `src/data/materials.js` |
 | PhysicsInteractionSystem | **Phase 1** (tiers, budget) | `src/engine/Physics.js` |
 | DestructionSystem | **Phase 1** (pieces, support, states, cause) | `src/world/Destructible.js` |
 | UISystem | **Phase 1** (minimal HUD) | `src/ui/Hud.js` |

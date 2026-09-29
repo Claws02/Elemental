@@ -16,12 +16,17 @@
 //   holding    —              move the object;      stone: heat after its      throw / drop     let go → idle
 //                             restart stillness     hold time                  → idle
 //   done       —              → orbit (idle)        aim fades after 0.4 s      → idle           —
+//   wind       —              first >10 px: start   the wind keeps blowing     flick: a gust    —
+//                             blowing; aim it at                               slow: stop
+//                             what is under the
+//                             finger
 //   stream     —              aim the stream at     —                          flick: snap to   hero walks off:
 //                             the finger; a fast                               an orb, throw it collapse → idle
 //                             yank away from the                               slow: collapse
 //                             basin tears it into
 //                             an orb → holding
 //
+//   press on THE HERO                     → wind (Air comes from the hero; no source needed)
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
 //   press on a thing with only CHANGE     → pending, for that material's hold time
@@ -41,8 +46,8 @@ const YANK_PX = 2200;        // px/s away from the basin that tears the water fr
 const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -56,7 +61,11 @@ export class Intent {
 
     _moveElement(thing) {
         const mv = thing.mat.move;
-        if (!mv) return null;
+        if (!mv) {
+            // Broken off and light: Air lifts it.
+            if (thing.mat.loose === 'air' && thing.entry && this.air.canMove(thing.entry)) return 'air';
+            return null;
+        }
         if (mv === 'earth' && !this.earth.canMove(thing.entry)) return null;
         return mv;
     }
@@ -73,6 +82,10 @@ export class Intent {
     /** A finger lands on the world. Returns true if Intent takes it. */
     press(x, y) {
         if (this.state !== 'idle') return false;
+        if (this.air.onHero(x, y)) {
+            Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'wind', blowing: false, element: 'air' });
+            return true;
+        }
         const thing = this.interactables.pick(x, y, this.camera, t => this._usable(t));
         if (!thing) return false;
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
@@ -111,6 +124,13 @@ export class Intent {
         case 'done':
             this._cancel();
             return 'orbit';
+        case 'wind':
+            if (!this.blowing && moved) this.blowing = true;
+            if (this.blowing) {
+                this.air.aim(x, y);
+                this.channel.aimAt(this.air.wind.aim, 'air');
+            }
+            return null;
         case 'stream':
             this.water.aimStream(x, y);
             if (this._yanked(x, y, t)) this._tearFree();
@@ -122,6 +142,10 @@ export class Intent {
 
     /** The finger lifts. */
     release(r) {
+        if (this.state === 'wind' && r?.flick) {
+            this.air.gustFromFlick(r.vx, r.vy, r.x, r.y);
+            this.hero.anim.throw();
+        }
         if (this.state === 'holding') this.channel.release(r);
         else if (this.state === 'stream') {
             if (r?.flick) {
@@ -138,6 +162,7 @@ export class Intent {
 
     _cancel() {
         if (this.state === 'stream') this.water.collapse();
+        if (this.state === 'wind') { this.air.stop(); this.blowing = false; }
         if (this.state !== 'holding') this.channel.aimAt(null);
         this.state = 'idle';
         this.thing = null;

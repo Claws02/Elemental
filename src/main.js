@@ -7,7 +7,7 @@
 //
 //   intent (what the finger means) → channel (forces on what is held)
 //     → earth (sensing) → player (velocity) → physics step
-//     → fire (contacts recorded in the step, burning, spread) → water (stream, orbs)
+//     → fire (contacts recorded in the step, burning, spread) → water (stream, orbs) → air (wind)
 //     → structures (apply hits and burns) → particles → camera → render
 //
 // There is deliberately no GameManager here. When save, scenes and world
@@ -26,6 +26,7 @@ import { Channel } from './elements/Channel.js';
 import { EarthSystem } from './elements/EarthSystem.js';
 import { FireSystem } from './elements/FireSystem.js';
 import { WaterSystem } from './elements/WaterSystem.js';
+import { AirSystem } from './elements/AirSystem.js';
 import { FireFx } from './art/FireFx.js';
 import { Intent } from './input/Intent.js';
 import { Gestures } from './input/Gestures.js';
@@ -49,12 +50,14 @@ function boot() {
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player });
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: room.solids });
+    const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: room.solids });
     wireTestRoom(room, { interactables, fire, water });
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air });
     const hud = new Hud(document.getElementById('hud'));
 
     const input = new Gestures(document.getElementById('game'), {
         press: (x, y) => intent.press(x, y),
+        claims: (x, y) => air.onHero(x, y),
         drag: (x, y, t) => intent.drag(x, y, t),
         release: r => intent.release(r),
         orbit: (dx, dy) => cam.orbit(dx, dy),
@@ -80,6 +83,7 @@ function boot() {
         Physics.step(dt);
         fire.update(dt);
         water.update(dt);
+        air.update(dt);
         room.barricade.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
@@ -99,7 +103,7 @@ function boot() {
     // through private state.
     window.__EL = {
         ready: true,
-        THREE, Physics, EventBus, room, player, channel, earth, fire, water, fx, intent, interactables, cam, input,
+        THREE, Physics, EventBus, room, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = room.rocks[i];

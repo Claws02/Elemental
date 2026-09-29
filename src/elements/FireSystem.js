@@ -54,6 +54,9 @@ export const FIRE = {
     droppedLife: 1.5,       // seconds after a slow release
     fireballRadius: 0.34,
     douseTime: 0.8,         // seconds of steady water a burning plank takes to go out
+    youngAge: 2.5,          // a fire younger than this can be blown out by wind…
+    blowTime: 0.35,         // …after this much of it; an older one is fanned instead
+    fanFor: 3,              // seconds a gust of wind keeps a fire flaring
     originGrace: 1.5,       // seconds a new fireball ignores the thing it was pulled from
 };
 
@@ -113,6 +116,36 @@ export class FireSystem {
     }
 
     get douseLump() { return FIRE.douseTime; }
+
+    /** How strong a fire is, 0.25 … 1, as it builds. */
+    intensity(f) { return Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * (f.age || 0) / FIRE.buildUp); }
+
+    /**
+     * Wind on a fire. A young, small flame blows out (after FIRE.blowTime of
+     * wind); an established fire flares and spreads downwind for a while.
+     * Returns 'out', 'fanned' or null.
+     */
+    wind(thing, amount, dir, cause) {
+        const f = this.flammables.get(thing);
+        if (!f?.burning) return null;
+        if (f.age < FIRE.youngAge) {
+            f.blowing = (f.blowing || 0) + amount;
+            if (f.blowing >= FIRE.blowTime) {
+                f.burning = false; f.heat = 0; f.age = 0; f.blowing = 0;
+                this._glow(thing, 0);
+                this.fx.steam?.(thing.pos(), 6);
+                EventBus.emit(EV.FIRE_OUT, { id: thing.id, cause, blown: true });
+                return 'out';
+            }
+            return null;
+        }
+        const first = (f.fanUntil || 0) <= this.time;
+        f.fanUntil = this.time + FIRE.fanFor;
+        f.windDir = dir.clone().setY(0).normalize();
+        f.cause = f.cause || cause;
+        if (first) EventBus.emit(EV.FIRE_FANNED, { id: thing.id, cause });
+        return 'fanned';
+    }
 
     isWet(thing) { return (this.flammables.get(thing)?.wet || 0) > 0; }
 
@@ -268,9 +301,10 @@ export class FireSystem {
             if (f.dousing > 0 && this.time - (f.wettedAt || 0) > 0.25) f.dousing = Math.max(0, f.dousing - dt);
             // Fire builds: a fresh flame is small and slow to spread (the
             // player's window to stop it), then it takes hold.
-            const k = Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * f.age / FIRE.buildUp);
-            f.onBurn?.((100 / f.fuelMax) * dt, f.cause);
-            this.fx.burn(p, dt, { rate: 22 * k, w: 0.85, h: 0.4 + 0.4 * k, size: 0.5 + 0.35 * k });
+            const k = this.intensity(f);
+            const fanned = (f.fanUntil || 0) > this.time;
+            f.onBurn?.((100 / f.fuelMax) * dt * (fanned ? 1.4 : 1), f.cause);
+            this.fx.burn(p, dt, { rate: 22 * k * (fanned ? 1.7 : 1), w: 0.85, h: 0.4 + 0.4 * k, size: (0.5 + 0.35 * k) * (fanned ? 1.25 : 1) });
             // A low, flickering ember glow: the flames carry the fire, the
             // wood only smoulders under them (a strong glow reads as a lamp).
             this._glow(f.thing, 0.16 + Math.sin(this.time * 17 + p.x * 3) * 0.06 + Math.sin(this.time * 7.3) * 0.04);
@@ -278,8 +312,12 @@ export class FireSystem {
                 if (o === f || o.burning || o.burned || o.wet > 0) continue;
                 const q = o.thing.pos();
                 const d = p.distanceTo(q);
-                if (d >= FIRE.spreadRadius) continue;
-                o.heat += k * FIRE.spreadRate * (1 - d / FIRE.spreadRadius) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;
+                // Fanned by wind, fire reaches further and faster downwind.
+                const align = fanned && d > 0 ? Math.max(0, q.clone().sub(p).normalize().dot(f.windDir)) : 0;
+                const R = FIRE.spreadRadius * (1 + 0.8 * align);
+                if (d >= R) continue;
+                const wind = fanned ? 1.3 + 1.5 * align : 1;
+                o.heat += k * wind * FIRE.spreadRate * (1 - d / R) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;
                 o.heatCause = f.cause;
                 heated.add(o);
             }

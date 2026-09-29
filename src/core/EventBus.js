@@ -54,4 +54,6 @@ export const EV = {
     OBJECT_HEATED:      'ObjectHeated',
     OBJECT_SOAKED:      'ObjectSoaked',
     WATER_DRAWN:        'WaterDrawn',
+    FIRE_FANNED:        'FireFanned',
+    WIND:               'Wind',
 };
