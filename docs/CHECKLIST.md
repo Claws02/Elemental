@@ -44,7 +44,8 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 
 - [x] **Scenes as data.** Every place is a JSON file in `scenes/` (`SCENES.md`): objects, puzzle wires, and a story script of steps, lines, reactions and an end card. The courtyard and Lesson I were converted from code. *Smoke and lesson tests pass unchanged on the scene files (boot view: 195 draw calls, as before); `npm run scenes` validates every file.*
 - [x] **Building kit.** Walls (stone, half-timbered, plaster; door, window, two windows, arch), floors, roofs (thatch, slate, shingle), stairs, fences, posts, and five prefab buildings; trees, market stalls, a portcullis gate, ground patches, characters. *`scenes/village.json`; screenshots.*
-- [ ] **Elemental-Editor** ([Claws02/Elemental-Editor](https://github.com/Claws02/Elemental-Editor)): place and edit everything on an iPad, wire puzzles, write story steps, play the scene in the editor, save for Claude.
+- [x] **Elemental-Editor** ([Claws02/Elemental-Editor](https://github.com/Claws02/Elemental-Editor)): place and edit everything on an iPad, wire puzzles, write story steps, play the scene in the editor, save for Claude. *Editor test: 25 checks on the built page (touch drag, turn, inspector, undo, rename, wires, story, break apart, Play/Stop, save, reload, phone width); a scene saved from it validates and plays here. Not yet used on a real iPad.*
+- [ ] **Pull a scene from the editor** ← next: build the first town, Save for Claude, and Claude brings it into `scenes/`.
 
 ## Phase 2: elemental sandbox
 
