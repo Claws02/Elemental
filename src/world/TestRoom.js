@@ -141,6 +141,7 @@ export function buildTestRoom(scene) {
         id: 'TestRoom_Barricade_01', scene,
         cols: COLS, rows: 3, pw: PW, ph: PH, pd: 0.16,
         origin: new THREE.Vector3(0, 0, BZ), rotY: 0, pieceMass: 5,
+        regenAfter: 60,       // testing aid: rebuilds a minute after the last damage
         build: plankPanel,
     });
     for (const sx of [-1, 1]) {
@@ -198,5 +199,6 @@ export function wireTestRoom(room, { interactables, fire }) {
         byPiece.set(piece, thing);
     }
     room.barricade.isBurning = piece => fire.isBurning(byPiece.get(piece));
+    room.barricade.onRebuild = () => { for (const t of byPiece.values()) fire.reset(t); };
     for (const b of room.braziers) fire.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'coals' }), b.flame);
 }

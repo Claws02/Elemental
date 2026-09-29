@@ -38,6 +38,7 @@ export class Hud {
 
         EventBus.on(EV.OBJECT_THROWN, () => this.el('hud-hint').classList.add('gone'));
         EventBus.on(EV.STRUCTURE_STATE, e => {
+            if (e.cause === 'rebuilt') { this._onFire.delete(e.id); this.log('Barricade · rebuilt'); return; }
             const who = e.cause === 'player' ? 'by you' : '';
             this.log(`Barricade · ${e.to} ${who}`.trim());
         });

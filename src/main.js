@@ -77,7 +77,7 @@ function boot() {
         player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
         Physics.step(dt);
         fire.update(dt);
-        room.barricade.update();
+        room.barricade.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);

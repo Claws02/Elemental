@@ -190,6 +190,16 @@ const SHOTS = path.join(__dirname, 'shots');
     const budget = await page.evaluate(() => ({ s: __EL.room.barricade.summary(), st: __EL.Physics.stats() }));
     check(budget.s.state === 'Collapsed', `enough damage collapses it (${budget.s.state})`);
     check(budget.st.debris <= 40, `debris stays within budget (${budget.st.debris} simulated)`);
+    // The barricade rebuilds itself after a quiet spell (60 s in the room; 2 s here).
+    await page.evaluate(() => { __EL.room.barricade.regenAfter = 2; });
+    const rebuilt = await page.waitForFunction(() => __EL.room.barricade.state === 'Intact', null, { timeout: 30000 }).then(() => true).catch(() => false);
+    const rb = await page.evaluate(() => {
+        const b = __EL.room.barricade;
+        const off = Math.max(...b.pieces.map(p => p.entry.body.position.distanceTo(p.home.p)));
+        return { static: b.pieces.every(p => p.entry.body.type === 2 && !p.broken), off, room: b.regenAfter };
+    });
+    check(rebuilt && rb.static && rb.off < 0.01, `a broken barricade rebuilds whole and in place (max offset ${rb.off.toFixed(3)} m)`);
+
     const back = await page.evaluate(async () => {
         const e = __EL.room.rocks[9];
         e.body.position.set(0, -40, 0);
@@ -313,7 +323,7 @@ const SHOTS = path.join(__dirname, 'shots');
     const through = await waitFor(() => __EL.room.barricade.summary().burned >= 1, 60000);
     const fsum = await page.evaluate(() => ({ s: __EL.room.barricade.summary(), fx: __EL.fx.stats(), states: __EL.EventBus.recent().filter(e => e.type === 'StructureStateChanged').map(e => e.to + ':' + e.cause) }));
     check(through, `burning planks burn through and fall (${fsum.s.burned} burned, ${fsum.s.state}; ${fsum.states.join(', ')})`);
-    check(fsum.states.every(s => s.endsWith(':player')), 'the fire damage is blamed on the player');
+    check(fsum.states.filter(s => !s.endsWith(':rebuilt')).every(s => s.endsWith(':player')), 'the fire damage is blamed on the player');
     check(fsum.fx.flame <= fsum.fx.flameMax && fsum.fx.smoke <= fsum.fx.smokeMax, `particles stay within their pools (${fsum.fx.flame}/${fsum.fx.flameMax} flame, ${fsum.fx.smoke}/${fsum.fx.smokeMax} smoke)`);
     await shot('10-burned');
 

@@ -19,6 +19,10 @@
 //   HEAT      every flammable has heat 0..1. Burning things heat what is
 //             near them (more strongly what is above: fire climbs). At 1 it
 //             catches. Unheated things cool.
+//   BUILD     a new fire starts at a quarter strength and builds over 5 s.
+//             Caught early it is easy to stop; left alone, several burning
+//             planks heat each neighbour from all sides and it runs away.
+//             Both are the design: the player's power gets out of hand.
 //   BURN      a burning thing spends fuel (8 s for a timber panel) and takes
 //             damage while it does; the barricade loses the panel when it
 //             burns through. Then it is charred and out: burned is a state,
@@ -38,6 +42,8 @@ import { EventBus, EV } from '../core/EventBus.js';
 
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
+    startIntensity: 0.25,   // a new fire spreads at a quarter strength…
+    buildUp: 5,             // …and reaches full strength over this many seconds
     spreadRate: 0.6,        // heat/s given to a neighbour at distance 0 (≈5 s to catch the next panel along, ≈3 s above)
     climb: 1.6,             // multiplier for neighbours above the fire
     cool: 0.15,             // heat/s lost by an unheated flammable
@@ -99,6 +105,7 @@ export class FireSystem {
         f.burning = true;
         f.heat = 1;
         f.cause = cause;
+        f.age = 0;                     // a new fire starts low and builds (FIRE.buildUp)
         this.ignitions++;
         EventBus.emit(EV.FIRE_STARTED, { id: thing.id, cause });
         return true;
@@ -189,8 +196,12 @@ export class FireSystem {
         for (const f of burning) {
             const p = f.thing.pos();
             f.fuel -= dt;
+            f.age += dt;
+            // Fire builds: a fresh flame is small and slow to spread (the
+            // player's window to stop it), then it takes hold.
+            const k = Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * f.age / FIRE.buildUp);
             f.onBurn?.((100 / f.fuelMax) * dt, f.cause);
-            this.fx.burn(p, dt, { rate: 22, w: 0.85, h: 0.8, size: 0.85 });
+            this.fx.burn(p, dt, { rate: 22 * k, w: 0.85, h: 0.4 + 0.4 * k, size: 0.5 + 0.35 * k });
             // A low, flickering ember glow: the flames carry the fire, the
             // wood only smoulders under them (a strong glow reads as a lamp).
             this._glow(f.thing, 0.16 + Math.sin(this.time * 17 + p.x * 3) * 0.06 + Math.sin(this.time * 7.3) * 0.04);
@@ -199,7 +210,7 @@ export class FireSystem {
                 const q = o.thing.pos();
                 const d = p.distanceTo(q);
                 if (d >= FIRE.spreadRadius) continue;
-                o.heat += FIRE.spreadRate * (1 - d / FIRE.spreadRadius) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;
+                o.heat += k * FIRE.spreadRate * (1 - d / FIRE.spreadRadius) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;
                 o.heatCause = f.cause;
                 heated.add(o);
             }
@@ -301,6 +312,15 @@ export class FireSystem {
     _fadeEmbers(dt) {
         for (const e of this.embers) { e.t += dt; e.m.emissiveIntensity = 0.1 * Math.max(0, 1 - e.t / 6); }
         this.embers = this.embers.filter(e => e.t < 6);
+    }
+
+    /** Back to unburnt: for a structure that has been rebuilt. */
+    reset(thing) {
+        const f = this.flammables.get(thing);
+        if (!f) return;
+        Object.assign(f, { heat: 0, burning: false, burned: false, fuel: f.fuelMax, cause: null, heatCause: null, age: 0 });
+        this.embers = this.embers.filter(e => e.m !== thing.mesh.userData.ownMaterials?.body);
+        this._glow(thing, 0);
     }
 
     stats() {

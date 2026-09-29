@@ -18,6 +18,12 @@
 // the seed of the consequence system (§12): the world will remember WHO broke
 // the wall, not just that it broke.
 //
+// REBUILD (testing aid). With `regenAfter` set, a damaged structure rebuilds
+// itself that many seconds after the last thing happened to it, once nothing
+// on it is burning. The test room sets 60 s so the barricade can be broken
+// again without reloading. Real rebuilding (§16's return visits) belongs to
+// the world state system, with its own rules.
+//
 // Every structure has a persistent ID (e.g. "TestRoom_Barricade_01"). Saving
 // and restoring the state is a later checklist item; the IDs are here now so
 // nothing has to be renamed when it arrives.
@@ -49,7 +55,10 @@ export class Destructible {
      * @param {number} o.pieceMass
      */
     constructor(o) {
-        Object.assign(this, { cols: o.cols, rows: o.rows, id: o.id, pieceMass: o.pieceMass ?? 6 });
+        Object.assign(this, { cols: o.cols, rows: o.rows, id: o.id, pieceMass: o.pieceMass ?? 6, scene: o.scene });
+        this.regenAfter = o.regenAfter ?? 0;     // seconds; 0 = never
+        this.quietFor = 0;                       // seconds since the last hit or break
+        this.onRebuild = null;
         this.state = STATE.INTACT;
         this.pieces = [];
         this.pending = [];           // hits collected during the physics step, applied after it
@@ -68,7 +77,8 @@ export class Destructible {
             body.addShape(new CANNON.Box(new CANNON.Vec3(o.pw / 2 - 0.01, o.ph / 2 - 0.01, o.pd / 2)));
             body.position.set(pos.x, pos.y, pos.z);
             body.quaternion.copy(q);
-            const piece = { r, c, hp: PIECE_HP, broken: false, burned: false, mesh, entry: null, id: `${o.id}_P${r}${c}` };
+            const piece = { r, c, hp: PIECE_HP, broken: false, burned: false, mesh, entry: null, id: `${o.id}_P${r}${c}`,
+                home: { p: pos.clone(), q: rot.clone() } };
             piece.entry = Physics.add({ body, mesh, tier: TIER.DESTRUCTIBLE, id: piece.id, data: { piece, owner: this } });
             body.addEventListener('collide', e => this._onCollide(piece, e));
             this.pieces.push(piece);
@@ -104,8 +114,10 @@ export class Destructible {
         if (!piece.broken) this.pending.push({ piece, amount, cause, vel: new THREE.Vector3(), fire: true });
     }
 
-    update() {
+    update(dt = 0) {
+        this._regen(dt);
         if (!this.pending.length) return;
+        this.quietFor = 0;
         const hits = this.pending.splice(0);
         let cause = 'environment';
         for (const h of hits) {
@@ -186,6 +198,31 @@ export class Destructible {
             this.state = next;
             EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from, to: next, cause });
         }
+    }
+
+    _regen(dt) {
+        if (!this.regenAfter || this.state === STATE.INTACT) return;
+        if (this.pieces.some(p => this.isBurning(p))) { this.quietFor = 0; return; }
+        this.quietFor += dt;
+        if (this.quietFor >= this.regenAfter) this.rebuild();
+    }
+
+    /** Every piece back where it was, whole. */
+    rebuild() {
+        for (const p of this.pieces) {
+            Physics.restore(p.entry, p.home.p, p.home.q);
+            if (!p.mesh.parent) this.scene.add(p.mesh);
+            Object.assign(p, { hp: PIECE_HP, broken: false, burned: false });
+            delete p.entry.data.thrownBy;
+            const m = p.mesh.userData.ownMaterials?.body;
+            if (m) { m.color.setScalar(1); m.emissiveIntensity = 0; }
+        }
+        this.pending.length = 0;
+        this.quietFor = 0;
+        const from = this.state;
+        this.state = STATE.INTACT;
+        this.onRebuild?.();
+        EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from, to: STATE.INTACT, cause: 'rebuilt' });
     }
 
     summary() {

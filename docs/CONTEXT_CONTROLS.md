@@ -54,4 +54,4 @@ It stops being how you choose an element. It becomes an **override** for the rar
 
 1. **Accidental heating.** Holding a rock still while deciding where to throw it heats it after 1.5 s. That's on-theme (accidental fire is the story), and the ring gives warning, but if it annoys, raise the stone hold time.
 2. **Holding a fireball near the barricade** can set it alight before you throw. Also on-theme; watch whether it feels unfair.
-3. **Fire spreads fast.** One lit plank takes the whole 18-panel barricade in about 12 s; the first neighbour catches at about 3 s, which is the window to pull the fire back out. `FIRE.spreadRate` in `FireSystem.js` sets the pace.
+3. **Fire gets away from you, on purpose.** A new fire starts at a quarter strength and builds over 5 s (`FIRE.startIntensity`, `FIRE.buildUp`). The first neighbour catches after about 5 s: the window to pull it back out. Left alone, burning planks heat their neighbours from all sides and it runs away; one plank takes the whole barricade in about 19 s. Tuned after the first phone test (was 3 s and 12 s): the player wanted more chance to stop it, but also wanted the power to be hard to control.
