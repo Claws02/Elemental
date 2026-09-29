@@ -186,7 +186,10 @@ export class WaterSystem {
             if (d > radius) continue;
             const near = 1 - d / radius;
             if (t.material === 'wood') {
-                this.fire.soak(t, 'player');
+                // A stream brings `amount` seconds of water; a burst a lump,
+                // enough to put out what it hits squarely (within ~1 m), not
+                // what it only splashes.
+                this.fire.wetten(t, dir ? amount : this.fire.douseLump * 2 * near, 'player');
                 // Water under pressure wears timber through.
                 const piece = t.entry?.data.piece, owner = t.entry?.data.owner;
                 if (piece && owner && !piece.broken) {

@@ -53,6 +53,7 @@ export const FIRE = {
     fireballLife: 4,        // seconds after it leaves the hand
     droppedLife: 1.5,       // seconds after a slow release
     fireballRadius: 0.34,
+    douseTime: 0.8,         // seconds of steady water a burning plank takes to go out
     originGrace: 1.5,       // seconds a new fireball ignores the thing it was pulled from
 };
 
@@ -111,6 +112,8 @@ export class FireSystem {
         return true;
     }
 
+    get douseLump() { return FIRE.douseTime; }
+
     isWet(thing) { return (this.flammables.get(thing)?.wet || 0) > 0; }
 
     /** Put a fire out with water. Returns true if something was burning. */
@@ -120,10 +123,29 @@ export class FireSystem {
         f.burning = false;
         f.heat = 0;
         f.age = 0;
+        f.dousing = 0;
         this._glow(thing, 0);
         this.fx.steam?.(thing.pos(), 10);
         EventBus.emit(EV.FIRE_OUT, { id: thing.id, cause, doused: true });
         return true;
+    }
+
+    /**
+     * Water arriving on timber: `amount` is seconds of steady stream (an
+     * orb's burst counts as a lump). A fire fights back: it only goes out
+     * after FIRE.douseTime of water, hissing all the while, and recovers if
+     * the water slips off. Timber that isn't burning soaks at once.
+     */
+    wetten(thing, amount, cause) {
+        const f = this.flammables.get(thing);
+        if (!f || f.burned) return false;
+        if (f.burning) {
+            f.dousing = (f.dousing || 0) + amount;
+            f.wettedAt = this.time;
+            this.fx.steam?.(thing.pos(), 18 * Math.min(amount, 0.1) + 1);
+            if (f.dousing < FIRE.douseTime) return false;
+        }
+        return this.soak(thing, cause);
     }
 
     /** Soak timber: it will not catch, and fire near it does not heat it, for a while. */
@@ -242,6 +264,8 @@ export class FireSystem {
             const p = f.thing.pos();
             f.fuel -= dt;
             f.age += dt;
+            // Water that stopped arriving: the fire recovers.
+            if (f.dousing > 0 && this.time - (f.wettedAt || 0) > 0.25) f.dousing = Math.max(0, f.dousing - dt);
             // Fire builds: a fresh flame is small and slow to spread (the
             // player's window to stop it), then it takes hold.
             const k = Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * f.age / FIRE.buildUp);

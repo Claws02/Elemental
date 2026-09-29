@@ -355,6 +355,16 @@ const SHOTS = path.join(__dirname, 'shots');
     const doused = await waitFor(() => !__EL.fire.isBurning(__piece(0, 4)) && __EL.fire.isWet(__piece(0, 4)), 8000);
     const dousedBy = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'FireOut' && e.doused).map(e => e.cause));
     check(doused, 'the stream puts a burning plank out and soaks it');
+    // A fire fights back: a short splash of water isn't enough, a sustained one is.
+    const fights = await page.evaluate(() => {
+        const t = __piece(2, 3), f = __EL.fire;
+        f.ignite(t, 'player');
+        f.wetten(t, 0.4, 'player');
+        const after04 = f.isBurning(t);
+        f.wetten(t, 0.45, 'player');
+        return { after04, after085: f.isBurning(t) };
+    });
+    check(fights.after04 && !fights.after085, `a fire takes ~0.8 s of water to go out (burning after 0.4 s: ${fights.after04}, after 0.85 s: ${fights.after085})`);
     check(dousedBy.length > 0 && dousedBy.every(c => c === 'player'), `putting it out is recorded as the player's (${dousedBy.join(',')})`);
     await wait(1500);
     await shot('11-stream');

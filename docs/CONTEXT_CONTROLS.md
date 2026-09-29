@@ -60,6 +60,7 @@ Agreed 2026-09-29. Water acts from the player's hand, never by holding still on 
 | Does | Sprays where it lands: puts fire out, soaks timber, cools hot stone (steam), pushes rocks and debris, wears timber down (~8 s to break a plank) | Bursts on whatever it hits: the same, in a 2 m radius |
 | Slow release | Collapses: a small splash where it ended | Dropped: bursts where it lands |
 
+- **Fire fights back** (added after the phone test, to cause some panic): a burning plank only goes out after about 0.8 s of steady water (`FIRE.douseTime`), steaming and still burning the whole time, and it recovers if the water slips off. An orb's burst puts out what it hits squarely (within about 1 m) but only knocks back fires at the edge of the splash.
 - **Soaked timber** won't catch or take heat from nearby fire for 20 s, and looks darker. Soaking ahead of a fire makes a firebreak.
 - **Water can do damage** (the player's choice): pushing rocks into the wall and wearing planks through are recorded as the player's doing.
 - **Aiming:** the stream's end goes to what the finger points at in the world (walls, planks, rocks, ground), never its own basin, so it can reach past the basin to what's behind it.
