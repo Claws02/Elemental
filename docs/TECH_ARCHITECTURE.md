@@ -1,0 +1,128 @@
+# Technical architecture
+
+The design brief was written for Unity. Elemental runs on Hundred Block Dash's stack instead. This document maps one onto the other, and records how the pieces that exist today fit together.
+
+## 1. The stack, and why
+
+| | |
+|---|---|
+| Rendering | three.js r128, loaded as a global from `vendor/` |
+| Physics | cannon.js 0.6.2, global, from `vendor/` |
+| Language | Plain ES modules. No bundler, no build step: the repo root *is* the web build |
+| Native shell | Capacitor 8 (`capacitor.config.json`), `www/` produced by `scripts/build-web.js` |
+| Tests | Headless Chromium through Playwright (`qa/smoke.js`, `qa/modelsheet.js`), plus a static parse and dead-reference check (`qa/parsecheck.sh`) |
+
+**Why not Unity:** HBD already ships to iOS and Android on this stack, its model toolkit and QA tooling carry straight over, and every change can be built, run and screenshotted in CI and in a cloud session. Unity can't be run or tested in either.
+
+**The cost, stated plainly:** Unity would handle streaming, skinned characters, profiling and a large physics budget more easily. An 8–12 hour 3D action RPG in a web view on a mid-range phone is a stretch goal. The mitigation is the brief's own roadmap: Phase 2's "20 minutes of fun" test and Phase 4's destruction test are where the web stack proves itself or doesn't. If it doesn't, the design, data and model knowledge transfer to Unity; the code doesn't.
+
+## 2. Unity terms → Elemental
+
+| Brief (Unity) | Elemental |
+|---|---|
+| `Assets/Scripts/<System>/` | `src/<system>/` (see §3) |
+| MonoBehaviour | A plain class with `update(dt)`, called in a fixed order from `src/main.js` |
+| ScriptableObject | A data module: a frozen object exported from `src/data/*.js` (planned). Designers edit data; systems read it. The Phase 1 constants (`EARTH` in `EarthSystem.js`, `BUDGET` in `Physics.js`) move there when the second element arrives |
+| Prefab | A builder function returning `{ group, …collider dimensions }` (`src/art/*.js`) |
+| Scene / additive loading | A region module that builds its content into the scene and registers its bodies; streaming by region (planned, Phase 8) |
+| Rigidbody | A `cannon.Body` registered through `Physics.add()` with a **tier** |
+| Interfaces (`IGrabbable`, `IFlammable`, …) | **Capabilities on the physics entry's `data`** (planned): a rock is `{ grabbable, throwable }`, a plank panel `{ breakable, flammable }`. Systems query capabilities; nothing is special-cased per object |
+| Unity events / UnityEvent | `EventBus` (`src/core/EventBus.js`) |
+| PlayerPrefs / save | `localStorage` for the prototype, then Capacitor Preferences or the filesystem; versioned (see §6) |
+
+## 3. Source layout
+
+```
+index.html              loads vendor globals, then src/main.js as a module
+css/styles.css          HUD only
+vendor/                 three.js r128, cannon.js 0.6.2 (from HBD)
+assets/fonts/           Nunito (OFL)
+src/
+  main.js               bootstrap and the frame order (no GameManager)
+  core/EventBus.js      world events (§40), with a recent-event log
+  engine/Kit.js         the model accumulator (from HBD's CityKit)
+  engine/Physics.js     cannon world, tiers, debris budget, out-of-world recovery
+  engine/Renderer.js    scene, sky, sun and shadows, quality tier
+  art/Palette.js        element and world colours
+  art/HeroModel.js      the protagonist: jointed model and procedural animator
+  art/PropModels.js     rock, floor, ruin wall, pillar, arch, planks, posts
+  input/Gestures.js     move stick, grab / drag / flick, orbit, pinch; WASD at a desk
+  player/PlayerController.js   the hero's body, movement and facing
+  player/CameraRig.js   third-person orbit, clip avoidance, target framing
+  elements/EarthSystem.js      sense, grab, hold, throw, drop
+  world/Destructible.js modular structures: pieces, support, states, cause
+  world/TestRoom.js     the Phase 1 room
+  ui/Hud.js             stick, element badge, hint, event log, debug readout
+qa/
+  parsecheck.sh         module parse + dead private-helper check (from HBD)
+  smoke.js              the Phase 1 gate (CI)
+  modelsheet.js         model review screenshots
+scripts/build-web.js    copies the shipped files to www/ for Capacitor
+docs/                   brief, architecture, art, checklist
+```
+
+## 4. The frame
+
+`src/main.js` owns the order and nothing else:
+
+```
+input → Earth (forces on held rock) → player (velocity) → physics step
+      → structures (apply hits recorded during the step) → camera → render → HUD
+```
+
+Hits are **recorded** during the physics step and **applied** after it, because changing a body from static to dynamic inside cannon's collision callback corrupts the solver. `Destructible.update()` does the applying.
+
+`dt` is capped at 0.1 s. Physics runs a fixed 1/60 step with up to 6 sub-steps, so a slow frame doesn't put the simulation into slow motion (a lesson from HBD's dice).
+
+## 5. Physics tiers and the budget (§37, §54, §55)
+
+| Tier | What | Simulated? |
+|---|---|---|
+| `static` | ground, walls, pillars, posts | Never moves |
+| `interactive` | rocks | Dynamic; sleeps when still; comes back to its spawn if it leaves the world |
+| `destructible` | barricade panels | Static until broken |
+| `debris` | broken panels | Dynamic, **budgeted**: past `BUDGET.debris` (40) the oldest are frozen where they lie (active → cached) |
+| `player` | the hero's sphere | Dynamic, rotation locked, never sleeps |
+
+Elemental (water, fire) and cosmetic (grass, particles) tiers will not use cannon: they get their own cheap simulations when their systems arrive.
+
+The budget numbers are the brief's starting guesses. They must be profiled on real phones before anyone tunes them.
+
+## 6. Systems: built, and planned
+
+The brief's required systems, and where each stands. "Planned" means an unchecked item in `CHECKLIST.md`; nothing is built ahead of its turn.
+
+| System | Status | Where |
+|---|---|---|
+| GameBootstrap | **Phase 1** | `src/main.js` |
+| EventSystem | **Phase 1** (bus + log) | `src/core/EventBus.js` |
+| InputSystem | **Phase 1** (stick, grab, flick, orbit, pinch, WASD) | `src/input/Gestures.js` |
+| PlayerSystem | **Phase 1** (movement, facing, animation) | `src/player/` |
+| ElementSystem | **Phase 1: Earth only** | `src/elements/EarthSystem.js` |
+| PhysicsInteractionSystem | **Phase 1** (tiers, budget) | `src/engine/Physics.js` |
+| DestructionSystem | **Phase 1** (pieces, support, states, cause) | `src/world/Destructible.js` |
+| UISystem | **Phase 1** (minimal HUD) | `src/ui/Hud.js` |
+| SaveSystem | Planned: versioned JSON `{ version, player, world, npcs, story, reputation }` with a migration per version bump | |
+| WorldStateSystem | Planned: listens to the EventBus, keeps `{ id → state, cause, time, witnesses }` per persistent object | |
+| SceneSystem | Planned: region modules, streamed | |
+| NPCMemorySystem, ReputationSystem, DialogueSystem, QuestSystem | Planned (Phase 5 onward): all listen to the EventBus | |
+| CombatSystem, EnemyAISystem, WielderAISystem, CaelSystem | Planned (Phase 6 onward) | |
+| AudioSystem | Planned: HBD's `AudioManager.js` is the starting point | |
+
+## 7. Cause and consequence, already wired
+
+The brief's consequence system (§12) needs to know **who** broke something. Phase 1 already records it:
+
+1. `EarthSystem.throwEntry()` tags the rock `thrownBy: 'player'` with a timestamp.
+2. A panel hit within 6 seconds of the throw is the player's doing; debris the player knocked loose carries the blame onward.
+3. `Destructible` emits `StructureDamaged`, `PieceBroken` and `StructureStateChanged` events with `cause`.
+4. The HUD shows `Barricade · Critical by you`. Later, WorldState, NPC memory and reputation subscribe to the same events.
+
+Every destructible already has a persistent ID (`TestRoom_Barricade_01`, pieces `…_P<row><col>`), so saving and restoring its state is data work, not a rename.
+
+## 8. Risks
+
+1. **Web performance at scale** (§1). Measure on a real mid-range Android phone during Phase 2, not after.
+2. **three.js r128.** Old, and its global build is a dead end. Decide on an ES-module upgrade by the end of Phase 2 (see `ART_AND_MODELS.md` §6).
+3. **cannon.js 0.6.2** is unmaintained. `cannon-es` is the maintained fork and a near drop-in, but it is ES-module only, so it rides on the same decision.
+4. **Character art** beyond stylized humanoids needs a glTF pipeline (`ART_AND_MODELS.md` §6).

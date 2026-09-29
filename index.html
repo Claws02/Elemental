@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Elemental</title>
+    <link rel="icon" href="data:,">
+    <!-- Engine libraries are self-hosted (copied from Hundred Block Dash's
+         vendor/), so the game runs offline and inside the native shell. -->
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/cannon.min.js"></script>
+    <link rel="preload" href="assets/fonts/Nunito-Variable.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div id="hud"></div>
+    <div id="boot-error"></div>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

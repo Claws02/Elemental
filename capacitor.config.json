@@ -1,0 +1,8 @@
+{
+  "appId": "com.claws.elemental",
+  "appName": "Elemental",
+  "webDir": "www",
+  "backgroundColor": "#1b1712",
+  "android": { "backgroundColor": "#1b1712", "allowMixedContent": false },
+  "ios": { "backgroundColor": "#1b1712", "contentInset": "never" }
+}

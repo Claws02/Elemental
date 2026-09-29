@@ -1,0 +1,24 @@
+{
+  "name": "elemental",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ELEMENTAL: a high-fantasy, physics-driven mobile action-adventure. Phase 1 technical prototype.",
+  "scripts": {
+    "serve": "npx --yes http-server -p 8140 -s -c-1 .",
+    "check": "bash qa/parsecheck.sh src",
+    "smoke": "node qa/smoke.js",
+    "sheet": "node qa/modelsheet.js",
+    "build:web": "node scripts/build-web.js",
+    "cap:sync": "npm run build:web && npx cap sync",
+    "android": "npm run cap:sync && npx cap open android",
+    "ios": "npm run cap:sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2"
+  }
+}
