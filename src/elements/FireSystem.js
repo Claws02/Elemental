@@ -31,8 +31,8 @@
 //             a whole wall that burns from one player-lit plank is the
 //             player's doing (§12).
 //
-// Water (next checklist item) will be the way to put fire out; until then it
-// burns out on its own, or the player pulls it away.
+// Water puts fire out (WaterSystem calls douse / soak / quench here): wet
+// timber will not catch or take heat until it dries (20 s).
 // ============================================================
 
 import { THREE, CANNON } from '../engine/lib.js';
@@ -77,7 +77,7 @@ export class FireSystem {
 
     addFlammable(thing, { onBurn = null } = {}) {
         const fl = thing.mat.flammable;
-        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, cause: null, heatCause: null, onBurn });
+        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
     }
 
     addHeatable(thing) {
@@ -101,7 +101,7 @@ export class FireSystem {
     /** Set a flammable alight. Returns false if it cannot burn (burned, already burning). */
     ignite(thing, cause) {
         const f = this.flammables.get(thing);
-        if (!f || f.burning || f.burned) return false;
+        if (!f || f.burning || f.burned || f.wet > 0) return false;     // wet timber will not catch
         f.burning = true;
         f.heat = 1;
         f.cause = cause;
@@ -109,6 +109,50 @@ export class FireSystem {
         this.ignitions++;
         EventBus.emit(EV.FIRE_STARTED, { id: thing.id, cause });
         return true;
+    }
+
+    isWet(thing) { return (this.flammables.get(thing)?.wet || 0) > 0; }
+
+    /** Put a fire out with water. Returns true if something was burning. */
+    douse(thing, cause) {
+        const f = this.flammables.get(thing);
+        if (!f?.burning) return false;
+        f.burning = false;
+        f.heat = 0;
+        f.age = 0;
+        this._glow(thing, 0);
+        this.fx.steam?.(thing.pos(), 10);
+        EventBus.emit(EV.FIRE_OUT, { id: thing.id, cause, doused: true });
+        return true;
+    }
+
+    /** Soak timber: it will not catch, and fire near it does not heat it, for a while. */
+    soak(thing, cause) {
+        const f = this.flammables.get(thing);
+        if (!f || f.burned) return false;
+        this.douse(thing, cause);
+        const m = thing.mesh.userData.ownMaterials?.body;
+        if (m && !f.wet) { f.dryCol = m.color.clone(); m.color.multiplyScalar(0.62).offsetHSL(0.02, -0.1, 0); }
+        const first = !f.wet;
+        f.wet = thing.mat.soaks || 20;
+        f.heat = 0;
+        if (first) EventBus.emit(EV.OBJECT_SOAKED, { id: thing.id, cause });
+        return true;
+    }
+
+    /** Water on hot stone: it cools fast and steams. */
+    quench(thing, dt) {
+        const d = thing.entry?.data;
+        if (!d?.heat) return false;
+        d.heat = Math.max(0, d.heat - 1.5 * dt);
+        this.fx.steam?.(thing.mesh.position, 30 * dt);
+        return true;
+    }
+
+    /** A fireball that meets water goes out in a puff of steam. */
+    quenchFireball(entry) {
+        for (const fb of this.fireballs) if (fb.entry === entry) { this.fx.steam?.(entry.mesh.position, 12); this._dissipate(fb); return true; }
+        return false;
     }
 
     /** Heat a stone the player is holding in Fire. */
@@ -164,7 +208,8 @@ export class FireSystem {
         const entry = Physics.add({ body, mesh: grp, tier: TIER.ELEMENTAL, id: 'Fireball', data: { radius: R, fireball: true, cause } });
         const thing = this.interactables.add({ id: 'Fireball', mesh: grp, entry, material: 'flame' });
         const fb = { thing, entry, born: this.time, created: this.time, origin, shell };
-        body.addEventListener('collide', ev => this.queue.push({ kind: 'fireball', fb, other: ev.body.userData }));
+        // Held-or-not is judged at the moment of contact (see WaterSystem).
+        body.addEventListener('collide', ev => this.queue.push({ kind: 'fireball', fb, other: ev.body.userData, held: this._held(entry) }));
         this.fireballs.add(fb);
         return thing;
     }
@@ -206,7 +251,7 @@ export class FireSystem {
             // wood only smoulders under them (a strong glow reads as a lamp).
             this._glow(f.thing, 0.16 + Math.sin(this.time * 17 + p.x * 3) * 0.06 + Math.sin(this.time * 7.3) * 0.04);
             for (const o of this.flammables.values()) {
-                if (o === f || o.burning || o.burned) continue;
+                if (o === f || o.burning || o.burned || o.wet > 0) continue;
                 const q = o.thing.pos();
                 const d = p.distanceTo(q);
                 if (d >= FIRE.spreadRadius) continue;
@@ -222,6 +267,16 @@ export class FireSystem {
             }
         }
         for (const o of this.flammables.values()) {
+            if (o.wet > 0) {
+                o.wet -= dt;
+                if (o.wet <= 0) {         // dried out
+                    o.wet = 0;
+                    const m = o.thing.mesh.userData.ownMaterials?.body;
+                    if (m && o.dryCol && !o.burned) m.color.copy(o.dryCol);
+                    o.dryCol = null;
+                }
+                continue;
+            }
             if (o.burning || o.burned) continue;
             if (o.heat >= o.ignitesAt) this.ignite(o.thing, o.heatCause || 'environment');
             else if (!heated.has(o) && o.heat > 0) o.heat = Math.max(0, o.heat - FIRE.cool * dt);
@@ -268,7 +323,7 @@ export class FireSystem {
                 const other = this.interactables.forEntry(c.other);
                 // For a moment after it is pulled, it ignores what it came out of.
                 if (other && other === fb.origin && this.time - fb.created < FIRE.originGrace) continue;
-                const held = this._held(fb.entry);
+                const held = c.held;
                 const cause = fb.entry.data.cause || 'player';
                 if (other && this.flammables.has(other)) {
                     // Pressed into wood, or thrown at it: it catches.
@@ -318,7 +373,7 @@ export class FireSystem {
     reset(thing) {
         const f = this.flammables.get(thing);
         if (!f) return;
-        Object.assign(f, { heat: 0, burning: false, burned: false, fuel: f.fuelMax, cause: null, heatCause: null, age: 0 });
+        Object.assign(f, { heat: 0, burning: false, burned: false, fuel: f.fuelMax, cause: null, heatCause: null, age: 0, wet: 0, dryCol: null });
         this.embers = this.embers.filter(e => e.m !== thing.mesh.userData.ownMaterials?.body);
         this._glow(thing, 0);
     }

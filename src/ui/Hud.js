@@ -24,7 +24,7 @@ export class Hud {
             <div class="hud-hint" id="hud-hint">
                 <div><b>Bottom-left thumb</b> move</div>
                 <div><b>Touch a rock</b> grab · <b>flick</b> throw</div>
-                <div><b>Hold still</b> on fire or wood · <b>drag empty</b> look</div>
+                <div><b>Hold still</b> on fire or wood · <b>touch water</b> stream</div>
             </div>
             <div class="hud-log" id="hud-log"></div>
             <div class="hud-debug" id="hud-debug"></div>

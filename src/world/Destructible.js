@@ -109,6 +109,11 @@ export class Destructible {
         if (piece && !piece.broken) this.pending.push({ piece, amount, cause, vel });
     }
 
+    /** Steady wear (a water jet): no splash to neighbours, quiet, pushes as it breaks. */
+    wear(piece, amount, cause = 'environment', vel = new THREE.Vector3()) {
+        if (!piece.broken) this.pending.push({ piece, amount, cause, vel, steady: true });
+    }
+
     /** Fire damage: no splash and no knock, and a piece it finishes is Burned. */
     burn(piece, amount, cause = 'environment') {
         if (!piece.broken) this.pending.push({ piece, amount, cause, vel: new THREE.Vector3(), fire: true });
@@ -122,8 +127,8 @@ export class Destructible {
         let cause = 'environment';
         for (const h of hits) {
             cause = h.cause;
-            if (h.fire) {
-                if (!h.piece.broken && h.piece.hp - h.amount <= 0) h.piece.burned = true;
+            if (h.fire || h.steady) {
+                if (h.fire && !h.piece.broken && h.piece.hp - h.amount <= 0) h.piece.burned = true;
                 this._damage(h.piece, h.amount, h.cause, h.vel, true);
                 continue;
             }
@@ -147,7 +152,7 @@ export class Destructible {
         const k = 1 - piece.hp / PIECE_HP;
         const m = piece.mesh.userData.ownMaterials?.body;
         if (m) m.color.setScalar(1 - k * 0.45);
-        piece.mesh.rotateZ((Math.random() - 0.5) * 0.05 * k);
+        if (!quiet) piece.mesh.rotateZ((Math.random() - 0.5) * 0.05 * k);   // steady damage would shake it every frame
     }
 
     _break(piece, cause, vel) {

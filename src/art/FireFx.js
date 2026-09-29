@@ -1,5 +1,5 @@
 // ============================================================
-// FIRE FX — every flame and wisp of smoke in two draw calls
+// FIRE FX — every flame, wisp of smoke and puff of steam in two draw calls
 // ============================================================
 //
 // Two pooled particle systems, each a single THREE.Points:
@@ -46,7 +46,7 @@ const FRAG = (additive) => /* glsl */`
 const FLAME_COLS = [new THREE.Color(0xfff2b0), new THREE.Color(0xffa23a), new THREE.Color(0xd8401a), new THREE.Color(0x5a1408)];
 const _c = new THREE.Color();
 
-class Pool {
+export class Pool {
     constructor(n, additive) {
         this.n = n;
         this.alive = 0;
@@ -131,7 +131,7 @@ export class FireFx {
             if (Math.random() < smoke) this.smoke.spawn({
                 x: p.x + (Math.random() - 0.5) * w, y: p.y + 0.4, z: p.z + (Math.random() - 0.5) * w,
                 vx: (Math.random() - 0.5) * 0.3, vy: 0.5 + Math.random() * 0.4, vz: (Math.random() - 0.5) * 0.3,
-                max: 1.6 + Math.random() * 1.2, s0: size * 0.6, s1: size * 2.4,
+                max: 1.6 + Math.random() * 1.2, s0: size * 0.6, s1: size * 2.4, white: false,
             });
         }
     }
@@ -146,6 +146,20 @@ export class FireFx {
         }
     }
 
+    /** Steam: white puffs from the smoke pool (water meeting fire or hot stone). */
+    steam(p, count = 8) {
+        let n = count;
+        while (n > 0) {
+            if (n < 1 && Math.random() > n) break;
+            n -= 1;
+            this.smoke.spawn({
+                x: p.x + (Math.random() - 0.5) * 0.6, y: p.y + Math.random() * 0.3, z: p.z + (Math.random() - 0.5) * 0.6,
+                vx: (Math.random() - 0.5) * 0.6, vy: 1.2 + Math.random() * 0.8, vz: (Math.random() - 0.5) * 0.6,
+                max: 1.0 + Math.random() * 0.8, s0: 0.35, s1: 1.4, white: true,
+            });
+        }
+    }
+
     update(dt, viewH) {
         this.flame.mat.uniforms.uViewH.value = viewH;
         this.smoke.mat.uniforms.uViewH.value = viewH;
@@ -156,6 +170,10 @@ export class FireFx {
             return (1 - k) * 0.9;
         }, 1.2);
         this.smoke.update(dt, (k, tint, i) => {
+            if (this.smoke.p[i].white) {
+                tint[i * 3] = 0.82; tint[i * 3 + 1] = 0.86; tint[i * 3 + 2] = 0.9;
+                return Math.sin(k * Math.PI) * 0.5;
+            }
             tint[i * 3] = 0.16; tint[i * 3 + 1] = 0.15; tint[i * 3 + 2] = 0.14;
             return Math.sin(k * Math.PI) * 0.35;
         }, 0.1);

@@ -8,7 +8,8 @@
 //   - ten boulders of different sizes (§57 asks for 10 rocks)
 //   - one timber barricade blocking the archway: the destructible wall
 //   - pillars, two of them broken, for cover and for rocks to bounce off
-//   - two braziers (fire sources): one by the spawn, one near the barricade
+//   - two braziers (fire sources) and two basins (water sources): one of
+//     each by the spawn, one of each near the barricade
 //   - behind the barricade, a sealed door carrying all four elements' runes,
 //     only Earth's lit. The first piece of environmental storytelling.
 //
@@ -30,7 +31,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
 import { ELEMENT, WORLD } from '../art/Palette.js';
-import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier } from '../art/PropModels.js';
+import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier, basin } from '../art/PropModels.js';
 import { Destructible } from './Destructible.js';
 
 export const ROOM = { half: 18, spawn: { x: 0, z: 9, facing: Math.PI } };
@@ -162,7 +163,18 @@ export function buildTestRoom(scene) {
         return { id: `TestRoom_Brazier_${String(i + 1).padStart(2, '0')}`, mesh: b.group, flame: new THREE.Vector3(x, b.flameY, z) };
     });
 
-    return { solids, rocks, barricade, braziers, spawn: ROOM.spawn };
+    // ---- two basins: water sources ---------------------------------------------
+    // Mirroring the braziers: one to learn on, one within a stream's reach
+    // (8 m) of the barricade, so a fire there can be fought.
+    const basins = [[-3.8, 6.2], [4.6, -11.2]].map(([x, z], i) => {
+        const b = basin(i + 3);
+        b.group.position.set(x, 0, z);
+        scene.add(b.group);
+        box(x, b.height / 2, z, b.radius * 1.7, b.height, b.radius * 1.7, 0, b.group);
+        return { id: `TestRoom_Basin_${String(i + 1).padStart(2, '0')}`, mesh: b.group, surface: new THREE.Vector3(x, b.surfaceY, z) };
+    });
+
+    return { solids, rocks, barricade, braziers, basins, spawn: ROOM.spawn };
 }
 
 // The sealed door: a stone slab with the four elements' runes. Only Earth is
@@ -190,7 +202,7 @@ function _sealedDoor(w, h) {
  * player can move and heat, barricade panels are timber that burns, the
  * braziers' coals are a fire source.
  */
-export function wireTestRoom(room, { interactables, fire }) {
+export function wireTestRoom(room, { interactables, fire, water }) {
     for (const e of room.rocks) fire.addHeatable(interactables.add({ id: e.id, mesh: e.mesh, entry: e, material: 'stone' }));
     const byPiece = new Map();
     for (const piece of room.barricade.pieces) {
@@ -201,4 +213,5 @@ export function wireTestRoom(room, { interactables, fire }) {
     room.barricade.isBurning = piece => fire.isBurning(byPiece.get(piece));
     room.barricade.onRebuild = () => { for (const t of byPiece.values()) fire.reset(t); };
     for (const b of room.braziers) fire.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'coals' }), b.flame);
+    for (const b of room.basins) water.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'water' }), b.surface);
 }

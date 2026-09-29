@@ -52,4 +52,6 @@ export const EV = {
     FIRE_STARTED:       'FireStarted',
     FIRE_OUT:           'FireOut',
     OBJECT_HEATED:      'ObjectHeated',
+    OBJECT_SOAKED:      'ObjectSoaked',
+    WATER_DRAWN:        'WaterDrawn',
 };

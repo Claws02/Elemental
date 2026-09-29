@@ -24,6 +24,8 @@ Agreed 2026-09-29. There is no element selector in normal play. What the finger 
 | Timber, burning | — | Fire **pulls** the flame out (it goes out) | 0.25 s |
 | Coals (brazier) | — | Fire **pulls** a fireball | 0.25 s |
 | Flame (fireball) | Fire | — | — |
+| Water (basin) | Water, instantly: a **stream** | reserved for freezing (Water + Air, Phase 2) | — |
+| Water (orb) | Water | — | — |
 
 Tune these in `src/data/materials.js`, nowhere else.
 
@@ -45,6 +47,22 @@ Tune these in `src/data/materials.js`, nowhere else.
 | Touch a brazier and hold | A fireball in the hand. The brazier stays lit. |
 | Touch empty world | Camera drag, as before. |
 | Touch in the bottom-left quarter | Always the move stick. A rock lying there has to be approached from another angle. |
+
+## Water: a stream while connected, an orb once it breaks off
+
+Agreed 2026-09-29. Water acts from the player's hand, never by holding still on fire (that stays Fire's pull), so no gesture means two things.
+
+| | Stream (still connected to the basin) | Orb (broken off) |
+|---|---|---|
+| How | Touch the basin: the water comes at once, arcing from the basin to whatever the finger points at | Point past the stream's reach for 0.25 s and it snaps into an orb in the hand; or flick while streaming |
+| Water | Unlimited: the basin feeds it | One splash |
+| Reach | 8 m from the source; pulled further it thins and strains | Carried and thrown anywhere |
+| Does | Sprays where it lands: puts fire out, soaks timber, cools hot stone (steam), pushes rocks and debris, wears timber down (~8 s to break a plank) | Bursts on whatever it hits: the same, in a 2 m radius |
+| Slow release | Collapses: a small splash where it ended | Dropped: bursts where it lands |
+
+- **Soaked timber** won't catch or take heat from nearby fire for 20 s, and looks darker. Soaking ahead of a fire makes a firebreak.
+- **Water can do damage** (the player's choice): pushing rocks into the wall and wearing planks through are recorded as the player's doing.
+- **Aiming:** the stream's end goes to what the finger points at in the world (walls, planks, rocks, ground), so it can reach a wall behind the basin.
 
 ## Where the Phase 3 element wheel fits
 

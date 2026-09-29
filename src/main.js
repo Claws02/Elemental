@@ -7,7 +7,7 @@
 //
 //   intent (what the finger means) → channel (forces on what is held)
 //     → earth (sensing) → player (velocity) → physics step
-//     → fire (contacts recorded in the step, burning, spread)
+//     → fire (contacts recorded in the step, burning, spread) → water (stream, orbs)
 //     → structures (apply hits and burns) → particles → camera → render
 //
 // There is deliberately no GameManager here. When save, scenes and world
@@ -25,6 +25,7 @@ import { CameraRig } from './player/CameraRig.js';
 import { Channel } from './elements/Channel.js';
 import { EarthSystem } from './elements/EarthSystem.js';
 import { FireSystem } from './elements/FireSystem.js';
+import { WaterSystem } from './elements/WaterSystem.js';
 import { FireFx } from './art/FireFx.js';
 import { Intent } from './input/Intent.js';
 import { Gestures } from './input/Gestures.js';
@@ -47,8 +48,9 @@ function boot() {
     const earth = new EarthSystem({ hero: player, rocks: room.rocks, channel });
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player });
-    wireTestRoom(room, { interactables, fire });
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth });
+    const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: room.solids });
+    wireTestRoom(room, { interactables, fire, water });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water });
     const hud = new Hud(document.getElementById('hud'));
 
     const input = new Gestures(document.getElementById('game'), {
@@ -77,6 +79,7 @@ function boot() {
         player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
         Physics.step(dt);
         fire.update(dt);
+        water.update(dt);
         room.barricade.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
@@ -96,7 +99,7 @@ function boot() {
     // through private state.
     window.__EL = {
         ready: true,
-        THREE, Physics, EventBus, room, player, channel, earth, fire, fx, intent, interactables, cam, input,
+        THREE, Physics, EventBus, room, player, channel, earth, fire, water, fx, intent, interactables, cam, input,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = room.rocks[i];

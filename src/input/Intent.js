@@ -16,7 +16,11 @@
 //   holding    —              move the object;      stone: heat after its      throw / drop     let go → idle
 //                             restart stillness     hold time                  → idle
 //   done       —              → orbit (idle)        aim fades after 0.4 s      → idle           —
+//   stream     —              aim the stream at     past its reach 0.25 s:     flick: snap to   hero walks off:
+//                             what is under the     snap to an orb → holding   an orb, throw it collapse → idle
+//                             finger                                           slow: collapse
 //
+//   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
 //   press on a thing with only CHANGE     → pending, for that material's hold time
 //   press on nothing usable               → not ours: Gestures orbits the camera
@@ -33,8 +37,8 @@ const RANGE = 14;            // how far from the hero a touch can act
 const RING_AFTER = 0.2;      // seconds of stillness before a holding ring appears
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth });
+    constructor({ camera, hero, channel, interactables, fire, earth, water }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -68,6 +72,12 @@ export class Intent {
         const thing = this.interactables.pick(x, y, this.camera, t => this._usable(t));
         if (!thing) return false;
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
+        if (thing.mat.source === 'water' && this.water.beginStream(thing)) {
+            this.state = 'stream';
+            this.element = 'water';
+            this.channel.aimAt(this.water.stream.cur, 'water');
+            return true;
+        }
         const mv = this._moveElement(thing);
         if (mv) {
             this.channel.grab(thing.entry, mv);
@@ -96,6 +106,9 @@ export class Intent {
         case 'done':
             this._cancel();
             return 'orbit';
+        case 'stream':
+            this.water.aimStream(x, y);
+            return null;
         default:
             return null;
         }
@@ -104,10 +117,21 @@ export class Intent {
     /** The finger lifts. */
     release(r) {
         if (this.state === 'holding') this.channel.release(r);
+        else if (this.state === 'stream') {
+            if (r?.flick) {
+                // A flick breaks the water off and throws it.
+                const orb = this.water.snap();
+                if (orb) { this.channel.grab(orb.entry, 'water', { lift: 0 }); this.channel.release(r); }
+            } else {
+                this.water.collapse();
+            }
+            this.channel.aimAt(null);
+        }
         this._cancel();
     }
 
     _cancel() {
+        if (this.state === 'stream') this.water.collapse();
         if (this.state !== 'holding') this.channel.aimAt(null);
         this.state = 'idle';
         this.thing = null;
@@ -141,6 +165,16 @@ export class Intent {
         case 'done':
             this.doneT -= dt;
             if (this.doneT <= 0) this.channel.aimAt(null);
+            break;
+        case 'stream':
+            if (!this.water.stream) { this._cancel(); break; }            // it let go (hero walked off)
+            if (this.water.strained) {
+                // Stretched past its reach: it breaks off into an orb in the hand.
+                const orb = this.water.snap();
+                this.channel.grab(orb.entry, 'water', { lift: 0 });
+                Object.assign(this, { state: 'holding', thing: orb, still: 0, ax: this.x, ay: this.y });
+                this.channel.drag(this.x, this.y);
+            }
             break;
         }
     }

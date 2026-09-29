@@ -221,3 +221,20 @@ export function brazier(seed) {
     k.cyl('glow', 0.53, 0.53, 0.035, 12, at(0, 0.98, 0), ELEMENT.fire.rune);
     return { group: k.build(), flameY: 1.3, radius: 0.56, height: 1.25 };
 }
+
+/**
+ * A basin: a round stone cistern brimming with water, a Water rune on its
+ * rim. The water is a source (materials: "water"): touch it and it comes.
+ * Returns the group, the water surface's centre height, and its footprint.
+ */
+export function basin(seed) {
+    const k = new Kit();
+    k.cyl('body', 0.95, 1.05, 0.25, 14, at(0, 0.125, 0), WORLD.stoneDark, { flat: true });
+    k.cyl('body', 0.9, 0.95, 0.55, 14, at(0, 0.5, 0), pick(WORLD.stone, seed), { flat: true });
+    // Rim, standing proud of the bowl, and moss where the water spills.
+    k.cyl('body', 0.98, 0.98, 0.1, 14, at(0, 0.82, 0), WORLD.stoneTop, { flat: true });
+    k.box('body', 0.5, 0.05, 0.14, at(0.62, 0.86, 0.45, 0, 0.6, 0), pick(WORLD.moss, seed));
+    k.cyl('sheen', 0.84, 0.84, 0.04, 14, at(0, 0.8, 0), 0x2f7fb0);
+    k.cyl('glow', 0.99, 0.99, 0.035, 14, at(0, 0.66, 0), ELEMENT.water.rune);
+    return { group: k.build(), surfaceY: 0.82, radius: 1.0, height: 0.87 };
+}

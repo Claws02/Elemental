@@ -54,7 +54,8 @@ src/
   player/CameraRig.js   third-person orbit, clip avoidance, target framing
   elements/Channel.js   the hero's hands: hold, move, throw, drop, aim; tether in the element's colour
   elements/EarthSystem.js      Earth's sensing (rock highlight) and limits
-  elements/FireSystem.js       ignite, heat, spread, burn out, fireballs, hot stone
+  elements/FireSystem.js       ignite, heat, spread, burn out, fireballs, hot stone; douse, soak, quench
+  elements/WaterSystem.js      stream (tube + spray) while connected to a basin, orbs once broken off
   art/FireFx.js         pooled flame and smoke particles, two draw calls
   world/Interactables.js       everything a touch can land on, with its material
   world/Destructible.js modular structures: pieces, support, states, cause
@@ -108,7 +109,7 @@ The brief's required systems, and where each stands. "Planned" means an unchecke
 | EventSystem | **Phase 1** (bus + log) | `src/core/EventBus.js` |
 | InputSystem | **Phase 1** (stick, press/drag/flick, orbit, pinch, WASD; context intent) | `src/input/Gestures.js`, `src/input/Intent.js` |
 | PlayerSystem | **Phase 1** (movement, facing, animation) | `src/player/` |
-| ElementSystem | **Phase 1: Earth and Fire** | `src/elements/` (`Channel`, `EarthSystem`, `FireSystem`), `src/data/materials.js` |
+| ElementSystem | **Phase 1: Earth, Fire and Water** | `src/elements/` (`Channel`, `EarthSystem`, `FireSystem`), `src/data/materials.js` |
 | PhysicsInteractionSystem | **Phase 1** (tiers, budget) | `src/engine/Physics.js` |
 | DestructionSystem | **Phase 1** (pieces, support, states, cause) | `src/world/Destructible.js` |
 | UISystem | **Phase 1** (minimal HUD) | `src/ui/Hud.js` |

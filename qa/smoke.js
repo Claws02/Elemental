@@ -327,6 +327,100 @@ const SHOTS = path.join(__dirname, 'shots');
     check(fsum.fx.flame <= fsum.fx.flameMax && fsum.fx.smoke <= fsum.fx.smokeMax, `particles stay within their pools (${fsum.fx.flame}/${fsum.fx.flameMax} flame, ${fsum.fx.smoke}/${fsum.fx.smokeMax} smoke)`);
     await shot('10-burned');
 
+
+    // ========================================================
+    // 8. WATER, in a fresh room: a stream while connected to the basin, an
+    // orb once it snaps off. It puts fire out, soaks, pushes, cools, wears.
+    // ========================================================
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__EL?.ready, null, { timeout: 30000 });
+    await page.evaluate(() => {
+        const el = document.getElementById('game');
+        window.__touch = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
+        window.__piece = (r, c) => __EL.interactables.things.find(t => t.id === `TestRoom_Barricade_01_P${r}${c}`);
+        // Drag the finger from the basin to a world point, in steps.
+        window.__streamTo = (id, p) => { const a = __screen(__EL.room.basins[1].surface), b = __screen(p); for (let k = 1; k <= 6; k++) __touch('pointermove', id, a.x + (b.x - a.x) * k / 6, a.y + (b.y - a.y) * k / 6); return b; };
+        __EL.player.body.position.set(1.5, 0.45, -7.5); __EL.cam.yaw = 0.35; __EL.cam.pitch = 0.3;
+    });
+    await wait(1800);
+
+    // 8a. Touch the basin: the water comes, as a stream.
+    const bs = await page.evaluate(() => { __EL.fire.ignite(__piece(0, 4), 'player'); const s = __screen(__EL.room.basins[1].surface); __touch('pointerdown', 41, s.x, s.y); return { s, st: __EL.intent.state, vis: __EL.water.tube.visible }; });
+    check(bs.s.on && bs.st === 'stream' && bs.vis, `touching a basin draws a stream (${bs.st})`);
+
+    // 8b. Aim it at a burning plank: the fire goes out and the plank is soaked.
+    const aimed = await page.evaluate(() => __streamTo(41, __piece(0, 4).pos()));
+    const doused = await waitFor(() => !__EL.fire.isBurning(__piece(0, 4)) && __EL.fire.isWet(__piece(0, 4)), 8000);
+    const dousedBy = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'FireOut' && e.doused).map(e => e.cause));
+    check(doused, 'the stream puts a burning plank out and soaks it');
+    check(dousedBy.length > 0 && dousedBy.every(c => c === 'player'), `putting it out is recorded as the player's (${dousedBy.join(',')})`);
+    await wait(1500);
+    await shot('11-stream');
+    const worn = await page.evaluate(() => __piece(0, 4).entry.data.piece.hp);
+    check(worn < 100, `water under pressure wears the plank (hp ${worn.toFixed(0)})`);
+
+    // 8c. It pushes: a rock in the spray moves along the stream.
+    const pushed = await page.evaluate(async () => {
+        const e = __EL.room.rocks[4];
+        e.body.position.set(3.2, 0.62, -14.2); e.body.velocity.set(0, 0, 0); e.body.wakeUp();
+        await new Promise(r => setTimeout(r, 300));
+        const p0 = e.body.position.clone();
+        __streamTo(41, e.mesh.position);
+        await new Promise(r => setTimeout(r, 2500));
+        return e.body.position.distanceTo(p0);
+    });
+    check(pushed > 0.5, `the stream pushes a rock (${pushed.toFixed(2)} m)`);
+
+    // 8d. Hot stone in the water cools, in steam.
+    const cooled = await page.evaluate(async () => {
+        const e = __EL.room.rocks[4];
+        e.data.heat = 0.9;
+        __streamTo(41, e.mesh.position);
+        await new Promise(r => setTimeout(r, 2000));
+        return e.data.heat;
+    });
+    check(cooled < 0.4, `water cools hot stone (heat 0.90 → ${cooled.toFixed(2)})`);
+
+    // 8e. Point past its reach: it snaps off into an orb in the hand.
+    await page.evaluate(() => { const s = __screen(__EL.room.basins[1].surface); __touch('pointermove', 41, s.x - 120, 12); });
+    const snapped = await waitFor(() => __EL.intent.state === 'holding' && __EL.channel.held?.element === 'water', 6000);
+    check(snapped, 'stretched past its reach, the stream snaps into an orb in the hand');
+    await shot('12-orb');
+
+    // 8f. Throw the orb at a burning plank: it bursts and puts it out.
+    const orbHit = await page.evaluate(async () => {
+        const t = __piece(2, 0);
+        __EL.fire.ignite(t, 'player');
+        __touch('pointerup', 41, 400, 12);                       // slow: a drop…
+        const orb = [...__EL.water.orbs][0];
+        if (!orb) return 'no orb';
+        orb.entry.body.position.set(-1.2, 2.2, -12.5);           // …caught and thrown from close in
+        orb.entry.mesh.position.set(-1.2, 2.2, -12.5);          // the mesh follows the body only at the next step
+        __EL.channel.throwEntry(orb.entry, t.pos().sub(orb.entry.mesh.position).normalize(), 18, 'water');
+        return 'thrown';
+    });
+    const orbOut = await waitFor(() => !__EL.fire.isBurning(__piece(2, 0)) && __EL.water.orbs.size === 0, 8000);
+    const orbDbg = await page.evaluate(() => JSON.stringify({ burning: __EL.fire.isBurning(__piece(2, 0)), wet: __EL.fire.isWet(__piece(2, 0)), orbs: __EL.water.orbs.size, st: __EL.intent.state }));
+    check(orbHit === 'thrown' && orbOut, `a thrown orb bursts and puts a fire out (${orbHit} ${orbDbg})`);
+
+    // 8g. Soaked timber will not catch: hold still on it and nothing happens.
+    const wetHold = await page.evaluate(() => { const s = __screen(__piece(0, 4).pos()); __touch('pointerdown', 42, s.x, s.y); return s; });
+    await wait(2500);
+    const stillOut = await page.evaluate(s => { __touch('pointerup', 42, s.x, s.y); return !__EL.fire.isBurning(__piece(0, 4)) && __EL.fire.isWet(__piece(0, 4)); }, wetHold);
+    check(stillOut, 'soaked timber will not catch');
+
+    // 8h. A flick from the stream breaks it off and throws it.
+    const flung = await page.evaluate(() => {
+        const s = __screen(__EL.room.basins[1].surface), n = __EL.channel.throws;
+        __touch('pointerdown', 43, s.x, s.y);
+        const spin = ms => { const t = performance.now(); while (performance.now() - t < ms); };
+        for (let k = 1; k <= 5; k++) { __touch('pointermove', 43, s.x - k * 6, s.y - k * 40); spin(10); }
+        __touch('pointerup', 43, s.x - 30, s.y - 200);
+        return { threw: __EL.channel.throws - n, state: __EL.intent.state, streaming: !!__EL.water.stream };
+    });
+    check(flung.threw === 1 && !flung.streaming, `a flick breaks the stream off and throws it (${JSON.stringify(flung)})`);
+
     const perf = await page.evaluate(() => __EL.renderInfo());
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
 

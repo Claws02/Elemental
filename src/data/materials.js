@@ -14,6 +14,10 @@
 //              heat    raise its heat while you keep holding still (stone
 //                      never burns; hot stone ignites what it hits)
 //
+// A `source` material gives, rather than moves: touching a basin starts a
+// stream of its water (WaterSystem), and the stream becomes an orb in the
+// hand if it is stretched past its reach.
+//
 // Hold times are per material, on purpose: coals answer Fire almost at once,
 // timber takes a moment, stone resists. Tune them here, nowhere else.
 //
@@ -32,10 +36,20 @@ export const MATERIALS = {
         change: { element: 'fire', verb: 'ignite', hold: 0.6 },
         whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
         flammable: { fuel: 8, ignitesAt: 1 },   // seconds of burning; heat 0..1 to catch
+        soaks: 20,                               // seconds wet timber resists fire
     },
     coals: {
         name: 'coals',
         change: { element: 'fire', verb: 'pull', hold: 0.25 },
+    },
+    water: {
+        name: 'water',                  // standing water: a basin, later rivers
+        move: 'water',                  // touch and it comes: a stream while it stays
+        source: 'water',                // connected to this source, an orb once it snaps off
+    },
+    waterOrb: {
+        name: 'water',                  // water carried away from its source
+        move: 'water',
     },
     flame: {
         name: 'flame',                  // a fireball in the hand
