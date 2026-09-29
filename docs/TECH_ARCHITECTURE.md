@@ -6,8 +6,8 @@ The design brief was written for Unity. Elemental runs on Hundred Block Dash's s
 
 | | |
 |---|---|
-| Rendering | three.js r128, loaded as a global from `vendor/` |
-| Physics | cannon.js 0.6.2, global, from `vendor/` |
+| Rendering | three.js r186, vendored ES module, imported through `src/engine/lib.js` |
+| Physics | cannon-es 0.20 (the maintained fork of cannon.js), same way |
 | Language | Plain ES modules. No bundler, no build step: the repo root *is* the web build |
 | Native shell | Capacitor 8 (`capacitor.config.json`), `www/` produced by `scripts/build-web.js` |
 | Tests | Headless Chromium through Playwright (`qa/smoke.js`, `qa/modelsheet.js`), plus a static parse and dead-reference check (`qa/parsecheck.sh`) |
@@ -33,13 +33,14 @@ The design brief was written for Unity. Elemental runs on Hundred Block Dash's s
 ## 3. Source layout
 
 ```
-index.html              loads vendor globals, then src/main.js as a module
+index.html              loads src/main.js as a module
 css/styles.css          HUD only
-vendor/                 three.js r128, cannon.js 0.6.2 (from HBD)
+vendor/                 three.js r186, cannon-es 0.20 (ES modules; see vendor/README.md)
 assets/fonts/           Nunito (OFL)
 src/
   main.js               bootstrap and the frame order (no GameManager)
   core/EventBus.js      world events (§40), with a recent-event log
+  engine/lib.js         the only importer of vendor/: re-exports THREE and CANNON
   engine/Kit.js         the model accumulator (from HBD's CityKit)
   engine/Physics.js     cannon world, tiers, debris budget, out-of-world recovery
   engine/Renderer.js    scene, sky, sun and shadows, quality tier
@@ -123,6 +124,21 @@ Every destructible already has a persistent ID (`TestRoom_Barricade_01`, pieces 
 ## 8. Risks
 
 1. **Web performance at scale** (§1). Measure on a real mid-range Android phone during Phase 2, not after.
-2. **three.js r128.** Old, and its global build is a dead end. Decide on an ES-module upgrade by the end of Phase 2 (see `ART_AND_MODELS.md` §6).
-3. **cannon.js 0.6.2** is unmaintained. `cannon-es` is the maintained fork and a near drop-in, but it is ES-module only, so it rides on the same decision.
+2. ~~three.js r128 / cannon.js 0.6.2~~ **Done** (§9).
+3. **cannon-es is quiet** (0.20.0, 2022). It works and is small enough to fix ourselves. If physics becomes the bottleneck the alternative is Rapier (WASM), a bigger change.
 4. **Character art** beyond stylized humanoids needs a glTF pipeline (`ART_AND_MODELS.md` §6).
+
+## 9. Engine upgrade: r128 → r186 (2026-09-29)
+
+Done in Phase 1, while the codebase was twelve files, because every month of new code made it dearer.
+
+| Change | Why it mattered |
+|---|---|
+| Globals → ES modules through `src/engine/lib.js` | r160+ ships no global build. One re-export file means the next upgrade touches `lib.js` and `vendor/` only. No import map, so nothing depends on WebView import-map support |
+| cannon.js 0.6.2 → cannon-es 0.20 | Maintained fork, same API. Only `world.remove` → `world.removeBody` changed |
+| Colour management on by default (r152) | `new Color(hex)` now converts sRGB → linear itself, so `Kit`'s manual conversion was removed (it would have converted twice). `outputEncoding` → default `outputColorSpace`; the sky texture is tagged `SRGBColorSpace` |
+| Physically based light units (r155) | Hemisphere and sun intensities × π to keep the same look. Checked against r128 screenshots: the model sheet matches |
+| `PCFSoftShadowMap` removed (r180) | Now `PCFShadowMap`, which is soft in r186 |
+| `renderer.info` now counts the shadow pass | The HUD's draw calls went 77 → 116 with no change in cost: the camera view is still 77, and 39 are shadow-map draws r128 didn't report |
+
+**A bug the upgrade found.** The north wall runs were built with an undefined rotation. r128 quietly drew nothing for them and gave them colliders turned 90°: invisible walls inside the courtyard, and a gap either side of the arch (visible in the first phone screenshot). r186's raycaster returned NaN distances for them, which put the camera at NaN. Fixed (`rotY = 0` default in `TestRoom.js`).

@@ -23,6 +23,8 @@
 //     selected) gets its own material via `build({ own: true })`.
 // ============================================================
 
+import { THREE } from './lib.js';
+
 const _v = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3(), _n = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _e = new THREE.Euler();
 
@@ -35,14 +37,16 @@ export function at(x, y, z, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
 }
 
 // Colours are authored in sRGB (what a colour picker shows) and stored in the
-// vertices as linear, because the renderer outputs sRGB. Hundred Block Dash
+// vertices as linear. three.js r152+ does the conversion itself: with colour
+// management on (the default), `new THREE.Color(0xffb347)` already holds the
+// linear value, so the vertices get exactly that. Hundred Block Dash (r128)
 // renders linear-out and authors to suit; Elemental does it the correct way so
 // lighting and fog blend the way they look in the palette.
 const _linCache = new Map();
 function _lin(col) {
-    if (col.isColor) return col.clone().convertSRGBToLinear();
+    if (col.isColor) return col;
     let c = _linCache.get(col);
-    if (!c) { c = new THREE.Color(col).convertSRGBToLinear(); _linCache.set(col, c); }
+    if (!c) { c = new THREE.Color(col); _linCache.set(col, c); }
     return c;
 }
 

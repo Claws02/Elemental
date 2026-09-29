@@ -8,6 +8,8 @@
 // shadow size); adaptive quality comes later, after profiling on phones.
 // ============================================================
 
+import { THREE } from './lib.js';
+
 let renderer, scene, camera, sun, sunTarget;
 export const quality = { tier: 'high', pixelRatio: 1, shadowSize: 1024 };
 
@@ -20,21 +22,21 @@ export function init(canvas) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(quality.pixelRatio);
     renderer.setSize(innerWidth, innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;    // r180+ removed PCFSoft; PCF is now the soft one
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
 
     scene = new THREE.Scene();
     const SKY_LOW = 0xd9c7a8, SKY_HIGH = 0x6f8fb0;
     scene.background = _skyTexture(SKY_HIGH, SKY_LOW);
-    scene.fog = new THREE.Fog(new THREE.Color(SKY_LOW).convertSRGBToLinear(), 28, 95);
+    scene.fog = new THREE.Fog(SKY_LOW, 28, 95);
 
     camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200);
 
-    scene.add(new THREE.HemisphereLight(_lin(0xcfe0ff), _lin(0x5a4a38), 0.75));
-    sun = new THREE.DirectionalLight(_lin(0xffe2b8), 1.9);
+    // Physically based light units (r155+): the r128 intensities times π.
+    scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x5a4a38, 0.75 * Math.PI));
+    sun = new THREE.DirectionalLight(0xffe2b8, 1.9 * Math.PI);
     sun.castShadow = true;
     sun.shadow.mapSize.set(quality.shadowSize, quality.shadowSize);
     const S = 18;
@@ -49,8 +51,6 @@ export function init(canvas) {
     return { renderer, scene, camera };
 }
 
-const _lin = hex => new THREE.Color(hex).convertSRGBToLinear();
-
 // A vertical gradient: warm haze at the horizon, cool sky above.
 function _skyTexture(top, bottom) {
     const c = document.createElement('canvas');
@@ -62,7 +62,7 @@ function _skyTexture(top, bottom) {
     grad.addColorStop(1, '#' + new THREE.Color(bottom).getHexString());
     g.fillStyle = grad; g.fillRect(0, 0, 2, 256);
     const t = new THREE.CanvasTexture(c);
-    t.encoding = THREE.sRGBEncoding;
+    t.colorSpace = THREE.SRGBColorSpace;
     return t;
 }
 

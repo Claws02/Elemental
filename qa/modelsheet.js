@@ -38,7 +38,7 @@ const VIEWS = [
             const c = __EL.cam;
             // Park the camera: a fixed focus instead of following the hero.
             c.update = function (dt) {
-                const dir = new THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+                const dir = new __EL.THREE.Vector3(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
                 this.cam.position.set(f[0], f[1], f[2]).addScaledVector(dir, dist);
                 this.cam.lookAt(f[0], f[1], f[2]);
             };

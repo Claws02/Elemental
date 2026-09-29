@@ -4,13 +4,19 @@
 //
 // The screen is split by intent, not by buttons:
 //
-//   left 40%      MOVE. A floating stick appears wherever the thumb lands.
-//   right 60%     THE WORLD. What a touch means depends on what it lands on:
+//   bottom-left   MOVE. The bottom half of the left half of the screen. A
+//   quarter       floating stick appears wherever the thumb lands in it.
+//   everywhere    THE WORLD. What a touch means depends on what it lands on:
+//   else
 //                   on something grabbable → grab, drag to move it,
 //                                            release fast = FLICK (throw),
 //                                            release slow = drop
 //                   on empty world         → drag orbits the camera
 //                   two fingers            → pinch zooms
+//
+// The move zone is deliberately only a quarter of the screen: a rock in the
+// top left is as grabbable as one on the right (tested on a phone: a
+// left-40% strip made the top-left of the view unreachable).
 //
 // Pointer Events cover touch, mouse and pen with the same code, so the
 // prototype is testable at a desk (WASD also moves). Handlers are plain
@@ -28,7 +34,7 @@ export class Gestures {
         this.world = new Map();   // pointerId -> { mode, target, samples: [{x,y,t}] }
         this.keys = new Set();
         this.pinchD = 0;
-        this.leftFraction = 0.4;
+        this.moveZone = { x: 0.5, y: 0.5 };   // stick lives left of x and below y (fractions of the screen)
         this.stickRadius = 60;
 
         el.addEventListener('pointerdown', e => this._down(e));
@@ -55,10 +61,13 @@ export class Gestures {
         return { x, y, run: k.has('ShiftLeft') ? 1 : Math.min(1, Math.hypot(x, y)) };
     }
 
+    /** Is (x, y) in the bottom-left move zone? */
+    inMoveZone(x, y) { return x < innerWidth * this.moveZone.x && y > innerHeight * this.moveZone.y; }
+
     _down(e) {
-        this.el.setPointerCapture?.(e.pointerId);
-        const left = e.clientX < innerWidth * this.leftFraction && e.pointerType !== 'mouse';
-        if (left && this.stick.id === null) {
+        // Capture can refuse (a pointer already gone); input must not die with it.
+        try { this.el.setPointerCapture?.(e.pointerId); } catch (err) { /* keep going uncaptured */ }
+        if (this.inMoveZone(e.clientX, e.clientY) && e.pointerType !== 'mouse' && this.stick.id === null) {
             Object.assign(this.stick, { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             this.h.stick?.({ active: true, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             return;

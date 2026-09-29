@@ -109,6 +109,40 @@ const SHOTS = path.join(__dirname, 'shots');
         await shot('04-thrown');
     }
 
+    // 3b. The move zone is only the bottom-left quarter: a touch there is the
+    // stick, a touch in the top left is the world (a rock there is grabbable).
+    await page.waitForTimeout(600);
+    const zone = await page.evaluate(() => {
+        const el = document.getElementById('game');
+        const ev = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true, isPrimary: id === 11 }));
+        const g = __EL.input, W = innerWidth, H = innerHeight;
+        const out = {};
+        // Bottom left: the stick.
+        ev('pointerdown', 11, W * 0.2, H * 0.8);
+        out.stickBottomLeft = g.stick.id === 11;
+        ev('pointerup', 11, W * 0.2, H * 0.8);
+        // Top left, empty world: not the stick.
+        ev('pointerdown', 12, W * 0.2, H * 0.2);
+        out.stickTopLeft = g.stick.id === 12;
+        ev('pointerup', 12, W * 0.2, H * 0.2);
+        // Top left, on a rock: grabbed. Put a rock under that point, 7 m out.
+        const cam = __EL.cam.cam, T = __EL.THREE;
+        const p = new T.Vector3(-0.6, 0.55, 0.5).unproject(cam).sub(cam.position).normalize().multiplyScalar(7).add(cam.position);
+        const e = __EL.room.rocks[3];
+        e.body.position.set(p.x, p.y, p.z); e.body.velocity.set(0, 0, 0); e.mesh.position.copy(p);
+        const sp = p.clone().project(cam);
+        const sx = (sp.x + 1) / 2 * W, sy = (1 - sp.y) / 2 * H;
+        out.rockScreen = [Math.round(sx), Math.round(sy)];
+        ev('pointerdown', 13, sx, sy);
+        out.grabTopLeft = __EL.earth.held?.entry === e;
+        ev('pointerup', 13, sx, sy);
+        out.throwsAfter = __EL.earth.throws;
+        return out;
+    });
+    check(zone.stickBottomLeft, 'a touch in the bottom-left quarter is the move stick');
+    check(!zone.stickTopLeft, 'a touch in the top left is not the move stick');
+    check(zone.grabTopLeft, `a rock in the top left can be grabbed (at ${zone.rockScreen})`);
+
     // A slow release drops instead of throwing.
     await page.waitForTimeout(800);
     const t2 = await page.evaluate(() => {

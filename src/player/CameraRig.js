@@ -12,6 +12,8 @@
 //   toward it, so the object being manipulated never leaves the screen.
 // ============================================================
 
+import { THREE } from '../engine/lib.js';
+
 const MIN_DIST = 3.2, MAX_DIST = 13;
 const PITCH_MIN = -0.15, PITCH_MAX = 1.2;
 

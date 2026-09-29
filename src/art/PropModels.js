@@ -11,6 +11,7 @@
 // learns is that the stone around them remembers what Earth can do.
 // ============================================================
 
+import { THREE } from '../engine/lib.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
 import { WORLD, ELEMENT } from './Palette.js';
 

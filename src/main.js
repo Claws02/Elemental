@@ -12,6 +12,7 @@
 // state arrive they are their own modules, and this file just calls them.
 // ============================================================
 
+import { THREE } from './engine/lib.js';
 import * as Renderer from './engine/Renderer.js';
 import * as Physics from './engine/Physics.js';
 import { EventBus } from './core/EventBus.js';
@@ -73,7 +74,7 @@ function boot() {
     // through private state.
     window.__EL = {
         ready: true,
-        Physics, EventBus, room, player, earth, cam,
+        THREE, Physics, EventBus, room, player, earth, cam, input,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = room.rocks[i];

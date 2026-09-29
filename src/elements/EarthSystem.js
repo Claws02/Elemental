@@ -23,6 +23,7 @@
 // the player broke it.
 // ============================================================
 
+import { THREE } from '../engine/lib.js';
 import { ELEMENT } from '../art/Palette.js';
 import { EventBus, EV } from '../core/EventBus.js';
 

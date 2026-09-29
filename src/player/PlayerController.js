@@ -9,6 +9,7 @@
 // gravity keeps the vertical.
 // ============================================================
 
+import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { buildHero, HeroAnimator } from '../art/HeroModel.js';

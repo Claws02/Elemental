@@ -11,10 +11,11 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Configure the input system.** Pointer Events: touch, mouse and pen through one path; WASD at a desk. *Smoke: W moves the hero.*
 - [x] **Create the folder architecture.** `TECH_ARCHITECTURE.md` §3.
 - [x] **Create the Git repository.** `Claws02/Elemental`.
+- [x] **Engine upgrade: three.js r128 → r186, cannon.js → cannon-es.** Pulled forward from Phase 2 while the codebase is small (`TECH_ARCHITECTURE.md` §9). *Smoke passes; model sheet matches the r128 screenshots.*
 - [x] **Create the bootstrap.** `index.html` + `src/main.js`, fixed frame order, no GameManager.
 - [x] **Basic third-person controller.** Camera-relative movement, acceleration, facing. *Smoke.*
 - [x] **Camera.** Orbit, pinch/wheel zoom, clip avoidance against walls, frames the held rock. *Screenshots; clip avoidance checked by eye only.*
-- [x] **Mobile movement controls.** Floating stick on the left 40% of the screen. *Exercised in headless Chromium; **not yet tried on a phone.***
+- [x] **Mobile movement controls.** Floating stick in the bottom-left quarter of the screen, so the top left stays grabbable (changed after the first phone test). *Played on a phone: 30–60 fps; grab and flick feel good.*
 - [x] **One test environment.** The ruined courtyard (`src/world/TestRoom.js`).
 - [x] **Grabbable rock.** Ten of them, 0.35–0.85 m. *Smoke.*
 - [x] **Physics grab.** Spring-held, follows the finger across a camera-facing plane, limited to reach. Fat-finger assist. *Smoke: press grabs, rock lifts.*
@@ -26,7 +27,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [ ] **Elemental interaction framework.** Capabilities on physics entries (`grabbable`, `throwable`, `flammable`, `breakable`, …) and element definitions as data (`src/data/elements.js`), replacing the Earth-only constants. Do this when the second element lands, so it is shaped by two real cases.
 - [x] **Destruction state (in memory).** States, piece IDs, events. Persistence is the next item.
 - [ ] **Save/load prototype.** Versioned JSON; the barricade reloads broken.
-- [ ] **Phase 1 review on a real phone.** Frame rate, touch feel of grab and flick, thermal after 10 minutes. The brief's gate: does it feel fun?
+- [ ] **Phase 1 review on a real phone.** *First pass 2026-09-29 (r128 build): 30–60 fps, grab and flick feel good for Earth; the move zone was too big (fixed).* Still to check: the r186 build's frame rate against those numbers, what drops it to 30, and thermal after 10 minutes.
 
 ## Phase 2: elemental sandbox
 
@@ -37,7 +38,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [ ] Element combinations
 - [ ] Destructible structures beyond the barricade
 - [ ] **Gate:** a tester spends 20 minutes experimenting unprompted. If not, stop and rethink.
-- [ ] Decide the three.js r128 → modern three.js / cannon-es question (`TECH_ARCHITECTURE.md` §8)
+
 
 ## Phase 3 onward
 

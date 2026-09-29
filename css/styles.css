@@ -40,3 +40,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
     border: 2px solid rgba(244,236,220,.35); background: rgba(20,16,12,.18); opacity: 0; transition: opacity .15s; }
 .stick-knob { position: absolute; left: 36px; top: 36px; width: 48px; height: 48px; border-radius: 50%;
     background: rgba(244,236,220,.55); }
+
+/* Portrait: lift the hint clear of the resting move stick. */
+@media (orientation: portrait) {
+    .hud-hint { bottom: calc(env(safe-area-inset-bottom) + 190px); }
+}

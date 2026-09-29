@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Elemental</title>
     <link rel="icon" href="data:,">
-    <!-- Engine libraries are self-hosted (copied from Hundred Block Dash's
-         vendor/), so the game runs offline and inside the native shell. -->
-    <script src="vendor/three.min.js"></script>
-    <script src="vendor/cannon.min.js"></script>
+    <!-- Engine libraries (three.js r186, cannon-es 0.20) are self-hosted ES
+         modules in vendor/, imported through src/engine/lib.js, so the game
+         runs offline and inside the native shell. -->
     <link rel="preload" href="assets/fonts/Nunito-Variable.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="css/styles.css">
 </head>

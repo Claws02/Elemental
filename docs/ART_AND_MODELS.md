@@ -4,7 +4,7 @@ This is the study of Hundred Block Dash's 3D models that Elemental's model pipel
 
 ## 1. How HBD builds its 3D models
 
-**There are no model files in Hundred Block Dash.** No `.glb`, `.fbx` or `.obj`, no loader, no licences to track. Every building, character, prop and minigame set is written in JavaScript against three.js r128 and built at load time.
+**There are no model files in Hundred Block Dash.** No `.glb`, `.fbx` or `.obj`, no loader, no licences to track. Every building, character, prop and minigame set is written in JavaScript against three.js r128 and built at load time. (Elemental has since moved to r186; see `TECH_ARCHITECTURE.md` §9.)
 
 | HBD file | What it builds | The idea worth keeping |
 |---|---|---|
@@ -27,7 +27,7 @@ HBD's look is **chunky toy-town**: bevelled edges that catch the light, bold rea
 | Look | Chunky toy-town, saturated | **Stylized high fantasy.** Same bevels and proud details, but muted, weathered surfaces. Saturation belongs to the elements alone (§3) |
 | Characters | Armless toys, rigged after the fact | **Jointed humanoids, built rigged.** The hero has shoulders, elbows, hips, knees, a neck, and a cloak that flares with speed, because they have to reach for and hurl a boulder |
 | Animation | `CharacterAnimator`: damped procedural poses | **`HeroAnimator`: same approach.** Legs are driven by distance travelled instead of time, so feet never skate |
-| Colour pipeline | Linear output, colours authored to suit | **sRGB output with ACES tone mapping**; `Kit` converts authored sRGB colours to linear, so the palette on the page is what shows on screen |
+| Colour pipeline | Linear output, colours authored to suit | **sRGB output with ACES tone mapping** and three.js colour management: authored sRGB colours are stored linear, so the palette on the page is what shows on screen |
 | Structures | One model per building | **One Kit per breakable piece** for anything destructible (§38 of the brief): each piece becomes its own physics body |
 | Review | `qa/modelsheet.js` | **`qa/modelsheet.js`**: six framed views (hero front and back, courtyard, barricade, sealed door, pillars and rocks) |
 
@@ -70,7 +70,7 @@ Rule: **the world is muted so the elements can be loud.** Stone, timber and moss
 |---|---|
 | ![Hero](assets/hero.png) | ![Holding](assets/holding.png) |
 
-Measured in headless Chromium (software GL, 844×390): **77 draw calls and 51k triangles** in the opening view. Phones handle far more triangles than that; draw calls are the number to watch.
+Measured in headless Chromium (software GL, 844×390): **77 draw calls and 51k triangles** in the opening view, plus 39 shadow-map draws (which r186's counter includes). On a phone: 30–60 fps. Phones handle far more triangles than that; draw calls are the number to watch.
 
 ## 6. Honest limits, and the recommendation
 
@@ -82,6 +82,6 @@ Measured in headless Chromium (software GL, 844×390): **77 draw calls and 51k t
 - **Creatures.** Monsters, corrupted creatures and the Ash Wyrm need organic silhouettes.
 - **Skinned deformation.** Cloth and bending limbs on important characters.
 
-**Recommendation:** stay procedural for the world (buildings, ruins, props, destruction) permanently. Plan a **hybrid pipeline** for hero characters and creatures from Phase 6 (the vertical slice): glTF models made in Blender, loaded with three.js's GLTFLoader (the r128 version, vendored), skinned and animated with clips. Decide at Phase 6, not now; the Phase 1 hero is enough to test feel.
+**Recommendation:** stay procedural for the world (buildings, ruins, props, destruction) permanently. Plan a **hybrid pipeline** for hero characters and creatures from Phase 6 (the vertical slice): glTF models made in Blender, loaded with three.js's GLTFLoader (vendored like the engine, see `vendor/README.md`), skinned and animated with clips. **Agreed 2026-09-29:** character models move to Blender in Phase 6; until then the procedural hero stands in.
 
-**Risk I'd watch first:** three.js r128 is from 2021. Its UMD global build is what HBD and Elemental load, and newer three.js dropped that build. Staying on r128 is fine for the prototype, but a move to modern three.js (for WebGPU, better shadows and instancing) means converting every file to ES-module imports. That gets more expensive the longer it waits; decide by the end of Phase 2.
+**Engine version:** resolved. Elemental moved from r128 to r186 in Phase 1 (`TECH_ARCHITECTURE.md` §9), so modern three.js features (instancing, BatchedMesh, WebGPU later) are available without a rewrite.

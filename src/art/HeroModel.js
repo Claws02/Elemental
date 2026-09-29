@@ -27,6 +27,7 @@
 // Height: 1.8 units. The hips sit at 0.95.
 // ============================================================
 
+import { THREE } from '../engine/lib.js';
 import { Kit, at } from '../engine/Kit.js';
 import { HERO, ELEMENT } from './Palette.js';
 

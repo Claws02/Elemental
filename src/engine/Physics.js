@@ -1,5 +1,5 @@
 // ============================================================
-// PHYSICS — cannon.js, divided into tiers and held to a budget (§37, §54, §55)
+// PHYSICS — cannon-es, divided into tiers and held to a budget (§37, §54, §55)
 // ============================================================
 //
 // Nothing is simulated at full fidelity just because it exists. Every body is
@@ -16,8 +16,10 @@
 // their systems and never touch cannon: they are simulated by their own
 // cheap approximations.
 //
-// Relies on the global CANNON from vendor/cannon.min.js (cannon.js 0.6.2).
+// cannon-es 0.20 (the maintained fork of cannon.js), from vendor/ via lib.js.
 // ============================================================
+
+import { CANNON } from './lib.js';
 
 export const TIER = { STATIC: 'static', INTERACTIVE: 'interactive', DESTRUCTIBLE: 'destructible', DEBRIS: 'debris', PLAYER: 'player' };
 
@@ -82,7 +84,7 @@ export function add({ body, mesh = null, tier, id = null, data = {} }) {
 
 export function remove(e) {
     if (!entries.has(e)) return;
-    world.remove(e.body);
+    world.removeBody(e.body);
     entries.delete(e);
     const i = debrisQueue.indexOf(e);
     if (i >= 0) debrisQueue.splice(i, 1);

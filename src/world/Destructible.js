@@ -23,6 +23,7 @@
 // nothing has to be renamed when it arrives.
 // ============================================================
 
+import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';

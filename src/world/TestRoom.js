@@ -24,6 +24,7 @@
 //            x=-18                  x=+18
 // ============================================================
 
+import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
@@ -56,7 +57,7 @@ export function buildTestRoom(scene) {
 
     // ---- perimeter walls ---------------------------------------------------
     const H = ROOM.half;
-    const wall = (seed, cx, cz, len, height, rotY) => {
+    const wall = (seed, cx, cz, len, height, rotY = 0) => {
         const w = ruinWall(seed, len, height);
         w.group.position.set(cx, 0, cz);
         w.group.rotation.y = rotY;
