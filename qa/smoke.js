@@ -374,7 +374,7 @@ const SHOTS = path.join(__dirname, 'shots');
     // 8c. It pushes: a rock in the spray moves along the stream.
     const pushed = await page.evaluate(async () => {
         const e = __EL.room.rocks[4];
-        e.body.position.set(3.2, 0.62, -14.2); e.body.velocity.set(0, 0, 0); e.body.wakeUp();
+        e.body.position.set(2.0, 0.62, -12.9); e.body.velocity.set(0, 0, 0); e.body.wakeUp();   // clear of the oil barrels
         await new Promise(r => setTimeout(r, 300));
         const p0 = e.body.position.clone();
         await __streamTo(41, e.mesh.position);
@@ -529,32 +529,96 @@ const SHOTS = path.join(__dirname, 'shots');
     check(fanned.burning && fanned.fanned, 'wind fans an established fire instead of putting it out');
     await shot('13-wind');
 
-    // 9e. A gust (flick from the hero) knocks a damaged plank loose, blamed on the player.
-    const gusted = await page.evaluate(() => {
-        const t = __piece(0, 4), piece = t.entry.data.piece;
-        piece.hp = 30;
+    // 9e. A gust barely marks sound timber (weakened after the phone test)…
+    const flick = (id, t) => page.evaluate(({ id, tid }) => {
+        const t = __EL.interactables.things.find(x => x.id === tid);
         const h = __hero(), q = __screen(t.pos());
-        const n = __EL.air.gusts;
-        __touch('pointerdown', 55, h.x, h.y);
+        __touch('pointerdown', id, h.x, h.y);
         const spin = ms => { const s = performance.now(); while (performance.now() - s < ms); };
-        for (let k = 1; k <= 5; k++) { __touch('pointermove', 55, h.x + (q.x - h.x) * k / 5, h.y + (q.y - h.y) * k / 5); spin(8); }
-        __touch('pointerup', 55, q.x, q.y);
-        return { gusts: __EL.air.gusts - n };
-    });
+        for (let k = 1; k <= 5; k++) { __touch('pointermove', id, h.x + (q.x - h.x) * k / 5, h.y + (q.y - h.y) * k / 5); spin(8); }
+        __touch('pointerup', id, q.x, q.y);
+    }, { id, tid: t });
+    await flick(55, 'TestRoom_Barricade_01_P03');
+    await wait(500);
+    const sound = await page.evaluate(() => __piece(0, 3).entry.data.piece.hp);
+    check(sound > 85, `a gust barely marks sound timber (hp 100 → ${sound.toFixed(0)})`);
+
+    // …but finishes off a plank that was nearly broken, blamed on the player.
+    await page.evaluate(() => { __piece(0, 4).entry.data.piece.hp = 4; });
+    await flick(56, 'TestRoom_Barricade_01_P04');
     const loose = await waitFor(() => __piece(0, 4).entry.data.piece.broken, 4000);
     const blame = await page.evaluate(() => __EL.EventBus.recent().filter(e => e.type === 'PieceBroken' && e.piece.endsWith('_P04')).map(e => e.cause));
-    check(gusted.gusts === 1 && loose && blame[0] === 'player', `a gust knocks a damaged plank loose, blamed on the player (${JSON.stringify({ ...gusted, loose, blame })})`);
+    check(loose && blame[0] === 'player', `a gust finishes off a nearly-broken plank, blamed on the player (${JSON.stringify({ loose, blame })})`);
 
-    // 9f. A loose plank is light: Air lifts it.
+    // 9f. Air carries nothing: a loose plank still answers to Fire.
     await wait(1500);
-    const lifted = await page.evaluate(() => {
-        const t = __piece(0, 4), s = __screen(t.pos());
-        __touch('pointerdown', 56, s.x, s.y);
-        const r = { held: __EL.channel.held?.element, on: s.on };
-        __touch('pointerup', 56, s.x, s.y);
-        return r;
+    const looseTouch = await page.evaluate(() => { const s = __screen(__piece(0, 4).pos()); __touch('pointerdown', 57, s.x, s.y); return { s, held: __EL.channel.held?.element || null, st: __EL.intent.state }; });
+    const looseLit = await waitFor(() => __EL.fire.isBurning(__piece(0, 4)), 5000);
+    await page.evaluate(s => __touch('pointerup', 57, s.x, s.y), looseTouch.s);
+    check(!looseTouch.held && looseLit, `a loose plank isn't carried by Air, and holding still sets it alight (${JSON.stringify({ held: looseTouch.held, st: looseTouch.st, looseLit })})`);
+
+    // ========================================================
+    // 10. OBSTACLES, in a fresh room: hay, oil barrels, dummies, crates.
+    // ========================================================
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__EL?.ready, null, { timeout: 30000 });
+    await page.evaluate(() => {
+        const el = document.getElementById('game');
+        window.__touch = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+        window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
+        window.__thing = id => __EL.interactables.things.find(t => t.id === id);
+        window.__hero = () => { const p = __EL.player.position; return __screen(new __EL.THREE.Vector3(p.x, p.y + 1.0, p.z)); };
+        __EL.player.body.position.set(-9, 0.45, 2.5); __EL.cam.yaw = Math.PI * 0.25; __EL.cam.pitch = 0.45;
     });
-    check(lifted.held === 'air', `a loose plank is lifted by Air (${JSON.stringify(lifted)})`);
+    await wait(1800);
+
+    // 10a. Dry hay catches almost at once and the fire runs through the field.
+    const hayTouch = await page.evaluate(() => { const s = __screen(__thing('TestRoom_Hay_18').pos()); __touch('pointerdown', 61, s.x, s.y); return s; });
+    const hayLit = await waitFor(() => __EL.fire.isBurning(__thing('TestRoom_Hay_18')), 3000);
+    await page.evaluate(s => __touch('pointerup', 61, s.x, s.y), hayTouch);
+    check(hayTouch.on && hayLit, 'holding still on dry hay sets it alight');
+    const field = await waitFor(() => __EL.room.props.filter(p => p.material === 'hay' && (__EL.fire.isBurning(p.thing) || __EL.fire.isBurned(p.thing))).length >= 6, 20000);
+    check(field, 'fire runs through the hay field');
+    await shot('14-hay');
+
+    // 10b. An oil barrel, once lit, bursts: it lights and damages what's near, blamed on the player.
+    await page.evaluate(() => { __EL.player.body.position.set(0, 0.45, -9); __EL.cam.yaw = 0.2; __EL.cam.pitch = 0.35; __EL.fire.ignite(__thing('TestRoom_Barrel_01'), 'player'); });
+    const boom = await waitFor(() => __EL.EventBus.recent().some(e => e.type === 'Explosion'), 8000);
+    await wait(300);
+    await shot('15-explosion');
+    const blast = await page.evaluate(() => ({
+        cause: __EL.EventBus.recent().find(e => e.type === 'Explosion')?.cause,
+        hurt: __EL.room.barricade.pieces.filter(p => p.hp < 100).length,
+        lit: __EL.fire.stats().ignitions,
+    }));
+    check(boom && blast.cause === 'player' && blast.hurt > 0 && blast.lit >= 2, `a lit oil barrel explodes: damages the wall, lights what's near (${JSON.stringify(blast)})`);
+
+    // 10c. A thrown rock knocks a training dummy over.
+    const toppled = await page.evaluate(async () => {
+        const d = __thing('TestRoom_Dummy_01'), e = __EL.room.rocks[5];
+        e.body.position.set(9, 1.4, -3); e.body.velocity.set(0, 0, 0);
+        __EL.throwRockAt(5, d.pos().add(new __EL.THREE.Vector3(0, 0.5, 0)), 22);
+        await new Promise(r => setTimeout(r, 3500));
+        const up = new __EL.THREE.Vector3(0, 1, 0).applyQuaternion(d.mesh.quaternion);
+        return +up.y.toFixed(2);
+    });
+    check(toppled < 0.7, `a thrown rock knocks a dummy over (upright ${toppled})`);
+
+    // 10d. A gust shifts a crate.
+    const shifted = await page.evaluate(async () => {
+        __EL.player.body.position.set(10, 0.45, 3);
+        await new Promise(r => setTimeout(r, 400));
+        const c = __thing('TestRoom_Crate_06'), p0 = c.entry.body.position.clone();   // the top crate: nothing on it
+        __EL.air.gust(c.pos().sub(__EL.air.origin()).normalize());
+        await new Promise(r => setTimeout(r, 1500));
+        return +c.entry.body.position.distanceTo(p0).toFixed(2);
+    });
+    check(shifted > 0.1, `a gust shifts a crate (${shifted} m)`);
+
+    // 10e. Left alone, the obstacles reset (60 s in the room; 2 s here once nothing burns).
+    await page.evaluate(() => { __EL.room.propReset.after = 2; for (const p of __EL.room.props) if (__EL.fire.isBurning(p.thing)) __EL.fire.douse(p.thing, 'player'); });
+    const reset = await waitFor(() => __EL.room.props.every(p => !__EL.fire.isBurned(p.thing) && (!p.entry || p.entry.body.position.distanceTo(p.home.p) < 0.05)), 30000);
+    check(reset, 'left alone, the obstacles reset: unburned, back in place');
 
     const perf = await page.evaluate(() => __EL.renderInfo());
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));

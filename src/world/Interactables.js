@@ -52,7 +52,7 @@ export class Interactables {
      * player can act on right now (in range, has a verb). The exact hit wins;
      * failing that, the nearest usable thing within the assist radius.
      */
-    pick(x, y, camera, usable) {
+    pick(x, y, camera, usable, { assist = true } = {}) {
         _v2.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
         _ray.setFromCamera(_v2, camera);
         const cand = this.things.filter(usable);
@@ -63,6 +63,7 @@ export class Interactables {
             while (o && !this.byMesh.has(o)) o = o.parent;
             if (o) return this.byMesh.get(o);
         }
+        if (!assist) return null;
         let best = null, bestD = ASSIST_PX;
         for (const t of cand) {
             _p.copy(t.pos()).project(camera);

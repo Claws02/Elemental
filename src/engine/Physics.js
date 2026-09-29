@@ -113,13 +113,14 @@ export function toDebris(e, mass) {
  * Put a piece back: static again, at `pos`/`quat` (plain {x,y,z}/{x,y,z,w}),
  * re-added to the world if it had fallen out of it. For rebuilt structures.
  */
-export function restore(e, pos, quat, tier = TIER.DESTRUCTIBLE) {
+export function restore(e, pos, quat, tier = TIER.DESTRUCTIBLE, mass = 0) {
     const b = e.body;
     const i = debrisQueue.indexOf(e);
     if (i >= 0) debrisQueue.splice(i, 1);
-    b.type = CANNON.Body.STATIC;
-    b.mass = 0;
+    b.type = mass > 0 ? CANNON.Body.DYNAMIC : CANNON.Body.STATIC;
+    b.mass = mass;
     b.updateMassProperties();
+    if (mass > 0) b.wakeUp();
     b.velocity.set(0, 0, 0);
     b.angularVelocity.set(0, 0, 0);
     b.position.set(pos.x, pos.y, pos.z);

@@ -15,10 +15,11 @@
 //   fans fire  a young flame (< 2.5 s old) blows out; an established fire
 //              flares and spreads DOWNWIND. Blowing on a fire too late
 //              drives it across the wall. That is on purpose.
-//   breaks     a gust knocks damaged timber loose (steady wind doesn't)
+//   breaks     a gust finishes off timber that is nearly broken; it barely
+//              marks sound timber (weakened after the phone test: three
+//              gusts used to bring the whole barricade down)
 //
-// And Air is the MOVE element for loose, light things (a plank knocked out
-// of the barricade): Intent routes that through Channel like any hold.
+// Air carries nothing. It only blows.
 //
 // Everything moving air causes is the player's (§12).
 // ============================================================
@@ -33,12 +34,11 @@ export const AIR = {
     touchPx: 60,          // minimum radius of the hero as a touch target
     windLen: 7,           // metres the steady wind reaches
     windAngle: 0.45,      // half-angle of the cone, radians (~26°)
-    windPush: 16,         // m/s² on light things in the wind (heavier move less)
+    windPush: 8,          // m/s² on light things in the wind (heavier move less)
     gustLen: 9,
     gustAngle: 0.6,
-    gustPush: 12,         // m/s given at once by a gust
-    gustWear: 70,         // damage to timber at the gust's heart: breaks damaged planks, cracks sound ones
-    looseMass: 12,        // Air lifts loose things up to this heavy
+    gustPush: 6,          // m/s given at once by a gust
+    gustWear: 12,         // damage to timber at the gust's heart: only finishes off nearly-broken planks
 };
 
 const _ray = new THREE.Raycaster();
@@ -70,8 +70,6 @@ export class AirSystem {
         const r = Math.max(AIR.touchPx, Math.abs(ay - by) * 0.6);
         return Math.hypot(x - cx, (y - cy) * 0.8) < r;
     }
-
-    canMove(entry) { return entry.body.type === CANNON.Body.DYNAMIC && entry.body.mass <= AIR.looseMass; }
 
     // ---- wind -------------------------------------------------------------
 
@@ -153,7 +151,7 @@ export class AirSystem {
             const k = inCone(t.pos());
             if (k > 0) this.fire.wind(t, gust ? 1 : dt, dir, 'player');
         }
-        // A gust knocks damaged timber loose.
+        // A gust finishes off timber that is nearly broken.
         if (gust) {
             for (const t of this.interactables.things) {
                 const piece = t.entry?.data.piece, owner = t.entry?.data.owner;

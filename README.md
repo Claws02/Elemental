@@ -31,7 +31,6 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 | Yank away from the basin fast, or flick | Same | The water tears free into an orb you hold and throw |
 | Touch the hero and drag | Click the hero and drag | Wind toward where you point (Air) |
 | Touch the hero and flick | Same | A gust |
-| Touch a loose plank | Click it | Lift it (Air) |
 | Drag | Drag | Move what you're holding |
 | Flick and let go | Flick the mouse and release | Throw it |
 | Let go slowly | Release slowly | Drop it |

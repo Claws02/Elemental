@@ -81,7 +81,7 @@ export class FireSystem {
 
     addFlammable(thing, { onBurn = null } = {}) {
         const fl = thing.mat.flammable;
-        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
+        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
     }
 
     addHeatable(thing) {
@@ -96,6 +96,7 @@ export class FireSystem {
     addSource(thing, pos) { this.sources.push({ thing, pos }); }
 
     isBurning(thing) { return !!this.flammables.get(thing)?.burning; }
+    isBurned(thing) { return !!this.flammables.get(thing)?.burned; }
     isSource(thing) { return this.sources.some(s => s.thing === thing); }
     burningCount() { let n = 0; for (const f of this.flammables.values()) if (f.burning) n++; return n; }
     burnedCount() { let n = 0; for (const f of this.flammables.values()) if (f.burned) n++; return n; }
@@ -118,7 +119,11 @@ export class FireSystem {
     get douseLump() { return FIRE.douseTime; }
 
     /** How strong a fire is, 0.25 … 1, as it builds. */
-    intensity(f) { return Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * (f.age || 0) / FIRE.buildUp); }
+    intensity(f) {
+        // Dry tinder (hay) flashes: full strength at once, and spreads faster.
+        if (f.flash) return f.flash;
+        return Math.min(1, FIRE.startIntensity + (1 - FIRE.startIntensity) * (f.age || 0) / FIRE.buildUp);
+    }
 
     /**
      * Wind on a fire. A young, small flame blows out (after FIRE.blowTime of
@@ -304,7 +309,8 @@ export class FireSystem {
             const k = this.intensity(f);
             const fanned = (f.fanUntil || 0) > this.time;
             f.onBurn?.((100 / f.fuelMax) * dt * (fanned ? 1.4 : 1), f.cause);
-            this.fx.burn(p, dt, { rate: 22 * k * (fanned ? 1.7 : 1), w: 0.85, h: 0.4 + 0.4 * k, size: (0.5 + 0.35 * k) * (fanned ? 1.25 : 1) });
+            const kv = Math.min(1, k);      // how big it looks: a flash spreads faster, it isn't bigger
+            this.fx.burn(p, dt, { rate: 22 * kv * (fanned ? 1.7 : 1), w: 0.85, h: 0.4 + 0.4 * kv, size: (0.5 + 0.35 * kv) * (fanned ? 1.25 : 1) });
             // A low, flickering ember glow: the flames carry the fire, the
             // wood only smoulders under them (a strong glow reads as a lamp).
             this._glow(f.thing, 0.16 + Math.sin(this.time * 17 + p.x * 3) * 0.06 + Math.sin(this.time * 7.3) * 0.04);
@@ -326,6 +332,7 @@ export class FireSystem {
                 f.burned = true;
                 this._char(f.thing);
                 EventBus.emit(EV.FIRE_OUT, { id: f.thing.id, cause: f.cause, burnedOut: true });
+                if (f.thing.mat.explodes) this._explode(f);
             }
         }
         for (const o of this.flammables.values()) {
@@ -409,6 +416,48 @@ export class FireSystem {
         }
     }
 
+    /**
+     * An oil barrel bursts: everything flammable in reach catches, loose
+     * things are thrown, timber is split, stone is heated. All of it is
+     * whoever lit the barrel's doing.
+     */
+    _explode(f) {
+        const { radius, push, wear } = f.thing.mat.explodes;
+        const p = f.thing.pos();
+        const cause = f.cause || 'environment';
+        this.fx.burst(p, 70, 0.95, 7);
+        for (let i = 0; i < 16; i++) this.fx.burn(p, 1, { rate: 1, w: 1.6, h: 1.2, size: 1.1, smoke: 1 });
+        const _q = new THREE.Vector3();
+        const near = q => { const d = _q.set(q.x, q.y, q.z).distanceTo(p); return d < radius ? 1 - d / radius : 0; };
+        for (const o of this.flammables.values()) {
+            if (o === f || o.burned || o.wet > 0) continue;
+            if (near(o.thing.pos()) > 0) this.ignite(o.thing, cause);
+        }
+        for (const t of this.heatables) {
+            const k = near(t.mesh.position);
+            if (k > 0) { t.entry.data.heat = Math.min(1, (t.entry.data.heat || 0) + 0.6 * k); t.entry.data.heatCause = cause; }
+        }
+        for (const t of this.interactables.things) {
+            const piece = t.entry?.data.piece, owner = t.entry?.data.owner;
+            if (!piece || piece.broken) continue;
+            const k = near(t.pos());
+            if (k > 0) owner.wear(piece, wear * k, cause, t.pos().sub(p).normalize().multiplyScalar(6));
+        }
+        for (const e of Physics.all()) {
+            const b = e.body;
+            if (b.type !== CANNON.Body.DYNAMIC || e.tier === TIER.PLAYER) continue;
+            const k = near(b.position);
+            if (k <= 0) continue;
+            const d = new THREE.Vector3(b.position.x - p.x, 0, b.position.z - p.z).normalize();
+            const v = push * k / (1 + b.mass / 8);
+            b.wakeUp();
+            b.velocity.x += d.x * v; b.velocity.y += v * 0.8; b.velocity.z += d.z * v;
+            b.angularVelocity.set((Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6);
+            e.data.thrownBy = cause; e.data.thrownAt = performance.now();
+        }
+        EventBus.emit(EV.EXPLOSION, { id: f.thing.id, cause, pos: { x: p.x, y: p.y, z: p.z } });
+    }
+
     _glow(thing, k) {
         const m = thing.mesh.userData.ownMaterials?.body;
         if (!m) return;
@@ -423,6 +472,7 @@ export class FireSystem {
         m.emissive.copy(EMBER);
         m.emissiveIntensity = 0.1;
         this.embers.push({ m, t: 0 });
+        if (thing.mat.name === 'hay') thing.mesh.scale.y = 0.3;      // burned to stubble
     }
 
     // Charred wood keeps a last glow of embers that dies over a few seconds.

@@ -31,7 +31,8 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
 import { ELEMENT, WORLD } from '../art/Palette.js';
-import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier, basin } from '../art/PropModels.js';
+import { rock, flagstoneFloor, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier, basin, crate, barrel, dummy, hay } from '../art/PropModels.js';
+import { EventBus, EV } from '../core/EventBus.js';
 import { Destructible } from './Destructible.js';
 
 export const ROOM = { half: 18, spawn: { x: 0, z: 9, facing: Math.PI } };
@@ -174,7 +175,55 @@ export function buildTestRoom(scene) {
         return { id: `TestRoom_Basin_${String(i + 1).padStart(2, '0')}`, mesh: b.group, surface: new THREE.Vector3(x, b.surfaceY, z) };
     });
 
-    return { solids, rocks, barricade, braziers, basins, spawn: ROOM.spawn };
+    // ---- test obstacles (docs/CHECKLIST.md: "a more interactive test room") ---
+    // Each one exercises the elements differently. All are timber, so Fire
+    // and Water act on them; none can be carried (Earth moves only stone,
+    // Air only blows); rocks, water and wind knock them about.
+    const props = [];
+    const dyn = (id, mesh, body, material, mass) => {
+        scene.add(mesh);
+        body.position.copy(mesh.position);
+        body.quaternion.copy(mesh.quaternion);
+        const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id, data: { radius: 0.5 } });
+        props.push({ id, mesh, entry, material, mass, home: { p: mesh.position.clone(), q: mesh.quaternion.clone() } });
+    };
+    // A crate stack (east): three, two, one.
+    const C = 0.9;
+    [[12, 0], [12.95, 0], [13.9, 0], [12.47, 1], [13.42, 1], [12.95, 2]].forEach(([x, row], i) => {
+        const m = crate(i + 7, C);
+        m.position.set(x, C / 2 + row * C, 3);
+        m.rotation.y = (seeded(i * 3.1) - 0.5) * 0.15;
+        const b = new CANNON.Body({ mass: 4, material: Physics.material('wood'), linearDamping: 0.05, angularDamping: 0.2, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+        b.addShape(new CANNON.Box(new CANNON.Vec3(C / 2, C / 2, C / 2)));
+        dyn(`TestRoom_Crate_${String(i + 1).padStart(2, '0')}`, m, b, 'wood', 4);
+    });
+    // Three training dummies (east), facing the courtyard.
+    [-3, -5.5, -8].forEach((z, i) => {
+        const m = dummy(i + 2);
+        m.position.set(13.5, 0.95, z);
+        m.rotation.y = -Math.PI / 2;
+        const b = new CANNON.Body({ mass: 15, material: Physics.material('wood'), linearDamping: 0.05, angularDamping: 0.3, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+        b.addShape(new CANNON.Box(new CANNON.Vec3(0.28, 0.95, 0.2)));
+        dyn(`TestRoom_Dummy_${String(i + 1).padStart(2, '0')}`, m, b, 'wood', 15);
+    });
+    // Two oil barrels, dangerously close to the barricade.
+    [[-2.6, -14.3], [2.9, -14.5]].forEach(([x, z], i) => {
+        const m = barrel(i);
+        m.position.set(x, 0.52, z);
+        const b = new CANNON.Body({ mass: 10, material: Physics.material('wood'), linearDamping: 0.05, angularDamping: 0.3, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+        b.addShape(new CANNON.Cylinder(0.4, 0.4, 1.02, 10));
+        dyn(`TestRoom_Barrel_${String(i + 1).padStart(2, '0')}`, m, b, 'barrel', 10);
+    });
+    // A field of dry hay (west): no colliders, walked through, burns fast.
+    let n = 0;
+    for (let cx = 0; cx < 5; cx++) for (let cz = 0; cz < 4; cz++) {
+        const m = hay(n + 1);
+        m.position.set(-15 + cx * 0.9 + (seeded(n * 2.3) - 0.5) * 0.25, 0, -1.35 + cz * 0.9 + (seeded(n * 4.1) - 0.5) * 0.25);
+        scene.add(m);
+        props.push({ id: `TestRoom_Hay_${String(++n).padStart(2, '0')}`, mesh: m, entry: null, material: 'hay', home: { p: m.position.clone(), q: m.quaternion.clone() } });
+    }
+
+    return { solids, rocks, barricade, braziers, basins, props, scene, spawn: ROOM.spawn };
 }
 
 // The sealed door: a stone slab with the four elements' runes. Only Earth is
@@ -214,4 +263,50 @@ export function wireTestRoom(room, { interactables, fire, water }) {
     room.barricade.onRebuild = () => { for (const t of byPiece.values()) fire.reset(t); };
     for (const b of room.braziers) fire.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'coals' }), b.flame);
     for (const b of room.basins) water.addSource(interactables.add({ id: b.id, mesh: b.mesh, material: 'water' }), b.surface);
+    for (const p of room.props) {
+        p.thing = interactables.add({ id: p.id, mesh: p.mesh, entry: p.entry, material: p.material });
+        fire.addFlammable(p.thing);
+    }
+    room.propReset = new PropReset(room, fire, 60);
+}
+
+/**
+ * Testing aid, like the barricade's rebuild: once the obstacles have been
+ * disturbed (moved, burned) and then left alone for `after` seconds with
+ * nothing burning or moving, they are all put back as new.
+ */
+class PropReset {
+    constructor(room, fire, after) {
+        Object.assign(this, { room, fire, after });
+        this.quiet = 0;
+    }
+
+    _disturbed(p) {
+        if (this.fire.isBurning(p.thing) || this.fire.isBurned(p.thing)) return true;
+        return p.entry ? p.entry.body.position.distanceTo(p.home.p) > 0.3 || !p.entry.body.world : false;
+    }
+
+    update(dt) {
+        const props = this.room.props;
+        if (!props.some(p => this._disturbed(p))) { this.quiet = 0; return; }
+        const busy = props.some(p => this.fire.isBurning(p.thing) || (p.entry && p.entry.body.world && p.entry.body.velocity.length() > 0.3));
+        this.quiet = busy ? 0 : this.quiet + dt;
+        if (this.quiet >= this.after) this.reset();
+    }
+
+    reset() {
+        for (const p of this.room.props) {
+            if (p.entry) {
+                Physics.restore(p.entry, p.home.p, p.home.q, TIER.INTERACTIVE, p.mass);
+                if (!p.mesh.parent) this.room.scene.add(p.mesh);
+                delete p.entry.data.thrownBy;
+            }
+            p.mesh.scale.set(1, 1, 1);
+            const m = p.mesh.userData.ownMaterials?.body;
+            if (m) { m.color.setScalar(1); m.emissiveIntensity = 0; }
+            this.fire.reset(p.thing);
+        }
+        this.quiet = 0;
+        EventBus.emit(EV.STRUCTURE_STATE, { id: 'TestRoom_Props', from: 'Disturbed', to: 'Intact', cause: 'rebuilt' });
+    }
 }

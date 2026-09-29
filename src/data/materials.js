@@ -24,11 +24,10 @@
 // `whenBurning` replaces `change` while the object is on fire: anything
 // burning is a fire source you can pull from.
 //
-// `loose` is the MOVE element once a piece has broken free (a plank knocked
-// out of the barricade is light enough for Air to lift).
-//
-// Air itself has no material: it comes from the hero (touch the hero and
-// drag for wind, flick for a gust; AirSystem).
+// Air has no material and moves nothing by hand: it comes from the hero as
+// wind and gusts (touch the hero and drag, or flick; AirSystem). Carrying
+// loose planks with Air was tried and removed after the phone test: it stole
+// the touch from Fire (a broken plank could no longer be set alight).
 // ============================================================
 
 export const MATERIALS = {
@@ -43,7 +42,21 @@ export const MATERIALS = {
         whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
         flammable: { fuel: 8, ignitesAt: 1 },   // seconds of burning; heat 0..1 to catch
         soaks: 20,                               // seconds wet timber resists fire
-        loose: 'air',                            // once broken off and loose, Air lifts it
+    },
+    hay: {
+        name: 'hay',                    // dry: answers Fire almost as fast as coals
+        change: { element: 'fire', verb: 'ignite', hold: 0.25 },
+        whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
+        flammable: { fuel: 3.5, ignitesAt: 0.55, flash: 2 },   // flash: goes up at full strength at once, spreads this much faster
+        soaks: 20,
+    },
+    barrel: {
+        name: 'oil',                    // an oil barrel: burns briefly, then bursts
+        change: { element: 'fire', verb: 'ignite', hold: 0.6 },
+        whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
+        flammable: { fuel: 2.5, ignitesAt: 1 },
+        explodes: { radius: 3.5, push: 9, wear: 60 },
+        soaks: 20,
     },
     coals: {
         name: 'coals',

@@ -75,12 +75,13 @@ Agreed 2026-09-29. Air is the one element with no source in the world, so it com
 |---|---|
 | Touch **the hero** and drag | Steady **wind** from the hero toward what the finger points at: a ~7 m cone, pale-jade streaks. Keeps blowing while the finger stays down |
 | Touch the hero and **flick** | A **gust** toward what's under the finger where it lifts (screen direction alone aims badly: depth is squashed on a phone) |
-| Drag a **loose, light thing** (a plank knocked out of the barricade) | Air lifts it: the MOVE verb for loose timber, as Earth is for stone |
+**Air carries nothing.** It only blows. (Carrying loose planks with Air was tried and removed after the phone test: it stole the touch from Fire, so a broken plank could no longer be set alight.)
 
 What moving air does:
-- **Pushes:** light things fly, rocks roll (heavy ones barely), a fireball or orb in flight is deflected.
+- **Pushes:** light things drift, crates shift, rocks barely roll, a fireball or orb in flight is deflected. (Halved after the phone test.)
 - **Fans fire, both ways:** a young flame (under 2.5 s old) blows out after about 0.35 s of wind; an established fire flares for 3 s, burns faster, and spreads further and faster **downwind**. Blowing on a fire too late drives it across the wall.
-- **Hurts** (the player's choice): a gust cracks timber in its path, about 30 to 45 damage per plank at 5 m; it breaks planks that were already damaged, and three gusts bring a sound barricade down. Steady wind doesn't break things.
+- **Hurts, a little:** a gust does at most 12 damage at its heart (was 70; three gusts used to bring the barricade down). It finishes off a plank that's nearly broken and barely marks sound timber. Steady wind breaks nothing.
+- **Touch priority:** a touch squarely on a thing (a rock at the hero's feet) goes to that thing; otherwise a touch on the hero is Air; otherwise the fat-finger assist picks the nearest thing.
 - **Touching the hero wins over the move stick:** in portrait the hero stands at the move zone's edge, so a touch on the hero is Air even inside the bottom-left quarter. The hero's touch area is at least 60 px.
 
 ## Where the Phase 3 element wheel fits

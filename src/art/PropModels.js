@@ -238,3 +238,66 @@ export function basin(seed) {
     k.cyl('glow', 0.99, 0.99, 0.035, 14, at(0, 0.66, 0), ELEMENT.water.rune);
     return { group: k.build(), surfaceY: 0.82, radius: 1.0, height: 0.87 };
 }
+
+/** A wooden crate: plank faces, a darker frame, iron corners. `size` metres. Own materials (it burns). */
+export function crate(seed, size = 0.9) {
+    const k = new Kit();
+    const h = size / 2;
+    k.box('body', size, size, size, at(0, 0, 0), pick(WORLD.timber, seed), { ch: 0.03 });
+    // Frame battens on every face, proud of the planks: a border and a diagonal brace.
+    const f = h + 0.015, D = WORLD.timberDark;
+    for (const rot of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+        const face = (x, y, w, hh, rz = 0) => {
+            const m = new THREE.Matrix4().makeRotationY(rot).multiply(at(x, y, f, 0, 0, rz));
+            k.box('body', w, hh, 0.03, m, D);
+        };
+        face(0, h - 0.05, size, 0.1);
+        face(0, -h + 0.05, size, 0.1);
+        face(h - 0.05, 0, 0.1, size);
+        face(-h + 0.05, 0, 0.1, size);
+        face(0, 0, size * 1.2, 0.08, Math.PI / 4);
+    }
+    k.box('body', size + 0.04, 0.03, size + 0.04, at(0, h + 0.01, 0), WORLD.timber[2], { ch: 0.01 });
+    return k.build({ own: true });
+}
+
+/** An oil barrel: staves, iron hoops, a lid, a dark oily drip. Own materials (it burns, then bursts). */
+export function barrel(seed) {
+    const k = new Kit();
+    k.cyl('body', 0.36, 0.36, 1.0, 12, at(0, 0, 0), 0x6a3a22, { flat: true });
+    k.cyl('body', 0.4, 0.4, 0.5, 12, at(0, 0, 0), 0x72402a, { flat: true });       // the belly
+    for (const y of [-0.42, -0.17, 0.17, 0.42]) k.cyl('body', 0.41 - Math.abs(y) * 0.1, 0.41 - Math.abs(y) * 0.1, 0.05, 12, at(0, y, 0), WORLD.iron);
+    k.cyl('body', 0.34, 0.34, 0.03, 12, at(0, 0.51, 0), 0x4a2a18);
+    k.box('body', 0.08, 0.3, 0.03, at(0.18, 0.2, 0.37, 0, 0.45, 0), 0x1a1612);   // an oily stain down the side
+    k.box('glow', 0.14, 0.14, 0.02, at(0, 0.05, 0.415, 0, 0, Math.PI / 4), ELEMENT.fire.deep);  // a warning mark
+    return k.build({ own: true });
+}
+
+/** A training dummy: a post, a crossbar, a stuffed sack body and head. Own materials (it burns). */
+export function dummy(seed) {
+    const k = new Kit();
+    const STRAW = 0xc9a45a, SACK = 0xa88a5e;
+    k.box('body', 0.16, 1.9, 0.16, at(0, 0, 0), pick(WORLD.timber, seed), { ch: 0.02 });
+    k.box('body', 1.1, 0.12, 0.12, at(0, 0.45, 0), WORLD.timberDark, { ch: 0.02 });
+    k.box('body', 0.5, 0.7, 0.34, at(0, 0.3, 0.02), SACK, { ch: 0.08 });
+    k.box('body', 0.34, 0.34, 0.3, at(0, 0.88, 0.02), SACK, { ch: 0.08 });
+    for (const x of [-0.55, 0.55]) k.box('body', 0.14, 0.2, 0.14, at(x, 0.45, 0), STRAW, { ch: 0.04 });
+    k.box('body', 0.52, 0.06, 0.36, at(0, 0.02, 0.02), 0x6b4a2a);               // rope belt
+    k.box('body', 0.12, 0.12, 0.03, at(0, 0.3, 0.2), ELEMENT.earth.deep);        // a target mark
+    return k.build({ own: true });
+}
+
+/** A bundle of dry hay, bound with twine. No collider: it is walked through and burns fast. */
+export function hay(seed) {
+    const k = new Kit();
+    const col = [0xd8b25a, 0xc9a24e, 0xe0bf6a][seed % 3];
+    k.box('body', 0.7, 0.36, 0.5, at(0, 0.18, 0, 0, seededAngle(seed), 0), col, { ch: 0.1 });
+    k.box('body', 0.72, 0.04, 0.52, at(0, 0.2, 0, 0, seededAngle(seed), 0), 0x7a5a30);
+    for (let i = 0; i < 4; i++) {
+        const a = seededAngle(seed * 3 + i) * 3;
+        k.box('body', 0.03, 0.22, 0.03, at(Math.cos(a) * 0.3, 0.42, Math.sin(a) * 0.2, 0.3, a, 0.2), col);
+    }
+    return k.build({ own: true });
+}
+
+function seededAngle(n) { return (seeded(n * 1.7) - 0.5) * 0.8; }

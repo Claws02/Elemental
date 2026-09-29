@@ -61,11 +61,7 @@ export class Intent {
 
     _moveElement(thing) {
         const mv = thing.mat.move;
-        if (!mv) {
-            // Broken off and light: Air lifts it.
-            if (thing.mat.loose === 'air' && thing.entry && this.air.canMove(thing.entry)) return 'air';
-            return null;
-        }
+        if (!mv) return null;
         if (mv === 'earth' && !this.earth.canMove(thing.entry)) return null;
         return mv;
     }
@@ -82,11 +78,16 @@ export class Intent {
     /** A finger lands on the world. Returns true if Intent takes it. */
     press(x, y) {
         if (this.state !== 'idle') return false;
-        if (this.air.onHero(x, y)) {
+        // Priority: a touch exactly on a thing, then the hero (Air), then the
+        // fat-finger assist. The hero's touch area is generous, and must not
+        // steal a touch that lands squarely on a rock at their feet.
+        const usable = t => this._usable(t);
+        let thing = this.interactables.pick(x, y, this.camera, usable, { assist: false });
+        if (!thing && this.air.onHero(x, y)) {
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'wind', blowing: false, element: 'air' });
             return true;
         }
-        const thing = this.interactables.pick(x, y, this.camera, t => this._usable(t));
+        thing = thing || this.interactables.pick(x, y, this.camera, usable);
         if (!thing) return false;
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
         this.trail = [];

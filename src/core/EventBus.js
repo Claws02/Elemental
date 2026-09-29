@@ -56,4 +56,5 @@ export const EV = {
     WATER_DRAWN:        'WaterDrawn',
     FIRE_FANNED:        'FireFanned',
     WIND:               'Wind',
+    EXPLOSION:          'Explosion',
 };

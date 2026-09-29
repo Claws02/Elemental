@@ -85,6 +85,7 @@ function boot() {
         water.update(dt);
         air.update(dt);
         room.barricade.update(dt);
+        room.propReset.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
