@@ -12,6 +12,7 @@
     "core": "node qa/core.js",
     "creatures": "node qa/creatures.js",
     "prologue": "node qa/prologue.js",
+    "abilities": "node qa/abilities.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",
     "scenes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-scenes.mjs",
     "scene:veyra": "node scripts/scenes/veyra.mjs",

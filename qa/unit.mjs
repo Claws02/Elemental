@@ -126,6 +126,13 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     EventBus.emit(EV.FIRE_STARTED, { id: 'Veyra_House_Home_R0', cause: 'awakening' });
     check(L.get('harm') === 2.5, `a surge that hurts people and lights a roof is harm; the awakening's fire isn't (${L.get('harm')})`);
     L.dispose();
+    // Abilities: their elements usable, and learned in the story.
+    p.flags.charm = 'refused';
+    const before = p.can('raise');
+    p.flags['learned.raise'] = true;
+    check(!before && p.can('raise') && !p.can('lava'), 'in the story an ability needs learning; a combination needs both its elements usable too');
+    const sb = new Progression('sandbox');
+    check(['raise', 'freeze', 'lava', 'firestorm', 'mud'].every(a => sb.can(a)), 'the sandbox knows every ability');
 }
 
 console.log(pass.map(p => '  ok   ' + p).join('\n'));

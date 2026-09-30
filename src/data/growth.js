@@ -53,6 +53,18 @@ export const SURGE = {
     playerHurt: 6,          // a fire surge singes you too
 };
 
+// Abilities beyond an element's basics, and combinations of two. Each needs its
+// elements usable (not locked, not stilled by the charm) and, in the story, to
+// have been learned: the story sets flag `learned.<ability>` (the sandbox knows
+// them all). docs/ABILITIES.md.
+export const ABILITIES = {
+    raise:     { name: 'Raise stone', needs: ['earth'] },
+    freeze:    { name: 'Ice',         needs: ['water', 'air'] },
+    lava:      { name: 'Lava',        needs: ['earth', 'fire'] },
+    firestorm: { name: 'Firestorm',   needs: ['fire', 'air'] },
+    mud:       { name: 'Mud',         needs: ['earth', 'water'] },
+};
+
 // Where a new story starts, and the sandbox.
 export const PROFILES = {
     story: {

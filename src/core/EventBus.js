@@ -63,6 +63,7 @@ export const EV = {
     GROWTH:             'Growth',
     WILD_BURST:         'WildBurst',
     SURGE:              'Surge',
+    EARTH_RAISED:       'EarthRaised',
     CHARM:              'Charm',
     LESSON:             'Lesson',
     PLATE:              'Plate',

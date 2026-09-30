@@ -41,6 +41,7 @@ import { Vitals } from './player/Vitals.js';
 import { rememberScene } from './scene/Loader.js';
 import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
+import { Earthworks } from './elements/Earthworks.js';
 
 /**
  * @param {object} o
@@ -83,6 +84,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player, prog });
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
+    const works = new Earthworks({ scene, hero: player, camera });
     wireScene(world, { interactables, fire, water });
     const forget = rememberScene(world, session);
     // Whose is it: a piece of a building answers for the building (Veyra_House_02_W1_P03 → Veyra_House_02).
@@ -117,7 +119,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     };
     world.onExit = (to, where) => travel(to, where);
     vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
     const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o) } }) : null;
@@ -181,6 +183,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         player.rig.setElement(intent.element);
         player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
         Physics.step(dt);
+        works.update(dt);
         fire.update(dt);
         water.update(dt);
         air.update(dt);
@@ -211,7 +214,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, wearCharm, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, works, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
@@ -226,6 +229,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         story?.dispose();
         ledger.dispose();
         creatures.dispose();
+        works.dispose();
         vitals.dispose();
         forget();
         input.dispose();

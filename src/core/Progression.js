@@ -16,7 +16,7 @@
 // ============================================================
 
 import { EventBus, EV } from './EventBus.js';
-import { GAINS, PROFILES, GROWTH } from '../data/growth.js';
+import { GAINS, PROFILES, GROWTH, ABILITIES } from '../data/growth.js';
 
 export class Progression {
     /**
@@ -46,6 +46,13 @@ export class Progression {
     charmed() { return this.flags.charm === 'worn'; }
     /** The state as the player feels it: a wild element under the charm is as good as locked. */
     live(el) { const s = this.state(el); return s === 'wild' && this.charmed() ? 'locked' : s; }
+
+    /** An ability or combination (data/growth.js ABILITIES): its elements usable, and learned (the sandbox knows them all). */
+    can(ability) {
+        const a = ABILITIES[ability];
+        if (!a || !a.needs.every(el => this.has(el))) return false;
+        return this.profile === 'sandbox' || !!this.flags['learned.' + ability];
+    }
 
     /** A number from data/growth.js for this element's current Power or Control. */
     earth(key) {

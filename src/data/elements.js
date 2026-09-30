@@ -11,6 +11,18 @@
 export const EARTH = {
     range: 14,           // how far the hero can sense and grab
     // How heavy a stone Earth lifts is Earth's Power (data/growth.js).
+    // Raising stone from the ground (elements/Earthworks.js).
+    raise: {
+        hold: 0.8,             // seconds of stillness on open ground before it rises
+        reach: 9,              // metres from the hero
+        size: 1.4,             // the column's width
+        minHeight: 0.7,        // how far it comes up at once
+        maxHeight: [1.6, 3.2], // how far it can be raised, at Earth Power 0 … 1
+        speed: 1.8,            // m/s rising: slow enough to ride
+        sinkSpeed: 0.8,
+        last: 25,              // seconds before it sinks back
+        most: 3,               // columns standing at once
+    },
 };
 
 export const FIRE = {

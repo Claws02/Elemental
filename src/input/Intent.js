@@ -30,7 +30,12 @@
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
 //   press on a thing with only CHANGE     → pending, for that material's hold time
+//   press on OPEN GROUND in reach         → ground (Earth can raise stone there)
 //   press on nothing usable               → not ours: Gestures orbits the camera
+//
+//   ground     —              → orbit (idle)        progress; at 100% a        → idle           —
+//                                                   column rises → raising
+//   raising    —              → stop (idle)          the column keeps rising    → idle           —
 //
 // Commit of a CHANGE verb:
 //   pull    a fireball comes away in the hand → holding it
@@ -39,6 +44,7 @@
 
 import { changeVerb } from '../data/materials.js';
 import { WILD } from '../data/growth.js';
+import { EARTH } from '../data/elements.js';
 import { EventBus, EV } from '../core/EventBus.js';
 
 const MOVE_PX = 10;          // finger travel that counts as a drag, not a hold
@@ -48,8 +54,8 @@ const YANK_PX = 2200;        // px/s away from the basin that tears the water fr
 const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -116,7 +122,14 @@ export class Intent {
             return true;
         }
         thing = thing || this.interactables.pick(x, y, this.camera, usable);
-        if (!thing) return false;
+        if (!thing) {
+            // Open ground: Earth can raise stone here, if the finger stays still.
+            const g = this.works && this.prog.can('raise') ? this.works.groundAt(x, y) : null;
+            if (!g) return false;
+            Object.assign(this, { x, y, ax: x, ay: y, thing: null, t: 0, state: 'ground', ground: g, column: null, element: 'earth' });
+            this.channel.aimAt(g, 'earth');
+            return true;
+        }
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
         this.trail = [];
         if (thing.mat.source === 'water' && this.water.beginStream(thing)) {
@@ -153,6 +166,11 @@ export class Intent {
         case 'done':
             this._cancel();
             return 'orbit';
+        case 'ground':
+            if (moved) { this._cancel(); return 'orbit'; }
+            return null;
+        case 'raising':
+            return null;
         case 'wind':
             if (!this.blowing && moved) this.blowing = true;
             if (this.blowing) {
@@ -222,6 +240,18 @@ export class Intent {
             }
             break;
         }
+        case 'ground':
+            this.t += dt;
+            if (this.t >= EARTH.raise.hold) {
+                this.column = this.works.raise(this.ground, 'player');
+                this.state = 'raising';
+                this.hero.anim?.throw?.();
+            }
+            break;
+        case 'raising':
+            this.works.grow(this.column, dt, this.prog.power('earth'));
+            this.channel.aimAt(this.column.mesh.position, 'earth');
+            break;
         case 'done':
             this.doneT -= dt;
             if (this.doneT <= 0) this.channel.aimAt(null);
@@ -272,6 +302,7 @@ export class Intent {
 
     /** The progress ring at the finger, or null: { x, y, progress 0..1, element }. */
     ring() {
+        if (this.state === 'ground') return { x: this.x, y: this.y, progress: Math.min(1, this.t / EARTH.raise.hold), element: 'earth' };
         if (this.state === 'pending') return { x: this.x, y: this.y, progress: Math.min(1, this.t / this.verb.hold), element: this.verb.element };
         if (this.state === 'holding') {
             const cv = this._changeVerb(this.thing, false);
