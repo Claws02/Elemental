@@ -223,6 +223,12 @@ export class FireSystem {
         return true;
     }
 
+    /** A held fireball is used up (a firestorm tore it open). */
+    spendFireball(entry) {
+        for (const fb of this.fireballs) if (fb.entry === entry) { this._dissipate(fb); return true; }
+        return false;
+    }
+
     /** A fireball that meets water goes out in a puff of steam. */
     quenchFireball(entry) {
         for (const fb of this.fireballs) if (fb.entry === entry) { this.fx.steam?.(entry.mesh.position, 12); this._dissipate(fb); return true; }

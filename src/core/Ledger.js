@@ -19,6 +19,7 @@
 // ============================================================
 
 import { EventBus, EV } from './EventBus.js';
+import { FIRESTORM } from '../data/elements.js';
 
 export const TALLIES = ['harm', 'care', 'excess', 'spared', 'killed'];
 export const REGIONS = ['verdant', 'emberwall', 'saltmere', 'skyreach', 'glass', 'capital'];
@@ -53,6 +54,7 @@ export class Ledger {
             EventBus.on(EV.FIRE_STARTED, e => { if (yours(e.cause) && this._owned(e.id)) this.add('harm', 0.5); }),
             // Lava is excess by nature: far more than any moment needs.
             EventBus.on(EV.LAVA, e => { if (e.cause === 'player') this.add('excess', 1); }),
+            EventBus.on(EV.FIRESTORM, e => { if (e.cause === 'player' && e.lit >= FIRESTORM.excessAt) this.add('excess', 1); }),
             // People caught in a surge.
             EventBus.on(EV.SURGE, e => { if (e.cause === 'surge' && e.hurt?.length) this.add('harm', e.hurt.length); }),
             EventBus.on(EV.FIRE_OUT, e => { if (e.cause === 'player' && (e.doused || e.blown || e.pulled) && this._owned(e.id)) this.add('care', 0.5); }),

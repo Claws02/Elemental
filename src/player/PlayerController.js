@@ -13,6 +13,7 @@ import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { buildHero, HeroAnimator } from '../art/HeroModel.js';
+import { MUD } from '../data/elements.js';
 
 const RADIUS = 0.42;
 const WALK = 3.2, RUN = 6.8;
@@ -55,7 +56,7 @@ export class PlayerController {
         const iz = move.x * sin + move.y * cos;
         const mag = Math.hypot(ix, iz);
         // Channelling slows the hero: you cannot sprint and hold a boulder.
-        const top = (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? 0.45 : 1);
+        const top = (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? 0.45 : 1) * (this.mired > 0 ? MUD.slow : 1);
         const tx = mag > 0.05 ? (ix / mag) * top * Math.min(1, mag) : 0;
         const tz = mag > 0.05 ? (iz / mag) * top * Math.min(1, mag) : 0;
         const rate = mag > 0.05 ? ACCEL : DECEL;

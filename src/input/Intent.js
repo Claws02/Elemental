@@ -30,7 +30,10 @@
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
 //   press on a thing with only CHANGE     → pending, for that material's hold time
-//   SECOND FINGER on the hero while streaming → the stream freezes (Ice) → done
+//   SECOND FINGER (a combination: the second touch names the second element's source)
+//     streaming, on the hero          → the stream freezes (Ice, Water + Air) → done
+//     streaming, on open ground       → mud where it lands (Earth + Water); the stream runs on
+//     holding a fireball, on the hero → a firestorm toward it (Fire + Air) → done
 //   press on OPEN GROUND in reach         → ground (Earth can raise stone there)
 //   press on nothing usable               → not ours: Gestures orbits the camera
 //
@@ -55,8 +58,8 @@ const YANK_PX = 2200;        // px/s away from the basin that tears the water fr
 const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null, ice = null }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works, ice });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null, ice = null, storm = null, mud = null }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -157,6 +160,22 @@ export class Intent {
      * while streaming, touching the hero freezes the stream (Water + Air: Ice).
      */
     second(x, y) {
+        const held = this.channel.held?.entry;
+        // Holding a fireball, touch the hero: Fire + Air, a firestorm toward where the fireball was.
+        if (this.state === 'holding' && held?.data.fireball && this.storm && this.prog.can('firestorm') && this.air.onHero(x, y)) {
+            const from = this.hero.position.clone(), dir = held.mesh.position.clone().sub(from);
+            this.fire.spendFireball(held);
+            this.channel.let();
+            this.storm.blow(from, dir, 'player');
+            this.hero.anim?.throw?.();
+            Object.assign(this, { element: 'fire', state: 'done', doneT: 0.4, thing: null });
+            return true;
+        }
+        // Streaming, touch open ground: Earth + Water, mud where the water lands. The stream keeps running.
+        if (this.state === 'stream' && this.mud && this.prog.can('mud') && !this.air.onHero(x, y) && this.works?.groundAt(x, y)) {
+            this.mud.make(this.water.stream.cur, 'player');
+            return true;
+        }
         if (this.state === 'stream' && this.ice && this.prog.can('freeze') && this.air.onHero(x, y)) {
             const arc = this.water.freeze();
             if (!arc) return false;

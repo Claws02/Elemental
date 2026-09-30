@@ -8,6 +8,8 @@
 //   and the arc freezes; what it was landing on freezes too.
 //   Lava (Earth + Fire): a held stone heated past glowing goes molten; thrown,
 //   it bursts into a pool that burns everything in it, then crusts over.
+//   Firestorm (Fire + Air): holding a fireball, a second finger on the hero.
+//   Mud (Earth + Water): streaming, a second finger on open ground.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/abilities.js
 // ============================================================
@@ -186,6 +188,94 @@ const SHOTS = path.join(__dirname, 'shots');
     await wait(400);
     const crusted = await ev(() => ({ pools: __EL.lava.pools.length, scorches: __EL.lava.scorches.length }));
     check(crusted.pools === 0 && crusted.scorches === 1, `it crusts over, and the scorch stays (${JSON.stringify(crusted)})`);
+
+    // ---- Firestorm: Fire + Air -----------------------------------------------------------------------------
+    await open('arena');
+    await ev(() => { __EL.vitals.invulnerable = true; for (const c of __EL.creatures.all) { c.engaged = false; c.group.engaged = false; c.group.item.aggressive = false; } });
+    const storm = await ev(async () => {
+        const T = __EL.THREE, F = __EL.fire;
+        const brazier = __EL.interactables.things.find(t => F.sources.some(s => s.thing === t));
+        // Stand by the brazier, facing the hay.
+        const bp = brazier.pos();
+        const hays = __EL.interactables.things.filter(t => /hay/i.test(t.id));
+        const hp = hays[0].pos();
+        const dir = new T.Vector3(hp.x - bp.x, 0, hp.z - bp.z).normalize();
+        __EL.player.body.position.set(bp.x - dir.x * 1.5, 0.45, bp.z - dir.z * 1.5);
+        __EL.cam.yaw = Math.atan2(dir.x, dir.z) + Math.PI;
+        await new Promise(r => setTimeout(r, 700));
+        const s = __screen(bp.clone().setY(bp.y + 0.3));
+        __touch('pointerdown', 1, s.x, s.y);
+        const t0 = performance.now();
+        while (__EL.intent.state !== 'holding' && performance.now() - t0 < 5000) await new Promise(r => setTimeout(r, 50));
+        if (!__EL.channel.held?.entry.data.fireball) return { err: 'no fireball', state: __EL.intent.state };
+        // Walk it toward the hay (6 m short), point it at the hay, then a hound in the cone.
+        __EL.player.body.position.set(hp.x - dir.x * 6, 0.45, hp.z - dir.z * 6);
+        await new Promise(r => setTimeout(r, 600));
+        const aim = s;
+        const hb = __EL.player.body.position;
+        __EL.channel.held.target.set(hb.x + dir.x * 2, 1.3, hb.z + dir.z * 2);     // held out in front, toward the hay
+        await new Promise(r => setTimeout(r, 900));
+        const hound = __EL.creatures.all.find(c => c.sp.behaviour === 'pack' && c.state !== 'dead');
+        const hero = __EL.player.body.position;
+        hound.body.position.set(hero.x + dir.x * 4, 0.5, hero.z + dir.z * 4); hound.body.velocity.set(0, 0, 0);
+        const hp0 = hound.hp, x0 = __EL.ledger.get('excess');
+        { const m = __EL.channel.held.entry.mesh.position; window.__fbAt = [+m.x.toFixed(1), +m.y.toFixed(1), +m.z.toFixed(1)]; }
+        await new Promise(r => setTimeout(r, 80));
+        const h = __screen(__EL.player.position.clone().setY(1));
+        __touch('pointerdown', 2, h.x, h.y);
+        await new Promise(r => setTimeout(r, 400));
+        const out = { fb: window.__fbAt, hero: [+hero.x.toFixed(1), +hero.z.toFixed(1)], hayAt: [hp.x, hp.z], state: __EL.intent.state, fireballs: F.fireballs.size, count: __EL.storm.count, hay: hays.filter(t => F.isBurning(t)).length, hound: +(hp0 - hound.hp).toFixed(1), excess: __EL.ledger.get('excess') - x0 };
+        __touch('pointerup', 2, h.x, h.y); __touch('pointerup', 1, aim.x, aim.y);
+        return out;
+    });
+    check(storm.state === 'done' && storm.count === 1 && storm.fireballs === 0 && storm.hay >= 1 && storm.hound > 5,
+        `holding a fireball, touch the hero: it tears open into a cone of flame that lights what's ahead and burns what stands in it (${JSON.stringify(storm)})`);
+    await shot('A5-firestorm');
+
+    // ---- Mud: Earth + Water -----------------------------------------------------------------------------------
+    await open('arena');
+    await ev(() => { __EL.vitals.invulnerable = true; for (const c of __EL.creatures.all) { c.engaged = false; c.group.engaged = false; c.group.item.aggressive = false; } });
+    const mud = await ev(async () => {
+        const W = __EL.water, src = W.sources[0], s = __screen(src.surface), T = __EL.THREE;
+        __touch('pointerdown', 1, s.x, s.y);
+        await new Promise(r => setTimeout(r, 200));
+        const aim = src.surface.clone().add(new T.Vector3(-4, 0, -2)); aim.y = 0;
+        const a = __screen(aim);
+        for (let i = 1; i <= 8; i++) { __touch('pointermove', 1, s.x + (a.x - s.x) * i / 8, s.y + (a.y - s.y) * i / 8); await new Promise(r => setTimeout(r, 40)); }
+        await new Promise(r => setTimeout(r, 1200));
+        // Second finger on open ground (not the hero).
+        let g = null;
+        for (const d of [5, 6, 7, 4.5, 8]) for (const t of [0, 0.4, -0.4, 0.8, -0.8, 1.2, -1.2]) {
+            const hp = __EL.player.position, f = __EL.cam.yaw + Math.PI, q = __screen(new T.Vector3(hp.x + Math.sin(f + t) * d, 0, hp.z + Math.cos(f + t) * d));
+            if (q.on && !__EL.air.onHero(q.x, q.y) && __EL.works.groundAt(q.x, q.y) && !__EL.interactables.pick(q.x, q.y, __EL.cam.cam, () => true, { assist: false })) { g = q; break; }
+            if (g) break;
+        }
+        if (!g) return { err: 'no open ground' };
+        __touch('pointerdown', 2, g.x, g.y);
+        await new Promise(r => setTimeout(r, 100));
+        const out = { patches: __EL.mud.patches.length, streaming: __EL.intent.state === 'stream' && !!W.stream };
+        const P = __EL.mud.patches[0].p;
+        const hound = __EL.creatures.all.find(c => c.sp.behaviour === 'pack' && c.state !== 'dead');
+        hound.body.position.set(P.x, 0.5, P.z); hound.body.velocity.set(0, 0, 0);
+        __EL.player.body.position.set(P.x + 0.5, 0.45, P.z);
+        await new Promise(r => setTimeout(r, 400));
+        out.houndMired = hound.mired > 0; out.heroMired = __EL.player.mired > 0;
+        __touch('pointerup', 2, g.x, g.y); __touch('pointerup', 1, a.x, a.y);
+        return out;
+    });
+    check(mud.patches === 1 && mud.streaming && mud.houndMired && mud.heroMired,
+        `streaming, touch open ground with a second finger: the ground where the water lands turns to mud that bogs down creatures and you (${JSON.stringify(mud)})`);
+    await shot('A6-mud');
+    // Slower in it: a hound steered at full speed covers less ground in mud.
+    const wade = await ev(async () => {
+        if (!__EL.mud.patches.length) return { err: 'no mud' };
+        const P = __EL.mud.patches[0].p, c = __EL.creatures.all.find(c => c.sp.behaviour === 'pack' && c.state !== 'dead');
+        const run = async (x, z) => { c.body.position.set(x, 0.5, z); c.body.velocity.set(0, 0, 0); c.engaged = true; c.group.engaged = true; const p0 = { x, z }; await new Promise(r => setTimeout(r, 500)); const d = Math.hypot(c.pos.x - p0.x, c.pos.z - p0.z); c.engaged = false; c.group.engaged = false; return d; };
+        const inMud = await run(P.x, P.z);
+        const dry = await run(P.x + 8, P.z + 8);
+        return { inMud: +inMud.toFixed(2), dry: +dry.toFixed(2) };
+    });
+    check(wade.inMud < wade.dry * 0.7, `a creature in mud covers far less ground (${JSON.stringify(wade)})`);
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await browser.close();

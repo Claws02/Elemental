@@ -2,6 +2,14 @@
 
 The elements beyond their basics. The rule from `CONTEXT_CONTROLS.md` holds: no buttons and no cooldowns. What the finger is on and what the finger does decide what happens.
 
+**The grammar of combinations:** the second finger names the second element's source. The hero is Air (the Conduit's own breath), and open ground is Earth. With one finger already on water or fire:
+
+- stream, then the hero: **ice**
+- stream, then the ground: **mud**
+- fireball, then the hero: **firestorm**
+
+Lava is the exception. It is Fire held on Earth's stone for longer.
+
 **Learning.** Each ability needs its elements usable: known, and not stilled by Cael's charm. In the story it also has to be learned, which the script does with `setFlag learned.<ability> = true` (for example from a lesson). The sandbox knows every ability. The list is `ABILITIES` in `src/data/growth.js`, and `Progression.can(ability)` is the check.
 
 | Ability | Elements | Gesture | Does |
@@ -10,8 +18,10 @@ The elements beyond their basics. The rule from `CONTEXT_CONTROLS.md` holds: no 
 
 | Ice | Water + Air | While a stream runs (one finger on it), **touch the hero with a second finger** | The whole arc freezes into a solid ice arch, which is a barrier. Where it was landing, creatures are locked in ice for 5 s (a flyer drops, and a hard hit does 2.5× damage) and fires go out. It melts after 20 s, six times faster beside fire, and a hard-thrown rock breaks a segment. |
 | Lava | Earth + Fire | Hold a stone still in the grip: Fire heats it, then past glowing it goes **molten**. Throw it | It bursts where it hits into a 2.2 m pool. For 10 s everything that burns there catches, creatures and you burn, and timber wears through. Then it crusts over and the scorch stays. A stream quenches it five times faster. Every pool is **excess** in the ledger. |
+| Firestorm | Fire + Air | Holding a fireball (one finger on it), **touch the hero with a second finger** | The fireball tears open into a 10 m cone of flame from the hero toward where it was held. Everything that burns in the cone catches, fires in it flare, creatures in it burn and are thrown back, and loose things are pushed. Lighting four or more things at once is excess. |
+| Mud | Earth + Water | While a stream runs, **touch open ground with a second finger** | The ground where the water lands turns to mud (2.4 m across). Creatures, and you, wade at a third of your speed, so a charge bogs down. Low fires in it go out. It dries after 25 s. The stream keeps running. |
 
-Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`), and the gestures are Intent's states.
+Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`, `FIRESTORM`, `MUD`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`, `Firestorm.js`, `Mud.js`), and the gestures are Intent's states.
 
 ## Raise stone
 
@@ -34,5 +44,13 @@ Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`). The code 
 - **It builds on heat:** heating a stone is the trained-Fire verb from Phase 1 (hold a held stone still). Learning lava lets the heat run past 1 up to 1.8; past 1 the stone is molten, glowing orange and shedding flame.
 - **Why excess:** the brief says lava should be "one of the first abilities that makes the player realize: maybe I shouldn't be doing this everywhere." The world counts it before it counts what burns.
 - **The stone is spent:** it cools to a black lump where it burst.
+
+*Test: `qa/abilities.js`.*
+
+## Firestorm and mud
+
+- **Firestorm aims where the fireball is:** the cone runs from the hero toward the fireball held in front of them, so the finger that holds it also aims it.
+- **Mud leaves the stream running:** unlike ice, which uses the water up, mud only needs the water to keep coming. Muddy a lane, then keep dousing.
+- **Still to come:** the brief also asks mud to repair structures and make clay. That comes with building repair in the towns phase.
 
 *Test: `qa/abilities.js`.*

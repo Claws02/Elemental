@@ -62,6 +62,8 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Raise stone (Earth): cover, barriers, a lift. *Abilities test.*
   - [x] Ice (Water + Air): a second finger on the hero freezes the stream into an arch and locks what it lands on. *Abilities test.*
   - [x] Lava (Earth + Fire): a stone heated molten bursts into a burning pool; excess in the ledger. *Abilities test.*
+  - [x] Firestorm (Fire + Air): a held fireball and a second finger on the hero blow a cone of flame. *Abilities test.*
+  - [x] Mud (Earth + Water): streaming, a second finger on open ground makes mud that bogs creatures down. *Abilities test.*
 
 ## Phase 2: elemental sandbox
 

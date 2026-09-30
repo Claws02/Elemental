@@ -44,6 +44,8 @@ import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
+import { Firestorm } from './elements/Firestorm.js';
+import { Mud } from './elements/Mud.js';
 
 /**
  * @param {object} o
@@ -101,6 +103,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
     const ice = new Ice({ scene, fire, fx, creatures });
+    const storm = new Firestorm({ fire, fx, creatures });
+    const mud = new Mud({ scene, fire, creatures, player });
     const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     let leaving = false;
@@ -123,7 +127,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     };
     world.onExit = (to, where) => travel(to, where);
     vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
     const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o) } }) : null;
@@ -191,6 +195,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         works.update(dt);
         ice.update(dt);
         lava.update(dt);
+        mud.update(dt);
         fire.update(dt);
         water.update(dt);
         air.update(dt);
@@ -221,7 +226,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, works, ice, lava, wearCharm, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
@@ -239,6 +244,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         works.dispose();
         ice.dispose();
         lava.dispose();
+        mud.dispose();
         vitals.dispose();
         forget();
         input.dispose();

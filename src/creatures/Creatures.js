@@ -28,7 +28,7 @@ import { TIER } from '../engine/Physics.js';
 import { seeded } from '../engine/Kit.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { SPECIES, ELITE } from '../data/creatures.js';
-import { ICE } from '../data/elements.js';
+import { ICE, MUD } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 
 const G = 22;                 // the world's gravity (Physics.init)
@@ -100,6 +100,7 @@ class Creature {
         this.soaked = 0;
         this.tumble = 0;
         this.frozen = 0;            // seconds left locked in ice (Water + Air)
+        this.mired = 0;             // in mud (Earth + Water): Mud sets it each frame it wades
         this.home = pos.clone();
         this.facing = seeded(pos.x * 3.1) * Math.PI * 2;
         this.orbitDir = seeded(pos.z) > 0.5 ? 1 : -1;
@@ -228,7 +229,10 @@ class Creature {
         }
 
         const speed = sp.speed * this.speedK;
+        const mud = this.mired > 0 && !(flyer && b.position.y > 1.4) ? MUD.slow : 1;
+        this.mired = Math.max(0, this.mired - dt);
         const move = (dir, v, turn = 6) => {       // steer the body along the ground at speed v
+            v *= mud;
             const k = Math.min(1, 8 * dt);
             b.velocity.x += (dir.x * v - b.velocity.x) * k;
             b.velocity.z += (dir.z * v - b.velocity.z) * k;

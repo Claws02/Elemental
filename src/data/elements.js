@@ -51,6 +51,23 @@ export const LAVA = {
     scorches: 12,       // crusted pools kept on the ground
 };
 
+// Firestorm: Fire + Air (elements/Firestorm.js).
+export const FIRESTORM = {
+    reach: 10,          // metres the cone of flame carries
+    angle: 0.42,        // half-angle of the cone, radians (~24°)
+    burn: 35,           // fire damage to a creature at the root of the cone
+    push: 9,            // m/s given to loose things (less for heavy ones)
+    excessAt: 4,        // lighting this many things at once is excess
+};
+
+// Mud: Earth + Water (elements/Mud.js).
+export const MUD = {
+    radius: 2.4,
+    slow: 0.35,         // speed in the mud, as a share of normal
+    last: 25,           // seconds before it dries
+    most: 4,            // patches at once
+};
+
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
     startIntensity: 0.25,   // a new fire spreads at a quarter strength…
