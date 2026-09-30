@@ -38,6 +38,19 @@ export const ICE = {
     most: 3,            // arches standing at once
 };
 
+// Lava: Earth + Fire (elements/Lava.js).
+export const LAVA = {
+    molten: 1.8,        // a held stone's heat goes past 1 up to this with lava learned; past 1 it is molten
+    splashSpeed: 5,     // a molten stone hitting something this fast bursts
+    radius: 2.2,        // the pool
+    last: 10,           // seconds before it crusts over
+    burn: 30,           // fire damage per second to a creature in it
+    playerBurn: 25,     // per second to the hero standing in it
+    wear: 0.8,          // timber worn per second
+    quench: 5,          // a stream on it cools it this many times faster
+    scorches: 12,       // crusted pools kept on the ground
+};
+
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
     startIntensity: 0.25,   // a new fire spreads at a quarter strength…

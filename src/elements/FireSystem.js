@@ -40,13 +40,14 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { WILD } from '../data/growth.js';
-import { FIRE } from '../data/elements.js';
+import { FIRE, LAVA } from '../data/elements.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { FIRE };
 
 const EMBER = new THREE.Color(0xff5a2a);
 const HOT = new THREE.Color(0xe0300a);
+const MOLTEN = new THREE.Color(0xff7a1a);
 const CHAR = 0.14;
 
 export class FireSystem {
@@ -74,6 +75,7 @@ export class FireSystem {
         const e = thing.entry;
         e.data.heat = 0;
         e.body.addEventListener('collide', ev => {
+            if (e.data.molten && this.channel?.held?.entry !== e && Math.abs(ev.contact.getImpactVelocityAlongNormal()) > LAVA.splashSpeed) this.queue.push({ kind: 'lava', src: thing });
             if ((e.data.heat || 0) > FIRE.hotIgnites) this.queue.push({ kind: 'hot', src: thing, other: ev.body.userData });
         });
     }
@@ -253,9 +255,12 @@ export class FireSystem {
         if (!this.heatables.has(thing)) return;
         const d = thing.entry.data;
         const before = d.heat || 0;
-        d.heat = Math.min(1, before + FIRE.rockHeat * dt);
+        // With lava learned (Earth + Fire) it doesn't stop at hot: past 1 it is molten.
+        const cap = this.prog?.can?.('lava') ? LAVA.molten : 1;
+        d.heat = Math.min(cap, before + FIRE.rockHeat * dt);
         d.heatCause = cause;
         if (before < FIRE.hotIgnites && d.heat >= FIRE.hotIgnites) EventBus.emit(EV.OBJECT_HEATED, { id: thing.id, cause });
+        if (!d.molten && d.heat > 1) { d.molten = true; EventBus.emit(EV.MOLTEN, { id: thing.id, cause }); }
     }
 
     /**
@@ -391,15 +396,17 @@ export class FireSystem {
             const d = t.entry.data;
             if (!d.heat) continue;
             d.heat = Math.max(0, d.heat - FIRE.rockCool * dt);
+            if (d.molten && d.heat <= 1) d.molten = false;
             const m = t.mesh.userData.ownMaterials?.body;
             if (m) {
                 // Hot stone darkens and glows from within, deep red first.
                 m.color.setScalar(1 - d.heat * 0.6);
                 m.emissive.copy(HOT);
                 m.emissiveIntensity = d.heat * d.heat * (0.7 + Math.sin(this.time * 9 + t.entry.body.id) * 0.08);
+                if (d.heat > 1) m.emissive.copy(MOLTEN);       // past red: running orange
                 if (d.heat <= 0.001) m.color.setScalar(1);
             }
-            if (d.heat > 0.55) this.fx.burn(t.mesh.position, dt, { rate: 4 * d.heat, w: 0.4, h: 0.3, size: 0.3, smoke: 0.5 });
+            if (d.heat > 0.55) this.fx.burn(t.mesh.position, dt, { rate: 4 * d.heat * (d.heat > 1 ? 2.5 : 1), w: 0.4, h: 0.3, size: 0.3, smoke: 0.5 });
         }
 
         // Fireballs: burn in the hand; once let go, float on and die out.
@@ -465,6 +472,9 @@ export class FireSystem {
                     }
                     this._dissipate(fb);
                 }
+            } else if (c.kind === 'lava') {
+                const d = c.src.entry.data;
+                if (d.molten) { d.molten = false; this.onMolten?.(c.src, d.heatCause || 'environment'); }
             } else if (c.kind === 'hot') {
                 const other = c.other && this.interactables.forEntry(c.other);
                 const d = c.src.entry.data;

@@ -43,6 +43,7 @@ import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Ice } from './elements/Ice.js';
+import { Lava } from './elements/Lava.js';
 
 /**
  * @param {object} o
@@ -100,6 +101,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
     const ice = new Ice({ scene, fire, fx, creatures });
+    const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
@@ -188,6 +190,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         Physics.step(dt);
         works.update(dt);
         ice.update(dt);
+        lava.update(dt);
         fire.update(dt);
         water.update(dt);
         air.update(dt);
@@ -218,7 +221,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, works, ice, wearCharm, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, works, ice, lava, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
@@ -235,6 +238,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         creatures.dispose();
         works.dispose();
         ice.dispose();
+        lava.dispose();
         vitals.dispose();
         forget();
         input.dispose();

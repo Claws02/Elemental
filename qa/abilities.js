@@ -6,6 +6,8 @@
 //   keeps rising while held; stand on the spot and it lifts you; it sinks back.
 //   Ice (Water + Air): stream with one finger, touch the hero with another,
 //   and the arc freezes; what it was landing on freezes too.
+//   Lava (Earth + Fire): a held stone heated past glowing goes molten; thrown,
+//   it bursts into a pool that burns everything in it, then crusts over.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/abilities.js
 // ============================================================
@@ -138,9 +140,10 @@ const SHOTS = path.join(__dirname, 'shots');
         const seg = __EL.ice.arches[0].segs[Math.floor(__EL.ice.arches[0].segs.length / 2)];
         const i = __EL.world.rocks.findIndex(r => r.body.mass >= 8);
         const r = __EL.world.rocks[i];
-        r.body.position.set(seg.mid.x + 3, seg.mid.y + 0.5, seg.mid.z); r.body.velocity.set(0, 0, 0);
-        await new Promise(res => setTimeout(res, 200));
-        __EL.throwRockAt(i, seg.mid, 30);
+        // Thrown straight at the segment from 3 m off (velocity set on the body itself: its mesh hasn't caught up yet).
+        r.body.position.set(seg.mid.x + 3, seg.mid.y, seg.mid.z);
+        r.body.velocity.set(-30, 0.5, 0); r.body.wakeUp();
+        r.data.thrownBy = 'player'; r.data.thrownAt = performance.now();
         await new Promise(res => setTimeout(res, 1500));
         return { broken: __EL.ice.arches[0]?.segs.filter(s => !s.alive).length || 0, mass: r.body.mass };
     });
@@ -148,6 +151,41 @@ const SHOTS = path.join(__dirname, 'shots');
     await ev(() => { __EL.ice.arches[0].age = 19.5; });
     const melted = await until(() => __EL.ice.arches.length === 0, 15000);
     check(melted, 'the ice melts away on its own');
+
+    // ---- Lava: Earth + Fire --------------------------------------------------------------------------------
+    const molten = await ev(async () => {
+        const i = __EL.world.rocks.findIndex(r => r.body.mass < 30 && r.body.world);
+        const rock = __EL.world.rocks[i];
+        const thing = __EL.interactables.things.find(t => t.entry === rock);
+        for (let k = 0; k < 50; k++) __EL.fire.heat(thing, 0.1, 'player');
+        const hay = __EL.interactables.things.find(t => /hay/i.test(t.id) && !__EL.fire.isBurning(t));
+        const hp = hay.pos();
+        const x0 = __EL.ledger.get('excess');
+        const heat = rock.data.heat, wasMolten = !!rock.data.molten;
+        // Thrown down onto the hay from just beside it (velocity on the body itself: its mesh hasn't caught up).
+        rock.body.position.set(hp.x + 1.5, 1.4, hp.z);
+        rock.body.velocity.set(-12, -6, 0); rock.body.wakeUp();
+        rock.data.thrownBy = 'player'; rock.data.thrownAt = performance.now();
+        const t0 = performance.now();
+        while (!__EL.lava.pools.length && performance.now() - t0 < 6000) await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 600));
+        return { heat: +heat.toFixed(2), wasMolten, pools: __EL.lava.pools.length, hay: __EL.fire.isBurning(hay) || __EL.fire.flammables.get(hay)?.burned, excess: __EL.ledger.get('excess') - x0, spent: rock.data.heat === 0 };
+    });
+    check(molten.wasMolten && molten.heat > 1 && molten.pools === 1 && molten.hay && molten.excess >= 1 && molten.spent,
+        `held in Fire past glowing, a stone goes molten; thrown, it bursts into lava that sets the hay alight, and the ledger counts it as excess (${JSON.stringify(molten)})`);
+    await shot('A4-lava');
+    const burnt = await ev(async () => {
+        const pool = __EL.lava.pools[0], c = __EL.creatures.all.find(c => c.state !== 'dead' && !c.gone && c.sp.behaviour !== 'flyer');
+        c.frozen = 0; c.body.position.set(pool.p.x, 0.6, pool.p.z); c.body.velocity.set(0, 0, 0);
+        const hp0 = c.hp;
+        await new Promise(r => setTimeout(r, 800));
+        return { hurt: +(hp0 - c.hp).toFixed(1) };
+    });
+    check(burnt.hurt > 5, `a creature in the lava burns (${JSON.stringify(burnt)})`);
+    await ev(() => { __EL.lava.pools[0].age = 99; });
+    await wait(400);
+    const crusted = await ev(() => ({ pools: __EL.lava.pools.length, scorches: __EL.lava.scorches.length }));
+    check(crusted.pools === 0 && crusted.scorches === 1, `it crusts over, and the scorch stays (${JSON.stringify(crusted)})`);
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await browser.close();

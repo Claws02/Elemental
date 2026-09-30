@@ -61,6 +61,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [ ] **Elemental expansion** (ROADMAP phase 4, `ABILITIES.md`) ← in progress
   - [x] Raise stone (Earth): cover, barriers, a lift. *Abilities test.*
   - [x] Ice (Water + Air): a second finger on the hero freezes the stream into an arch and locks what it lands on. *Abilities test.*
+  - [x] Lava (Earth + Fire): a stone heated molten bursts into a burning pool; excess in the ledger. *Abilities test.*
 
 ## Phase 2: elemental sandbox
 

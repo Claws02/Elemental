@@ -190,7 +190,7 @@ export class Hud {
 
     /** The screen goes dark before the checkpoint comes back. */
     died(cause) {
-        const words = { fire: 'The fire took you.', fall: 'You fell.', fell: 'You fell.', blast: 'The blast took you.', 'wild-fire': 'Your own fire took you.' };
+        const words = { fire: 'The fire took you.', fall: 'You fell.', fell: 'You fell.', blast: 'The blast took you.', 'wild-fire': 'Your own fire took you.', lava: 'The lava took you.' };
         const el = this.el('hud-died');
         el.querySelector('span').textContent = words[cause] || 'You fell.';
         el.classList.add('on');

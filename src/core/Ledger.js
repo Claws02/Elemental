@@ -9,7 +9,7 @@
 //   harm     things that belonged to someone, damaged or burned by the player
 //   care     fires the player put out, things rebuilt, people shielded
 //   excess   force far beyond what the moment needed (a wall smashed flat
-//            where a gap would do)
+//            where a gap would do; every pool of lava)
 //   spared   creatures driven off rather than killed
 //   killed   creatures killed
 //
@@ -51,6 +51,8 @@ export class Ledger {
                 if (yours(e.cause) && ['Collapsed', 'Burned'].includes(e.to) && this._owned(e.id)) this.add('harm', 3);
             }),
             EventBus.on(EV.FIRE_STARTED, e => { if (yours(e.cause) && this._owned(e.id)) this.add('harm', 0.5); }),
+            // Lava is excess by nature: far more than any moment needs.
+            EventBus.on(EV.LAVA, e => { if (e.cause === 'player') this.add('excess', 1); }),
             // People caught in a surge.
             EventBus.on(EV.SURGE, e => { if (e.cause === 'surge' && e.hurt?.length) this.add('harm', e.hurt.length); }),
             EventBus.on(EV.FIRE_OUT, e => { if (e.cause === 'player' && (e.doused || e.blown || e.pulled) && this._owned(e.id)) this.add('care', 0.5); }),
