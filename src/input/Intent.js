@@ -67,14 +67,14 @@ export class Intent {
     _changeVerb(thing, burning) {
         const cv = changeVerb(thing.mat, burning);
         if (!cv) return null;
-        const st = this.prog.state(cv.element);
+        const st = this.prog.live(cv.element);
         if (st === 'locked') return null;
         if (st === 'wild') {
             if (cv.verb === 'pull' && burning) return null;
             // Heating stone in the grip takes trained Fire: untrained, holding
             // a stone still is just holding it (Lesson I's "hold it steady").
             if (cv.verb === 'heat') return null;
-            return { ...cv, hold: cv.hold * WILD[cv.element].holdFactor };
+            return { ...cv, hold: cv.hold * (WILD[cv.element]?.holdFactor ?? 1) };
         }
         return cv;
     }

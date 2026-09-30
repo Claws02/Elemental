@@ -8,7 +8,7 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 Every place is a scene file in `scenes/` (`docs/SCENES.md`), made in [Elemental-Editor](https://github.com/Claws02/Elemental-Editor): `?scene=village` opens a sample village built from the building kit.
 
-**New game** on the title screen asks for a name and a look, then plays the **prologue**: harvest eve in Veyra, the Emberwing flock, the stone that cracks, and a village on fire that you save or don't. **Lesson I**, Cael's first lesson, follows: Earth trained, Fire still wild, and powers grow in Power and Control (`docs/PROGRESSION.md`). Three save slots; **Continue** picks up at the last checkpoint. `?scene=courtyard` is the sandbox, every element fully trained.
+**New game** on the title screen asks for a name and a look, then plays the **prologue**: harvest eve in Veyra, the Emberwing flock, the stone that cracks, your own roof on fire, and a village you save or don't; then Cael's charm, worn or refused. **Lesson I**, Cael's first lesson, follows: Earth trained, Fire still wild, and powers grow in Power and Control (`docs/PROGRESSION.md`). Three save slots; **Continue** picks up at the last checkpoint. `?scene=courtyard` is the sandbox, every element fully trained.
 
 ![The courtyard](docs/assets/courtyard.png)
 

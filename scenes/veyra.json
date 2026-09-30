@@ -716,15 +716,16 @@
   {
    "id": "Flock",
    "type": "creature",
-   "x": 2,
+   "x": 15,
    "y": 0,
-   "z": -12,
+   "z": 15,
    "rotY": 0,
    "species": "emberwing",
-   "count": 5,
-   "spread": 6,
+   "count": 4,
+   "spread": 5,
    "aggressive": true,
    "elite": false,
+   "embers": false,
    "hidden": true
   },
   {
@@ -758,6 +759,17 @@
    "rotY": 0,
    "width": 4.5,
    "depth": 4.5,
+   "height": 3
+  },
+  {
+   "id": "Zone_Home",
+   "type": "trigger",
+   "x": 6.5,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "width": 4,
+   "depth": 6,
    "height": 3
   }
  ],
@@ -795,6 +807,30 @@
       "mood": {
        "name": "day",
        "secs": 0
+      }
+     },
+     {
+      "setElement": {
+       "el": "earth",
+       "state": "locked"
+      }
+     },
+     {
+      "setElement": {
+       "el": "fire",
+       "state": "locked"
+      }
+     },
+     {
+      "setElement": {
+       "el": "water",
+       "state": "locked"
+      }
+     },
+     {
+      "setElement": {
+       "el": "air",
+       "state": "locked"
       }
      },
      {
@@ -866,7 +902,8 @@
     "then": {
      "say": [
       "@Wynn Older than the valley, that stone.",
-      "@Wynn My grandmother said it hums on harvest nights. Don't lean on it."
+      "@Wynn My grandmother said it hums on harvest nights. Don't lean on it.",
+      "@Wynn Now go home and wash the forge off you. Lanterns at dark."
      ],
      "do": [
       {
@@ -879,12 +916,19 @@
     }
    },
    {
-    "id": "dusk",
-    "say": [
-     "@Bram Lanterns! Everyone to the stone!"
+    "id": "home",
+    "objective": "Go home before the lanterns",
+    "mark": "Veyra_House_Home",
+    "do": [
+     {
+      "checkpoint": true
+     }
     ],
     "until": {
-     "time": 9
+     "signal": {
+      "obj": "Zone_Home",
+      "name": "entered"
+     }
     }
    },
    {
@@ -898,13 +942,13 @@
      {
       "npc": {
        "id": "Hollis",
-       "role": "brigade"
+       "role": "cower"
       }
      },
      {
       "npc": {
        "id": "Tam",
-       "role": "brigade"
+       "role": "cower"
       }
      },
      {
@@ -922,17 +966,16 @@
      {
       "npc": {
        "id": "Bram",
-       "role": "brigade"
+       "role": "cower"
       }
      }
     ],
     "say": [
-     "@Wynn Emberwings! In the thatch!",
-     "@Hollis Buckets! To the well!"
+     "@Tam Emberwings! Get inside!"
     ],
-    "objective": "Stay close to the stone",
+    "objective": "Get away from them",
     "until": {
-     "time": 11
+     "time": 8
     }
    },
    {
@@ -963,17 +1006,61 @@
       }
      },
      {
-      "hint": "Something answers you. Touch the well and drag: water. Touch a stone: lift it. Hold still on fire: it grows."
+      "setElement": {
+       "el": "air",
+       "state": "wild"
+      }
+     },
+     {
+      "setFlag": {
+       "name": "charm",
+       "value": "none"
+      }
+     },
+     {
+      "surge": {
+       "el": "air",
+       "cause": "awakening"
+      }
+     },
+     {
+      "surge": {
+       "el": "fire",
+       "target": "Veyra_House_Home",
+       "cause": "awakening"
+      }
+     },
+     {
+      "npc": {
+       "id": "Hollis",
+       "role": "brigade"
+      }
+     },
+     {
+      "npc": {
+       "id": "Tam",
+       "role": "brigade"
+      }
+     },
+     {
+      "npc": {
+       "id": "Bram",
+       "role": "brigade"
+      }
+     },
+     {
+      "hint": "Something answers you. Touch the well and drag: water. Touch a stone: lift it. Touch yourself and drag: wind."
      },
      {
       "checkpoint": true
      }
     ],
     "say": [
-     "@Wynn The stone— it broke open—",
-     "@Bram What is that? What are you doing?"
+     "@Tam The stone— did you hear the stone?",
+     "@Tam Your roof! Fire— it came off you—",
+     "@Hollis Buckets! To the well!"
     ],
-    "objective": "Save what you can",
+    "objective": "Drive them off. Save what you can.",
     "waiting": [
      {
       "when": {
@@ -1254,13 +1341,14 @@
        }
       },
       "say": [
-       "@Tam You were at the well with us. I saw that too."
+       "@Tam It started on your roof. I saw that.",
+       "@Tam I saw you at the well after, too."
       ],
       "do": [
        {
         "setFlag": {
          "name": "veyra.blame",
-         "value": "birds"
+         "value": "forgiven"
         }
        }
       ]
@@ -1279,6 +1367,37 @@
          "value": "unsure"
         }
        }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "charm",
+    "say": [
+     "@Cael Here.",
+     "@Cael Old silver. Older than me. It quiets whatever in you hasn't learned to listen yet.",
+     "@Cael Wear it, and what's wild in you goes still. What I teach you will still answer.",
+     "@Cael Or don't. But what's in you won't wait until you're ready."
+    ],
+    "choices": [
+     {
+      "label": "Put it on.",
+      "flag": {
+       "name": "charm",
+       "value": "worn"
+      },
+      "say": [
+       "@Cael It isn't a cage. It's a quiet room."
+      ]
+     },
+     {
+      "label": "Not yet.",
+      "flag": {
+       "name": "charm",
+       "value": "refused"
+      },
+      "say": [
+       "@Cael Then keep it close. The day you want it, put it on."
       ]
      }
     ]
@@ -1339,12 +1458,6 @@
      "@Cael Fire is the loudest thing in you. I'll teach you something quieter first."
     ],
     "do": [
-     {
-      "setElement": {
-       "el": "water",
-       "state": "locked"
-      }
-     },
      {
       "setElement": {
        "el": "earth",

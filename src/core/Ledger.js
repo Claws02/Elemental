@@ -26,6 +26,9 @@ export const REGIONS = ['verdant', 'emberwall', 'saltmere', 'skyreach', 'glass',
 // How a kingdom sees you, from its own tallies. The names are the world's words.
 export const STANDING = ['the cause of all this', 'dangerous', 'unpredictable', 'necessary', 'saviour'];
 
+// A surge is the player's own power going off: the world counts it as theirs.
+const yours = c => c === 'player' || c === 'surge';
+
 export class Ledger {
     /**
      * @param {Session} session  the save session (the tallies live in its working copy)
@@ -37,7 +40,7 @@ export class Ledger {
         this._burst = [];
         this.off = [
             EventBus.on(EV.PIECE_BROKEN, e => {
-                if (e.cause !== 'player' || !this._owned(e.id)) return;
+                if (!yours(e.cause) || !this._owned(e.id)) return;
                 this.add('harm', 1);
                 // Many pieces at once from one act of force: excess.
                 const t = e.t;
@@ -45,9 +48,11 @@ export class Ledger {
                 if (this._burst.length === 5) this.add('excess', 1);
             }),
             EventBus.on(EV.STRUCTURE_STATE, e => {
-                if (e.cause === 'player' && ['Collapsed', 'Burned'].includes(e.to) && this._owned(e.id)) this.add('harm', 3);
+                if (yours(e.cause) && ['Collapsed', 'Burned'].includes(e.to) && this._owned(e.id)) this.add('harm', 3);
             }),
-            EventBus.on(EV.FIRE_STARTED, e => { if (e.cause === 'player' && this._owned(e.id)) this.add('harm', 0.5); }),
+            EventBus.on(EV.FIRE_STARTED, e => { if (yours(e.cause) && this._owned(e.id)) this.add('harm', 0.5); }),
+            // People caught in a surge.
+            EventBus.on(EV.SURGE, e => { if (e.cause === 'surge' && e.hurt?.length) this.add('harm', e.hurt.length); }),
             EventBus.on(EV.FIRE_OUT, e => { if (e.cause === 'player' && (e.doused || e.blown || e.pulled) && this._owned(e.id)) this.add('care', 0.5); }),
             EventBus.on(EV.CREATURE, e => {
                 if (e.cause !== 'player') return;

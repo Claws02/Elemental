@@ -16,6 +16,8 @@
 //             fire in someone's house and throws it (the Veyra fire)
 //   cower     keeps away from creatures
 //
+// Anyone caught in one of the player's surges flinches away (startle()).
+//
 // Characters walk in straight lines (no pathfinding yet): scenes lay out
 // their routes in the open.
 // ============================================================
@@ -185,12 +187,23 @@ export class Npc {
         } else this.speed = 0;
     }
 
+    /** Caught in a surge: stagger back from `from` and keep away a moment, then carry on. */
+    startle(from) {
+        const p = this.position;
+        const d = new THREE.Vector3(p.x - from.x, 0, p.z - from.z);
+        if (d.lengthSq() < 0.01) d.set(1, 0, 0);
+        this.flinch = { to: d.normalize().multiplyScalar(3.5).add(p), t: 2.5 };
+    }
+
     get position() { return this.rig.root.position; }
 
     /** Do their role; turn toward the player (or what they point at) and breathe. */
     update(dt, hero) {
         this.speed = 0;
-        if (this.role === 'brigade') this._brigade(dt);
+        if (this.flinch) {
+            this.flinch.t -= dt;
+            if (this.flinch.t <= 0 || this._walk(this.flinch.to, dt, 4.5)) this.flinch = null;
+        } else if (this.role === 'brigade') this._brigade(dt);
         else if (this.role === 'cower') this._cower(dt);
         else if (this.role === 'walk' && this.target) { if (this._walk(this.target, dt)) this.role = 'idle'; }
         const p = this.position, t = this.point || hero;

@@ -106,6 +106,28 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     check(parseWhen('good, ba d').some(c => c.bad), 'showWhen: nonsense is reported, not guessed');
 }
 
+// ---- Cael's charm -------------------------------------------------------------------------------------
+{
+    EventBus.reset();
+    const s = new Session(3, null, { persist: false });
+    const p = new Progression('story', { session: s });
+    for (const el of ['fire', 'water', 'air']) p.setState(el, 'wild');
+    p.setState('earth', 'trained');
+    check(p.has('fire') && p.has('water') && p.has('earth'), 'without the charm, wild elements answer');
+    p.flags.charm = 'worn';
+    check(!p.has('fire') && !p.has('water') && !p.has('air') && p.has('earth') && p.live('fire') === 'locked' && p.state('fire') === 'wild',
+        'the charm stills what is wild; what Cael has trained still answers');
+    p.setState('fire', 'trained');
+    check(p.has('fire'), 'an element trained under the charm comes back');
+    // A surge is the player's: the ledger counts it (the awakening's doesn't).
+    const L = new Ledger(s, 'verdant', () => 'civilian');
+    EventBus.emit(EV.SURGE, { el: 'earth', cause: 'surge', hurt: ['Mira', 'Tam'] });
+    EventBus.emit(EV.FIRE_STARTED, { id: 'Veyra_House_Tam_R0', cause: 'surge' });
+    EventBus.emit(EV.FIRE_STARTED, { id: 'Veyra_House_Home_R0', cause: 'awakening' });
+    check(L.get('harm') === 2.5, `a surge that hurts people and lights a roof is harm; the awakening's fire isn't (${L.get('harm')})`);
+    L.dispose();
+}
+
 console.log(pass.map(p => '  ok   ' + p).join('\n'));
 if (fail.length) { console.log(fail.map(p => '  FAIL ' + p).join('\n')); console.log('UNIT FAIL'); process.exit(1); }
 console.log('UNIT PASS');

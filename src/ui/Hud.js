@@ -35,6 +35,7 @@ export class Hud {
             <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>
             <div class="hud-choices" id="hud-choices"></div>
             <div class="hud-tip" id="hud-tip"></div>
+            <button class="hud-charm" id="hud-charm" type="button" aria-label="Cael's charm"></button>
             <div class="hud-vignette" id="hud-vignette"></div>
             <div class="hud-died" id="hud-died"><span></span></div>`;
         this.el = id => root.querySelector('#' + id);
@@ -45,6 +46,11 @@ export class Hud {
         this.onLink = null;          // set to catch the card's buttons instead of following them (the editor's Play mode)
         this.fps = 60; this._acc = 0; this._frames = 0;
         this.skipLine = false;
+        EventBus.on(EV.SURGE, e => {
+            if (e.cause !== 'surge') return;
+            const what = { fire: 'Fire', earth: 'Earth', water: 'Water', air: 'Air' }[e.el];
+            this.log(`${what} · it got away from you${e.hurt.length ? ' · someone was hurt' : ''}`);
+        });
         this.el('hud-say').addEventListener('pointerdown', e => { e.stopPropagation(); this.skipLine = true; });
         EventBus.on(EV.GROWTH, e => {
             const name = { earth: 'Earth', fire: 'Fire', water: 'Water', air: 'Air' }[e.el];
@@ -156,6 +162,13 @@ export class Hud {
             b.addEventListener('pointerdown', e => { e.stopPropagation(); pick(i); });
             el.append(b);
         });
+    }
+
+    /** Cael's charm, in your pocket: a small button while it can still be put on. `null` hides it. */
+    charm(onWear) {
+        const el = this.el('hud-charm');
+        el.classList.toggle('on', !!onWear);
+        el.onpointerdown = onWear ? e => { e.stopPropagation(); onWear(); } : null;
     }
 
     /** A one-line tip for a few seconds (the prologue teaching a gesture). */

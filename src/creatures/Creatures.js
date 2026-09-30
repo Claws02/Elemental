@@ -336,6 +336,8 @@ class Creature {
     // The nearest thing below that will burn and isn't burning yet; else the hero.
     _pickTarget() {
         this.targetDone = false;
+        this.target = null;
+        if (this.group.item.embers === false || !this.sp.attack.ember) return;     // a flock that only goes for you
         const p = this.pos;
         let best = null, bd = 22;
         for (const f of this.sys.fire.flammables.values()) {

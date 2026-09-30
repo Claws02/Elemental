@@ -122,3 +122,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; align-self: stretch; }
 .swatches button { width: 38px !important; height: 38px; padding: 0 !important; border-radius: 50% !important; border: 2px solid transparent !important; }
 .swatches button[aria-checked=true] { border-color: var(--rune) !important; box-shadow: 0 0 0 2px rgba(0,0,0,.5) inset; }
+/* Cael's charm, in your pocket (refused, it can still be put on). */
+.hud-charm { position: absolute; right: calc(env(safe-area-inset-right) + 16px); bottom: calc(env(safe-area-inset-bottom) + 96px);
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(200,210,220,.6); display: none; cursor: pointer; pointer-events: auto;
+  background: radial-gradient(circle at 40% 35%, #e8ecf0, #8a949c 60%, #3a4046); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
+.hud-charm.on { display: block; }

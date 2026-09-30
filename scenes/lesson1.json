@@ -511,6 +511,21 @@
       "Not that one. It is beyond you, for now."
      ]
     ]
+   },
+   {
+    "on": "playerSurge",
+    "throttle": 25,
+    "lines": [
+     [
+      "That wasn't you choosing. That was it choosing for you."
+     ],
+     [
+      "The charm is in your pocket. It isn't a punishment."
+     ],
+     [
+      "Breathe. It answers you. Even when you don't ask."
+     ]
+    ]
    }
   ],
   "steps": [

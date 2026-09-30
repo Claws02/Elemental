@@ -1,11 +1,13 @@
 // ============================================================
 // PROLOGUE — the Veyra fire, played twice: carefully and recklessly.
 //
-//   title → the character creator → Veyra, morning → the forge, a choice →
-//   the square → the stone → dusk → the flock → the stone cracks and the
-//   elements answer → the fire → Cael → the aftermath (what burned, who is
-//   blamed, Bram's barn) → a choice → the prophecy → Lesson I, with what
-//   happened remembered.
+//   title → the character creator → Veyra, morning (no powers yet) → the forge,
+//   a choice → the square → the stone → dusk, home → the flock goes for you →
+//   the stone cracks, every element answers wild, and your own roof catches →
+//   the fire → Cael → the aftermath (what burned, who is blamed, Bram's barn) →
+//   Cael's charm, worn or refused → a choice → the prophecy → Lesson I, with
+//   what happened remembered. Refused, the power surges on its own; the charm
+//   can still be put on later.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/prologue.js
 // ============================================================
@@ -51,24 +53,29 @@ const SHOTS = path.join(__dirname, 'shots');
         await at(0, 3);
         await until(() => __EL.story.step === 'stone', 10000);
         await at(0, 0.6);
-        const dusk = await until(() => ['dusk', 'attack', 'awaken'].includes(__EL.story.step), 15000);
-        // The headless browser runs the game at about half speed: move the story's clock on through the waits.
-        await ev(() => { if (__EL.story.step === 'dusk') __EL.story.t = 9; });
+        const powerless = await ev(() => ['earth', 'fire', 'water', 'air'].every(el => !__EL.prog.has(el)));
+        const home = await until(() => __EL.story.step === 'home', 15000);
+        await ev(() => { window.__fires = []; __EL.EventBus.on('FireStarted', e => __fires.push(e.cause)); });
+        await at(6.5, 8);
         await until(() => __EL.story.step === 'attack', 10000);
-        await wait(3000);                                             // the flock is out
-        await ev(() => { if (__EL.story.step === 'attack') __EL.story.t = 11; });
+        await until(() => __EL.vitals.health < 100, 20000);             // they come for you
+        const beforeCrack = await ev(() => ({ fires: __fires.length, hp: Math.round(__EL.vitals.health), any: ['earth', 'fire', 'water', 'air'].some(el => __EL.prog.has(el)) }));
+        // The headless browser runs the game at about half speed: move the story's clock on through the waits.
+        await ev(() => { if (__EL.story.step === 'attack') __EL.story.t = 8; });
         const woke = await until(() => __EL.story.step === 'awaken', 10000);
-        await ev(() => { __EL.vitals.invulnerable = true; });
-        return { met, dusk, woke };
+        await ev(() => { __EL.vitals.invulnerable = true; __EL.surges.enabled = false; });
+        return { met, dusk: home, woke, powerless, beforeCrack };
     }
 
     // ---- 1. Carefully ---------------------------------------------------------------------------------
     const a = await toTheFire('Rowan');
     const opening = await ev(() => ({ name: __EL.session.work.custom.name, hair: __EL.session.work.custom.look.hair, tone: __EL.prog.flags['veyra.tone'] }));
     check(opening.name === 'Rowan' && opening.hair && opening.tone === 'earnest', `New game: a name and a look, then Veyra; the forge choice is remembered (${JSON.stringify(opening)})`);
-    check(a.met && a.dusk && a.woke, `the morning leads to dusk, the flock, and the awakening (${JSON.stringify(a)})`);
-    const woke = await ev(() => ({ fire: __EL.prog.state('fire'), earth: __EL.prog.state('earth'), water: __EL.prog.state('water'), cracked: __EL.world.signal('StandingStone', 'cracked'), flock: __EL.creatures.all.length }));
-    check(woke.fire === 'wild' && woke.earth === 'wild' && woke.water === 'wild' && woke.cracked && woke.flock > 0, `the stone cracks and three elements answer, all wild (${JSON.stringify(woke)})`);
+    check(a.met && a.dusk && a.woke && a.powerless, `the morning (no powers yet) leads to dusk, home, the flock, and the awakening (${JSON.stringify(a)})`);
+    check(a.beforeCrack.fires === 0 && a.beforeCrack.hp < 100 && !a.beforeCrack.any, `the flock goes for you, not the thatch, and you can't answer yet (${JSON.stringify(a.beforeCrack)})`);
+    const woke = await ev(() => ({ states: ['earth', 'fire', 'water', 'air'].map(el => __EL.prog.state(el)).join(), cracked: __EL.world.signal('StandingStone', 'cracked'), home: __EL.world.signal('Veyra_House_Home', 'burning'), by: __fires.join(), harm: __EL.ledger.get('harm'), charm: __EL.prog.flags.charm }));
+    check(woke.states === 'wild,wild,wild,wild' && woke.cracked && woke.home && woke.by === 'awakening,awakening' && woke.harm === 0 && woke.charm === 'none',
+        `the stone cracks, all four answer wild, and your own roof catches: the power's doing, not a choice the ledger holds against you (${JSON.stringify(woke)})`);
     await shot('P1-awaken');
     // Fight the fire: drive the birds off with water, put out every fire with the stream.
     await ev(async () => {
@@ -80,16 +87,18 @@ const SHOTS = path.join(__dirname, 'shots');
     });
     const caelCame = await until(() => ['cael', 'damage', 'barn', 'blame', 'choice'].includes(__EL.story.step), 60000);
     await shot('P2-cael');
-    const chose = await until(() => __EL.story.step === 'choice' && !!__EL.story.choosing, 30000);
+    const offered = await until(() => __EL.story.step === 'charm' && !!__EL.story.choosing, 30000);
+    await ev(() => __EL.story.choose(0));                              // put it on
+    const chose = offered && await until(() => __EL.story.step === 'choice' && !!__EL.story.choosing, 30000);
     const after = await ev(() => ({ fire: __EL.prog.flags['veyra.fire'], barn: __EL.prog.flags['bram.barn'], blame: __EL.prog.flags['veyra.blame'], care: __EL.ledger.get('care'), harm: __EL.ledger.get('harm'), mood: __EL.EventBus.recent().length >= 0 }));
     check(caelCame && chose, 'Cael arrives when the fire is out and the birds are gone');
     check(after.fire !== 'ruin' && after.barn === 'saved' && after.blame !== 'you' && after.care > after.harm,
         `the careful night: little burned, Bram's barn saved, nobody blames you (${JSON.stringify(after)})`);
     await ev(() => __EL.story.choose(0));                              // help clear the ashes
     const lesson = await until(() => __EL.mode === 'lesson1' && __EL.story?.step, 60000);
-    const carried = await ev(() => ({ mode: __EL.mode, fire: __EL.prog.state('fire'), earth: __EL.prog.state('earth'), water: __EL.prog.state('water'), after: __EL.prog.flags['veyra.after'], prologue: __EL.prog.flags.prologue, saved: JSON.parse(localStorage.getItem('elemental.save.1')).meta.scene, name: __EL.session.work.custom.name }));
-    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'locked' && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'lesson1' && carried.name === 'Rowan',
-        `on to Lesson I: Fire stays wild, Earth is Cael's to teach, Water is gone again; the night is remembered and saved (${JSON.stringify(carried)})`);
+    const carried = await ev(() => ({ mode: __EL.mode, fire: __EL.prog.state('fire'), earth: __EL.prog.state('earth'), water: __EL.prog.state('water'), charm: __EL.prog.flags.charm, canFire: __EL.prog.has('fire'), canEarth: __EL.prog.has('earth'), surges: __EL.surges.active, after: __EL.prog.flags['veyra.after'], prologue: __EL.prog.flags.prologue, saved: JSON.parse(localStorage.getItem('elemental.save.1')).meta.scene, name: __EL.session.work.custom.name }));
+    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'wild' && carried.charm === 'worn' && !carried.canFire && carried.canEarth && !carried.surges && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'lesson1' && carried.name === 'Rowan',
+        `on to Lesson I wearing the charm: what's wild is still, Earth (Cael's to teach) answers, nothing surges; the night is remembered and saved (${JSON.stringify(carried)})`);
 
     // ---- 2. Recklessly ----------------------------------------------------------------------------------
     await toTheFire('Wren');
@@ -100,14 +109,32 @@ const SHOTS = path.join(__dirname, 'shots');
     await shot('P3-reckless');
     await until(() => [...__EL.world.objects.keys()].filter(id => /^Veyra_(House|Barn)/.test(id) && __EL.world.signal(id, 'burned')).length >= 3, 150000);
     await ev(() => { if (__EL.story.step === 'awaken') __EL.story.t = 150; });   // the fire's time is up: Cael comes
-    const ruin = await until(() => __EL.story.step === 'choice', 60000);
+    const refusedAt = await until(() => __EL.story.step === 'charm' && !!__EL.story.choosing, 60000);
+    await ev(() => __EL.story.choose(1));                              // not yet
+    const ruin = refusedAt && await until(() => __EL.story.step === 'choice', 60000);
     const after2 = await ev(() => ({ fire: __EL.prog.flags['veyra.fire'], blame: __EL.prog.flags['veyra.blame'], harm: __EL.ledger.get('harm'), standing: __EL.ledger.standingWord(), burned: [...__EL.world.objects.keys()].filter(id => /^Veyra_(House|Barn)/.test(id) && __EL.world.signal(id, 'burned')).length }));
     check(ruin && after2.blame === 'you' && after2.burned >= 3 && ['ruin', 'some'].includes(after2.fire),
         `the reckless night: houses burn, the village blames you, the kingdom's view of you drops (${JSON.stringify(after2)})`);
     await shot('P4-ruin');
     // The world remembers: come back to Veyra and it is still burned.
     await ev(() => __EL.story.choose(2));
-    await until(() => __EL.mode === 'lesson1', 60000);
+    await until(() => __EL.mode === 'lesson1' && __EL.story?.step, 60000);
+    await wait(800);
+    // Refused: the power goes off on its own. Force one next to Cael and see it counted.
+    const surged = await ev(() => {
+        const c = __EL.world.objects.get('Cael').npc.position, h0 = __EL.ledger.get('harm');
+        __EL.player.body.position.set(c.x + 1.2, 0.45, c.z);
+        const s = __EL.surges.surge('air', { at: new __EL.THREE.Vector3(c.x + 1.2, 0, c.z) });
+        return { active: __EL.surges.active, hurt: s.hurt, harm: __EL.ledger.get('harm') - h0, charmButton: document.getElementById('hud-charm').classList.contains('on'), canFire: __EL.prog.has('fire') };
+    });
+    check(surged.active && surged.hurt.includes('Cael') && surged.harm >= 1 && surged.charmButton && surged.canFire,
+        `refused, the power surges on its own and hurts whoever is close; the charm waits in your pocket (${JSON.stringify(surged)})`);
+    await page.click('#hud-charm');
+    await wait(300);
+    await page.click('#hud-choices button >> nth=0');
+    await wait(300);
+    const worn = await ev(() => ({ charm: __EL.prog.flags.charm, active: __EL.surges.active, canFire: __EL.prog.has('fire'), button: document.getElementById('hud-charm').classList.contains('on'), saved: JSON.parse(localStorage.getItem('elemental.save.1')).progress.flags.charm }));
+    check(worn.charm === 'worn' && !worn.active && !worn.canFire && !worn.button && worn.saved === 'worn', `put on later, the charm stills the wild elements, and stays on (${JSON.stringify(worn)})`);
     await ev(() => __EL.travel('veyra', 'start'));
     await until(() => __EL.mode === 'veyra', 30000);
     await wait(800);

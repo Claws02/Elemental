@@ -40,6 +40,7 @@ import { Ledger } from './core/Ledger.js';
 import { Vitals } from './player/Vitals.js';
 import { rememberScene } from './scene/Loader.js';
 import { Creatures } from './creatures/Creatures.js';
+import { Surges } from './elements/Surges.js';
 
 /**
  * @param {object} o
@@ -95,6 +96,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const ledger = new Ledger(session, st.region || 'verdant', ownerOf);
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
+    const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
     const checkpoint = () => {
@@ -118,8 +120,22 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment') } }) : null;
+    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o) } }) : null;
     if (story) hud.story();
+    // Cael's charm: refused, it stays in your pocket, and you can put it on any time. Once on, it stays on.
+    const wearCharm = () => {
+        if (story?.choosing || prog.flags.charm !== 'refused') return;
+        hud.choices(['Put the charm on. It stays on.', 'Not now'], i => {
+            hud.choices(null);
+            if (i !== 0) return;
+            prog.flags.charm = 'worn';
+            prog._save();
+            EventBus.emit(EV.CHARM, { worn: true });
+            hud.log('The charm is on. What is wild in you goes still.');
+            checkpoint();
+        });
+    };
+    let charmShown;
     if (story && !spawnAt) {
         // The story opens looking at what the script names (Lesson I: Cael).
         const f = data.script.face && world.objects.get(data.script.face);
@@ -172,6 +188,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         creatures.update(dt);
         world.update(dt, frameInfo);
         vitals.update(dt);
+        surges.update(dt);
+        if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }
         hud.vitals?.(vitals.danger);
         story?.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
@@ -193,7 +211,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];

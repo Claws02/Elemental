@@ -62,6 +62,8 @@ export const EV = {
     EXPLOSION:          'Explosion',
     GROWTH:             'Growth',
     WILD_BURST:         'WildBurst',
+    SURGE:              'Surge',
+    CHARM:              'Charm',
     LESSON:             'Lesson',
     PLATE:              'Plate',
     TOO_HEAVY:          'TooHeavy',

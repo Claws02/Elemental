@@ -10,9 +10,13 @@ Agreed 2026-09-29. The player does not start with every element. They gather the
 | **Wild** | It answers, but untrained. Dangerous (see Wild Fire). |
 | **Trained** | Learned from Cael. Grows in Power and Control. |
 
-**The prologue (Veyra):** every element locked until the stone cracks; then Fire, Earth and Water answer at once, all wild. When it ends, Water goes quiet again and Earth becomes Cael's to teach.
+**The prologue (Veyra):** every element locked until the stone cracks; then all four answer at once, all wild, and the first thing the power does is set the player's own roof alight (cause `awakening`: the ledger doesn't count it). When it ends, Earth becomes Cael's to teach; Fire, Water and Air stay wild.
 
-**Story start (Lesson I):** Earth trained (Power 1, Control 1), Fire **wild**, Water and Air locked. Fire woke in Veyra, in the prologue; Cael judges it too uncontrollable to start with, so he teaches Earth first. The player can still reach for Fire, and Cael notices every time.
+**Cael's charm.** After the fire Cael offers a charm. Worn, it stills every WILD element (`Progression.live()` reads it as locked); a trained element still answers, so each comes back as Cael trains it. Refused, it stays in the player's pocket (a small silver button on the HUD) and can be put on any time; once on, it stays on. Flag `charm`: `none` (the stone has cracked, not yet offered), `worn`, `refused`.
+
+**Surges** (`src/elements/Surges.js`, tuning `SURGE` in `data/growth.js`). Without the charm, a wild element goes off on its own every 40–90 s, faster under stress (creatures on you, fire close, health low): fire lights what's near and singes you, earth jolts things and cracks timber, water lashes and shoves, air blasts. People close by are hurt and flinch away. It all goes in the ledger as the player's (cause `surge`).
+
+**Lesson I, played on its own (`?scene=lesson`):** Earth trained (Power 1, Control 1), Fire **wild**, Water and Air locked. Fire woke in Veyra, in the prologue; Cael judges it too uncontrollable to start with, so he teaches Earth first. The player can still reach for Fire, and Cael notices every time.
 
 **Sandbox:** everything trained, at full Power and Control.
 

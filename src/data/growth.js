@@ -40,6 +40,19 @@ export const WILD = {
     },
 };
 
+// Wild surges: without the charm, an untrained element goes off on its own
+// around you (src/elements/Surges.js). Stress makes it come sooner.
+export const SURGE = {
+    every: [40, 90],        // seconds between surges, calm
+    stress: { creatures: 1.0, fire: 0.5, hurt: 0.5 },   // added to the clock's speed: 1 + these
+    creatureRange: 14,      // an engaged creature this close is stress
+    fireRange: 6,           // a fire this close is stress
+    radius: 4.5,            // what a surge reaches
+    people: 3,              // people this close are hurt by it
+    ignites: 3,             // a fire surge lights at most this many things
+    playerHurt: 6,          // a fire surge singes you too
+};
+
 // Where a new story starts, and the sandbox.
 export const PROFILES = {
     story: {

@@ -133,7 +133,7 @@ export const TYPES = {
         props: {
             species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound']),
             count: int('How many', 3, 1, 12), spread: num('Spread (m)', 3, 0, 30, 0.5),
-            aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), hidden: HIDDEN,
+            aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), embers: bool('Emberwings drop embers', true), hidden: HIDDEN,
         },
         signals: ['gone', 'engaged', 'visible'],
         actions: ['release'],
@@ -280,6 +280,7 @@ export const ACTIONS = {
     douseAll: { label: 'Put out every fire', arg: { by: 'text' } },
     hint:     { label: 'Show a tip', arg: 'text' },
     npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role' } },
+    surge:    { label: 'A surge of wild power', arg: { el: 'element', target: 'ref', cause: 'text' } },
     checkpoint: { label: 'Checkpoint (save)', arg: 'bool' },
     travel:   { label: 'Travel to a scene', arg: { scene: 'text', at: 'text' } },
     setFlag:  { label: 'Set a saved flag', arg: { name: 'text', value: 'text' } },
@@ -297,6 +298,7 @@ export const REACTION_EVENTS = {
     tooHeavy:   'The player tries to lift a stone too heavy for them',
     playerBreak: 'The player breaks a piece of something',
     playerThrow: 'The player throws something',
+    playerSurge: 'The player\'s wild power goes off on its own',
 };
 
 /** A new object of `type` with every prop at its default. */

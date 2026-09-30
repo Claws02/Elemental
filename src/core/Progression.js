@@ -39,8 +39,13 @@ export class Progression {
     state(el) { return this.els[el]?.state || 'locked'; }
     power(el) { return this.els[el]?.power || 0; }
     control(el) { return this.els[el]?.control || 0; }
-    has(el) { return this.state(el) !== 'locked'; }
+    /** Can the player use it now: known, and not silenced by the charm (the charm stills what is wild). */
+    has(el) { return this.live(el) !== 'locked'; }
     wild(el) { return this.state(el) === 'wild'; }
+    /** Cael's charm: 'none' (not offered yet), 'worn', 'refused'; undefined outside the story. */
+    charmed() { return this.flags.charm === 'worn'; }
+    /** The state as the player feels it: a wild element under the charm is as good as locked. */
+    live(el) { const s = this.state(el); return s === 'wild' && this.charmed() ? 'locked' : s; }
 
     /** A number from data/growth.js for this element's current Power or Control. */
     earth(key) {

@@ -32,6 +32,7 @@ const EVENTS = {
     tooHeavy:    [[EV.TOO_HEAVY, () => true]],
     playerBreak: [[EV.PIECE_BROKEN, e => e.cause === 'player']],
     playerThrow: [[EV.OBJECT_THROWN, () => true]],
+    playerSurge: [[EV.SURGE, e => e.cause === 'surge']],
 };
 
 export class Story {
@@ -197,6 +198,7 @@ export class Story {
         case 'douseAll': this.hooks.douseAll?.(v); break;
         case 'hint': this.hud.hint?.(this.fill(String(v))); break;
         case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target); break;
+        case 'surge': this.hooks.surge?.(v.el, { cause: v.cause || 'awakening', target: v.target || null }); break;
         default: console.warn('[story] unknown action', a);
         }
     }
