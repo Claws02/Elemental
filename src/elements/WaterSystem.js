@@ -125,6 +125,15 @@ export class WaterSystem {
         this._endStream();
     }
 
+    /** The stream freezes where it stands (Ice): it ends, and hands back its arc's ends. */
+    freeze() {
+        const s = this.stream;
+        if (!s) return null;
+        const arc = { S: s.source.surface.clone(), E: s.cur.clone() };
+        this._endStream();
+        return arc;
+    }
+
     _endStream() {
         this.stream = null;
         this.tube.visible = false;

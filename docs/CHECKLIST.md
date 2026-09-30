@@ -60,6 +60,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Prologue, second pass (your notes).** No powers until the stone cracks. Heading home at dusk, the flock goes for you, not the thatch; the stone cracks, all four elements answer wild, and your own roof catches. Cael offers a charm that stills what's wild: wear it, or refuse and live with surges (wild power going off on its own, hurting whoever is close, counted in the ledger), with the charm still in your pocket. *Prologue test: 12 checks; unit: 4 more.*
 - [ ] **Elemental expansion** (ROADMAP phase 4, `ABILITIES.md`) ← in progress
   - [x] Raise stone (Earth): cover, barriers, a lift. *Abilities test.*
+  - [x] Ice (Water + Air): a second finger on the hero freezes the stream into an arch and locks what it lands on. *Abilities test.*
 
 ## Phase 2: elemental sandbox
 

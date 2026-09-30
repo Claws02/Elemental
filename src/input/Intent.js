@@ -30,6 +30,7 @@
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
 //   press on a thing with only CHANGE     → pending, for that material's hold time
+//   SECOND FINGER on the hero while streaming → the stream freezes (Ice) → done
 //   press on OPEN GROUND in reach         → ground (Earth can raise stone there)
 //   press on nothing usable               → not ours: Gestures orbits the camera
 //
@@ -54,8 +55,8 @@ const YANK_PX = 2200;        // px/s away from the basin that tears the water fr
 const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null, ice = null }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works, ice });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -149,6 +150,24 @@ export class Intent {
         this.state = 'pending';
         this.channel.aimAt(thing.pos(), this.verb.element);
         return true;
+    }
+
+    /**
+     * A second finger lands while the first acts. Returns true if it means something:
+     * while streaming, touching the hero freezes the stream (Water + Air: Ice).
+     */
+    second(x, y) {
+        if (this.state === 'stream' && this.ice && this.prog.can('freeze') && this.air.onHero(x, y)) {
+            const arc = this.water.freeze();
+            if (!arc) return false;
+            this.ice.freeze(arc.S, arc.E, 'player');
+            this.hero.anim?.throw?.();
+            this.element = 'water';
+            this.state = 'done';
+            this.doneT = 0.4;
+            return true;
+        }
+        return false;
     }
 
     /** The finger moves. Returns 'orbit' when the gesture should become a camera drag. */

@@ -4,6 +4,8 @@
 //
 //   Earth raises stone: touch open ground, hold still, a column rises and
 //   keeps rising while held; stand on the spot and it lifts you; it sinks back.
+//   Ice (Water + Air): stream with one finger, touch the hero with another,
+//   and the arc freezes; what it was landing on freezes too.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/abilities.js
 // ============================================================
@@ -98,6 +100,54 @@ const SHOTS = path.join(__dirname, 'shots');
     await ev(() => { for (const c of __EL.works.columns) c.age = 99; });
     const sank = await until(() => __EL.works.columns.length === 0, 30000);
     check(most === 3 && sank, `at most three stand at once, and they sink back after a while (${most} standing; sank: ${sank})`);
+
+    // ---- Ice: Water + Air ------------------------------------------------------------------------------
+    await open('arena');
+    await ev(() => { __EL.vitals.invulnerable = true; for (const c of __EL.creatures.all) { c.engaged = false; c.group.engaged = false; c.group.item.aggressive = false; } });
+    const frozeIt = await ev(async () => {
+        const W = __EL.water, src = W.sources[0], s = __screen(src.surface);
+        __touch('pointerdown', 1, s.x, s.y);
+        await new Promise(r => setTimeout(r, 200));
+        if (__EL.intent.state !== 'stream') return { err: 'no stream', state: __EL.intent.state };
+        // Aim a few metres off to the side, and put a hound right where it lands.
+        const aim = src.surface.clone().add(new __EL.THREE.Vector3(-4, 0, -2)); aim.y = 0;
+        const a = __screen(aim);
+        for (let i = 1; i <= 8; i++) { __touch('pointermove', 1, s.x + (a.x - s.x) * i / 8, s.y + (a.y - s.y) * i / 8); await new Promise(r => setTimeout(r, 40)); }
+        await new Promise(r => setTimeout(r, 1500));
+        const hound = __EL.creatures.all.find(c => c.sp.behaviour === 'pack');
+        const E = W.stream.cur;
+        hound.body.position.set(E.x, 0.5, E.z); hound.body.velocity.set(0, 0, 0);
+        await new Promise(r => setTimeout(r, 100));
+        // Second finger on the hero.
+        const h = __screen(__EL.player.position.clone().setY(1));
+        __touch('pointerdown', 2, h.x, h.y);
+        await new Promise(r => setTimeout(r, 100));
+        const out = { state: __EL.intent.state, stream: !!W.stream, arches: __EL.ice.arches.length, segs: __EL.ice.arches[0]?.segs.length || 0, frozen: +hound.frozen.toFixed(1) };
+        const p0 = hound.pos.clone ? hound.pos.clone() : { x: hound.pos.x, z: hound.pos.z };
+        await new Promise(r => setTimeout(r, 1500));
+        out.stayed = Math.hypot(hound.pos.x - p0.x, hound.pos.z - p0.z) < 0.3;
+        __touch('pointerup', 2, h.x, h.y);
+        __touch('pointerup', 1, a.x, a.y);
+        return out;
+    });
+    check(frozeIt.state === 'done' && !frozeIt.stream && frozeIt.arches === 1 && frozeIt.segs >= 4 && frozeIt.frozen > 3 && frozeIt.stayed,
+        `stream with one finger, touch the hero with another: the arc freezes solid, and the hound it was landing on is locked in ice (${JSON.stringify(frozeIt)})`);
+    await shot('A3-ice');
+    // A thrown rock breaks it; it melts, sooner beside fire.
+    const broke = await ev(async () => {
+        const seg = __EL.ice.arches[0].segs[Math.floor(__EL.ice.arches[0].segs.length / 2)];
+        const i = __EL.world.rocks.findIndex(r => r.body.mass >= 8);
+        const r = __EL.world.rocks[i];
+        r.body.position.set(seg.mid.x + 3, seg.mid.y + 0.5, seg.mid.z); r.body.velocity.set(0, 0, 0);
+        await new Promise(res => setTimeout(res, 200));
+        __EL.throwRockAt(i, seg.mid, 30);
+        await new Promise(res => setTimeout(res, 1500));
+        return { broken: __EL.ice.arches[0]?.segs.filter(s => !s.alive).length || 0, mass: r.body.mass };
+    });
+    check(broke.broken >= 1, `a rock thrown hard breaks the ice it hits (${JSON.stringify(broke)})`);
+    await ev(() => { __EL.ice.arches[0].age = 19.5; });
+    const melted = await until(() => __EL.ice.arches.length === 0, 15000);
+    check(melted, 'the ice melts away on its own');
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await browser.close();

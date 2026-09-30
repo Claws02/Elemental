@@ -29,7 +29,7 @@ const VEL_WINDOW = 90;        // ms of history used for release velocity
 export class Gestures {
     constructor(el, handlers) {
         this.el = el;
-        this.h = handlers;        // { press(x,y) → taken?, drag(x,y,t) → 'orbit'|null, release, orbit, zoom, stick }
+        this.h = handlers;        // { press(x,y) → taken?, second(x,y) → taken? (a second finger while the first acts), drag(x,y,t) → 'orbit'|null, release, orbit, zoom, stick }
         this.stick = { id: null, ox: 0, oy: 0, x: 0, y: 0 };   // x,y in -1..1
         this.world = new Map();   // pointerId -> { mode: world|orbit|pinch, samples: [{x,y,t}] }
         this.keys = new Set();
@@ -82,6 +82,9 @@ export class Gestures {
         const s = { mode: 'orbit', samples: [{ x: e.clientX, y: e.clientY, t: e.timeStamp }], lx: e.clientX, ly: e.clientY };
         if (this.world.size === 0) {
             if (this.h.press?.(e.clientX, e.clientY)) s.mode = 'world';
+        } else if (this.h.second?.(e.clientX, e.clientY)) {
+            // A second finger that means something while the first acts (a combination: touch the hero while streaming).
+            s.mode = 'second';
         } else {
             // A second finger on the world turns it into a pinch.
             s.mode = 'pinch';

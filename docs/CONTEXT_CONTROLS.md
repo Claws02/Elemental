@@ -48,6 +48,10 @@ Tune these in `src/data/materials.js`, nowhere else.
 | Touch empty world | Camera drag, as before. |
 | Touch in the bottom-left quarter | Always the move stick. A rock lying there has to be approached from another angle. |
 
+## Combinations and abilities
+
+See `ABILITIES.md`. They follow the same rule. Two elements at once use two fingers: while streaming, a second finger on the hero freezes the water.
+
 ## Water: a stream while connected, an orb once it breaks off
 
 Agreed 2026-09-29. Water acts from the player's hand, never by holding still on fire (that stays Fire's pull), so no gesture means two things.

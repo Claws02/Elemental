@@ -25,6 +25,19 @@ export const EARTH = {
     },
 };
 
+// Ice: Water + Air (elements/Ice.js).
+export const ICE = {
+    radius: 1.8,        // around where the stream was landing: creatures freeze, fires go out
+    frozen: 5,          // seconds a creature stays locked in ice
+    shatter: 2.5,       // a hard hit on a frozen creature does this much more
+    last: 20,           // seconds an ice arch stands
+    fireMelt: 1.6,      // a fire this close melts it…
+    fireRate: 6,        // …this many times faster
+    breakSpeed: 6,      // a thing hitting it this fast…
+    breakMass: 8,       // …and this heavy breaks a segment (a thrown rock, a charging boar)
+    most: 3,            // arches standing at once
+};
+
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
     startIntensity: 0.25,   // a new fire spreads at a quarter strength…

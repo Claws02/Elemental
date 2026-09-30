@@ -28,6 +28,7 @@ import { TIER } from '../engine/Physics.js';
 import { seeded } from '../engine/Kit.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { SPECIES, ELITE } from '../data/creatures.js';
+import { ICE } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 
 const G = 22;                 // the world's gravity (Physics.init)
@@ -98,6 +99,7 @@ class Creature {
         this.scared = 0;
         this.soaked = 0;
         this.tumble = 0;
+        this.frozen = 0;            // seconds left locked in ice (Water + Air)
         this.home = pos.clone();
         this.facing = seeded(pos.x * 3.1) * Math.PI * 2;
         this.orbitDir = seeded(pos.z) > 0.5 ? 1 : -1;
@@ -141,13 +143,27 @@ class Creature {
         if (this.sp.fears.includes(kind) && amount > 0.02) this.scared = Math.max(this.scared, 3);
         if (kind === 'water' && this.sp.soakedFalls && amount > 0.01) this.soaked = 3;
         if (kind === 'wind' && this.sp.behaviour === 'flyer' && amount > 0.5) this.tumble = 1;
-        const w = (this.sp.weak[kind] ?? 1) * (this.state === 'stunned' ? this.sp.weak.stunned || 1 : 1);
+        const w = (this.sp.weak[kind] ?? 1) * (this.state === 'stunned' ? this.sp.weak.stunned || 1 : 1) * (this.frozen > 0 && kind === 'impact' ? ICE.shatter : 1);
         const dmg = amount * w;
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
         if (dmg <= 0.01) return;
         this.hp -= dmg;
         this.flash = 0.15;
         if (this.hp <= 0) this._die();
+    }
+
+    /** Locked in ice for `secs`: no moving, no attacking; a flyer drops; a hard hit does more (ICE.shatter). */
+    freeze(secs, cause = 'environment') {
+        if (this.state === 'dead' || this.gone) return;
+        this.frozen = Math.max(this.frozen, secs);
+        if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
+        if (!this.ice) {
+            this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(this.entry.data.radius * 1.35 / this.model.root.scale.x, 0),
+                new THREE.MeshStandardMaterial({ color: 0xcfefff, transparent: true, opacity: 0.55, roughness: 0.1, emissive: 0x2a6a8a, emissiveIntensity: 0.4, flatShading: true }));
+            this.model.root.add(this.ice);
+        }
+        this.ice.visible = true;
+        EventBus.emit(EV.FROZEN, { id: this.id, secs, cause });
     }
 
     _die() {
@@ -185,6 +201,13 @@ class Creature {
         }
 
         const flyer = sp.behaviour === 'flyer';
+        if (this.frozen > 0) {
+            this.frozen -= dt;
+            b.velocity.x = 0; b.velocity.z = 0;           // gravity still has it: a frozen bird falls
+            if (this.frozen <= 0 && this.ice) this.ice.visible = false;
+            this._pose(dt);
+            return;
+        }
         // Flyers hold themselves up, unless wet or tumbling.
         if (flyer && !this.soaked && !this.tumble) b.velocity.y += G * dt;
 
