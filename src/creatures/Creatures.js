@@ -90,7 +90,7 @@ class Creature {
         Object.assign(this, { sys, sp, group, id, elite });
         const k = elite ? ELITE : { hp: 1, damage: 1, scale: 1, speed: 1 };
         this.maxHp = this.hp = sp.hp * k.hp;
-        this.dmgK = k.damage;
+        this.dmgK = k.damage * (group.item.damage ?? 1);
         this.speedK = k.speed;
         this.state = 'idle';
         this.t = 0;                 // seconds in this state
@@ -145,7 +145,8 @@ class Creature {
         if (kind === 'water' && this.sp.soakedFalls && amount > 0.01) this.soaked = 3;
         if (kind === 'wind' && this.sp.behaviour === 'flyer' && amount > 0.5) this.tumble = 1;
         const w = (this.sp.weak[kind] ?? 1) * (this.state === 'stunned' ? this.sp.weak.stunned || 1 : 1) * (this.frozen > 0 && kind === 'impact' ? ICE.shatter : 1);
-        const dmg = amount * w;
+        // A fragile flock (a first fight): any real hit, of any kind, kills.
+        const dmg = this.group.item.fragile && amount > 0.02 ? this.hp + 1 : amount * w;
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
         if (dmg <= 0.01) return;
         this.hp -= dmg;

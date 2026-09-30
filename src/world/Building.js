@@ -60,6 +60,7 @@ export function buildingModel(it) {
     // The look alone (the editor): the same panels, in place.
     const g = new THREE.Group();
     for (const w of _walls(it)) for (let r = 0; r < w.rows; r++) for (let c = 0; c < w.cols; c++) {
+        if (w.gaps?.has(`${r},${c}`)) continue;
         const p = (it.kind === 'barn' ? plankPanel : housePanel)(r * 31 + c * 7 + w.i, PW, PH, PD);
         const local = new THREE.Vector3((c - (w.cols - 1) / 2) * PW, PH / 2 + r * PH, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), w.rotY).add(w.origin);
         p.position.copy(local);
@@ -69,7 +70,33 @@ export function buildingModel(it) {
     for (const c of _corners(it)) { const post = timberPost(it.rows * PH + 0.3); post.position.copy(c); g.add(post); }
     for (const r of _roof(it)) { const m = thatchPanel(r.seed, r.w, r.len); m.position.copy(r.pos); m.quaternion.copy(r.q); g.add(m); }
     g.add(_gables(it));
+    g.add(_floor(it));
+    const leaf = doorLeaf(it);
+    leaf.position.copy(_doorHinge(it));
+    g.add(leaf);
     return g;
+}
+
+// The floor inside: boards, a hand's height, no collider (the ground holds you).
+function _floor(it) {
+    const k = new Kit(), W = it.cols * PW - 0.1, D = it.depth * PW - 0.1, n = Math.max(3, Math.round(W / 0.35));
+    for (let i = 0; i < n; i++) k.box('body', W / n - 0.02, 0.04, D, at(-W / 2 + (i + 0.5) * (W / n), 0.02, 0), pick(WORLD.timber, (it.seed || 0) + i));
+    return k.build();
+}
+
+// The door: planks on ledges, hung at the doorway's left edge (the hinge), closing across it.
+function doorLeaf(it) {
+    const d = doorCell(it), w = PW - 0.06, h = d.rows * PH - 0.04;
+    const k = new Kit();
+    k.box('body', w, h, 0.07, at(w / 2, h / 2, 0), it.kind === 'barn' ? WORLD.timber[1] : WORLD.timber[2], { skipBottom: false });
+    for (const y of [0.25, h / 2, h - 0.25]) k.box('body', w - 0.04, 0.1, 0.05, at(w / 2, y, -0.06), WORLD.timberDark);
+    k.box('body', 0.06, 0.06, 0.09, at(w - 0.14, h * 0.48, 0.07), WORLD.iron);     // the latch
+    return k.build({ own: true });
+}
+// The hinge, in the building's frame: the doorway's left edge, at the wall's outer face.
+function _doorHinge(it) {
+    const d = doorCell(it), D = it.depth * PW;
+    return new THREE.Vector3((d.c - (it.cols - 1) / 2) * PW - PW / 2 + 0.03, 0.02, D / 2);
 }
 
 // Gable ends: the triangles under the roof, oak and plaster; they stand (charred) through a fire.
@@ -85,10 +112,14 @@ function _gables(it) {
     return k.build();
 }
 
+// The doorway: the front wall's middle column, two panels high (the lintel above stands on its neighbours).
+export function doorCell(it) { return { c: Math.floor(it.cols / 2), rows: Math.min(2, it.rows - 1) }; }
+function _doorGaps(it) { const d = doorCell(it); return new Set(Array.from({ length: d.rows }, (_, r) => `${r},${d.c}`)); }
+
 function _walls(it) {
     const W = it.cols * PW, D = it.depth * PW, rows = it.rows;
     return [
-        { i: 0, origin: new THREE.Vector3(0, 0, D / 2), rotY: 0, cols: it.cols, rows },
+        { i: 0, origin: new THREE.Vector3(0, 0, D / 2), rotY: 0, cols: it.cols, rows, gaps: _doorGaps(it) },
         { i: 1, origin: new THREE.Vector3(0, 0, -D / 2), rotY: Math.PI, cols: it.cols, rows },
         { i: 2, origin: new THREE.Vector3(-W / 2, 0, 0), rotY: -Math.PI / 2, cols: it.depth, rows },
         { i: 3, origin: new THREE.Vector3(W / 2, 0, 0), rotY: Math.PI / 2, cols: it.depth, rows },
@@ -131,7 +162,7 @@ export class Building {
         this.walls = _walls(it).map(w => new Destructible({
             id: `${it.id}_W${w.i}`, scene: ctx.scene, cols: w.cols, rows: w.rows, pw: PW, ph: PH, pd: PD,
             origin: toWorld(w.origin), rotY: (it.rotY || 0) + w.rotY, pieceMass: 5, regenAfter: 0,
-            build: it.kind === 'barn' ? plankPanel : housePanel,
+            build: it.kind === 'barn' ? plankPanel : housePanel, gaps: w.gaps,
         }));
         // Corner posts: oak, they stand through a fire.
         this.group = new THREE.Group();
@@ -150,6 +181,7 @@ export class Building {
             this.entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Post' }));
         }
         this.group.add(_gables(it));
+        this.group.add(_floor(it));
         // Roof: thatch panels (no physics of their own: one collider per slope, removed when the roof is gone).
         this.roof = _roof(it).map((r, i) => {
             const m = thatchPanel(r.seed, r.w, r.len);
@@ -171,6 +203,21 @@ export class Building {
         });
         this.entries.push(...this.roofBodies);
         ctx.world.solids.push(this.group);
+        // The door: its own mesh and body, swinging on its hinge (open() / close() / toggle()).
+        this.door = { leaf: doorLeaf(it), open: false, angle: 0, want: 0 };
+        this.door.leaf.position.copy(_doorHinge(it));
+        this.group.add(this.door.leaf);
+        {
+            const dc = doorCell(it), w = PW - 0.06, h = dc.rows * PH - 0.04;
+            const body = new CANNON.Body({ mass: 0, material: Physics.material('wood') });
+            body.addShape(new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, 0.05)));
+            this.door.size = { w, h };
+            this.door.entry = Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Door' });
+            this.entries.push(this.door.entry);
+            this._toWorld = toWorld;
+            this._q = q;
+            this._placeDoor();
+        }
         this.off = EventBus.on(EV.FIRE_OUT, e => this._roofBurned(e));
         this._merge();
     }
@@ -244,10 +291,34 @@ export class Building {
             }
             w.isBurning = piece => sys.fire.isBurning(byPiece.get(piece));
         }
+        this.door.thing = sys.interactables.add({ id: this.id + '_Door', mesh: this.door.leaf, material: 'door' });
+        this.door.thing.use = () => this.toggle();
         for (const r of this.roof) {
             r.thing = sys.interactables.add({ id: r.id, mesh: r.mesh, material: 'thatch' });
             sys.fire.addFlammable(r.thing);
         }
+    }
+
+    // The door's body follows its leaf: a box centred half a door-width from the hinge, turned with it.
+    _placeDoor() {
+        const d = this.door, { w, h } = d.size;
+        d.leaf.rotation.y = d.angle;
+        const c = new THREE.Vector3(w / 2, h / 2, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), d.angle).add(d.leaf.position);
+        const p = this._toWorld(c);
+        const b = d.entry.body;
+        b.position.set(p.x, p.y, p.z);
+        const bq = this._q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), d.angle));
+        b.quaternion.set(bq.x, bq.y, bq.z, bq.w);
+        b.aabbNeedsUpdate = true;
+    }
+
+    /** Open or shut the door. It swings inward. */
+    toggle(open = !this.door.open) {
+        const d = this.door;
+        if (d.gone) return;
+        d.open = open;
+        d.want = open ? 1.75 : 0;          // + turns the leaf (along +x from the hinge) toward -z: into the house
+        EventBus.emit(EV.DOOR, { id: this.id, open });
     }
 
     _roofBurned(e) {
@@ -263,6 +334,12 @@ export class Building {
     }
 
     update(dt) {
+        const d = this.door;
+        if (d.angle !== d.want) {
+            const step = 4 * dt, diff = d.want - d.angle;
+            d.angle = Math.abs(diff) <= step ? d.want : d.angle + Math.sign(diff) * step;
+            this._placeDoor();
+        }
         if (!this.live && this._stirred()) this.goLive();
         for (const w of this.walls) w.update(dt);
         if (this.state === STATE.BURNED) return;
@@ -288,6 +365,7 @@ export class Building {
         if (name === 'burned') return this.state === STATE.BURNED;
         if (name === 'burning') return !!this.sys && (this.roof.some(r => this.sys.fire.isBurning(r.thing)) || this.walls.some(w => w.pieces.some(p => w.isBurning(p))));
         if (name === 'intact') return this.state === STATE.INTACT;
+        if (name === 'open') return this.door.open;
         if (name === 'damaged') return this.state !== STATE.INTACT;
         return false;
     }
@@ -299,6 +377,7 @@ export class Building {
         for (const w of this.walls) w.collapseNow(true);
         for (const r of this.roof) { r.burned = true; r.mesh.visible = false; }
         for (const b of this.roofBodies) Physics.remove(b);
+        Physics.remove(this.door.entry); this.door.leaf.visible = false; this.door.gone = true;
         this.group.traverse(o => { if (o.isMesh && o.material?.color) { o.material = o.material.clone(); o.material.color.setScalar(0.18); } });
         this.state = STATE.BURNED;
     }

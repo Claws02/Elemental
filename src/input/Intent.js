@@ -26,6 +26,8 @@
 //                             basin tears it into
 //                             an orb → holding
 //
+//   press near a CREATURE (fire usable)   → jet: flame from the hands, held on it until let go
+//   press on a DOOR (anyone, powers or not) → it opens or closes → done
 //   press on THE HERO                     → wind (Air comes from the hero; no source needed)
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
 //   press on a thing with a MOVE verb     → holding, at once (a rock grabs instantly)
@@ -46,20 +48,22 @@
 //   ignite  it catches where it stands        → done
 // ============================================================
 
+import { THREE } from '../engine/lib.js';
 import { changeVerb } from '../data/materials.js';
 import { WILD } from '../data/growth.js';
-import { EARTH } from '../data/elements.js';
+import { EARTH, FLAME } from '../data/elements.js';
 import { EventBus, EV } from '../core/EventBus.js';
 
 const MOVE_PX = 10;          // finger travel that counts as a drag, not a hold
 const RANGE = 14;            // how far from the hero a touch can act
 const RING_AFTER = 0.2;      // seconds of stillness before a holding ring appears
 const YANK_PX = 2200;        // px/s away from the basin that tears the water free (deliberate, not a quick aim)
-const YANK_WINDOW = 80;      // ms of finger history the yank is measured over
+const YANK_WINDOW = 80;
+const DOOR_RANGE = 4;          // a door opens from close by, not across the square      // ms of finger history the yank is measured over
 
 export class Intent {
-    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null, ice = null, storm = null, mud = null }) {
-        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud });
+    constructor({ camera, hero, channel, interactables, fire, earth, water, air, prog, works = null, ice = null, storm = null, mud = null, jet = null, creatures = null }) {
+        Object.assign(this, { camera, hero, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
@@ -96,9 +100,25 @@ export class Intent {
         return mv;
     }
 
+    // The living creature nearest the finger on screen, within FLAME.pickPx and the jet's range.
+    _pickCreature(x, y) {
+        let best = null, bd = FLAME.pickPx;
+        const h = this.hero.position;
+        for (const c of this.creatures?.all || []) {
+            if (c.state === 'dead' || c.gone) continue;
+            if (Math.hypot(c.pos.x - h.x, c.pos.y - h.y, c.pos.z - h.z) > FLAME.range) continue;
+            const q = new THREE.Vector3(c.pos.x, c.pos.y, c.pos.z).project(this.camera);
+            if (q.z > 1) continue;
+            const d = Math.hypot((q.x + 1) / 2 * innerWidth - x, (1 - q.y) / 2 * innerHeight - y);
+            if (d < bd) { bd = d; best = c; }
+        }
+        return best;
+    }
+
     _inRange(thing) { return thing.pos().distanceTo(this.hero.position) <= RANGE; }
 
     _usable(thing) {
+        if (thing.mat.use) return thing.pos().distanceTo(this.hero.position) <= DOOR_RANGE;
         if (!this._inRange(thing)) return false;
         if (thing.mat.source === 'water') return this.prog.has('water');
         return !!this._moveElement(thing) || !!this._changeVerb(thing, this.fire.isBurning(thing));
@@ -112,6 +132,13 @@ export class Intent {
         // Priority: a touch exactly on a thing, then the hero (Air), then the
         // fat-finger assist. The hero's touch area is generous, and must not
         // steal a touch that lands squarely on a rock at their feet.
+        // A creature under the finger: Fire's jet, held on it (FlameJet). First, because it moves.
+        const c = this.jet && this.prog.has('fire') ? this._pickCreature(x, y) : null;
+        if (c) {
+            Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'jet', element: 'fire' });
+            this.jet.atCreature(c);
+            return true;
+        }
         const usable = t => this._usable(t);
         let thing = this.interactables.pick(x, y, this.camera, usable, { assist: false });
         if (!thing && this.prog.has('earth')) {
@@ -136,6 +163,11 @@ export class Intent {
         }
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
         this.trail = [];
+        if (thing.mat.use) {
+            thing.use?.();
+            Object.assign(this, { state: 'done', doneT: 0 });
+            return true;
+        }
         if (thing.mat.source === 'water' && this.water.beginStream(thing)) {
             this.state = 'stream';
             this.element = 'water';
@@ -208,6 +240,7 @@ export class Intent {
             if (moved) { this._cancel(); return 'orbit'; }
             return null;
         case 'raising':
+        case 'jet':
             return null;
         case 'wind':
             if (!this.blowing && moved) this.blowing = true;
@@ -246,6 +279,7 @@ export class Intent {
     }
 
     _cancel() {
+        this.jet?.stop();
         if (this.state === 'stream') this.water.collapse();
         if (this.state === 'wind') { this.air.stop(); this.blowing = false; }
         if (this.state !== 'holding') this.channel.aimAt(null);
@@ -258,9 +292,15 @@ export class Intent {
 
     update(dt) {
         switch (this.state) {
+        case 'jet':
+            if (!this.jet.on) { this._cancel(); break; }
+            this.channel.aimAt(this.jet.end(), 'fire');
+            break;
         case 'pending': {
             const cv = this._changeVerb(this.thing, this.fire.isBurning(this.thing));
             if (!this._inRange(this.thing) || !cv || cv.verb !== this.verb.verb) { this._cancel(); break; }
+            // Fire going in: the jet plays on it while the ring fills.
+            if (cv.verb === 'ignite' && this.jet && !this.jet.on) this.jet.atThing(this.thing);
             this.channel.aimAt(this.thing.pos(), cv.element);
             this.t += dt;
             if (this.t >= cv.hold) this._commit(cv);
@@ -330,6 +370,7 @@ export class Intent {
             this.channel.grab(fb.entry, 'fire', { lift: 0.4 });
             Object.assign(this, { state: 'holding', thing: fb, still: 0, ax: this.x, ay: this.y });
         } else if (cv.verb === 'ignite') {
+            this.jet?.stop();
             this.fire.ignite(this.thing, 'player', { direct: true });
             this.state = 'done';
             this.doneT = 0.4;

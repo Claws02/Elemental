@@ -50,8 +50,8 @@ add('Wynn', 'npc', 1.6, -3.8, -0.6, { name: 'Elder Wynn', look: 'elder', role: '
 add('Tam', 'npc', 15, -6, -H, { name: 'Tam', look: 'villager', role: 'idle' });
 add('Cael', 'npc', 0, 22, PI, { name: 'Cael', look: 'cael', role: 'idle', hidden: true });
 // ---- the flock (arrives at dusk) ----
-// They come for you, not the thatch: the fire is yours (embers off).
-add('Flock', 'creature', 15, 15, 0, { species: 'emberwing', count: 4, spread: 5, aggressive: true, elite: false, embers: false, hidden: true });
+// They come for you, not the thatch: the fire is yours (embers off). A first fight: any hit kills one, and they hit softly.
+add('Flock', 'creature', 15, 15, 0, { species: 'emberwing', count: 4, spread: 5, aggressive: true, elite: false, embers: false, fragile: true, damage: 0.3, hidden: true });
 // ---- where the morning goes ----
 add('Zone_Forge', 'trigger', -11, 11, 0, { width: 6, depth: 6, height: 3 });
 add('Zone_Square', 'trigger', 0, 1, 0, { width: 9, depth: 8, height: 3 });
@@ -83,20 +83,23 @@ const script = {
     { id: 'home', objective: 'Go home before the lanterns', mark: 'Veyra_House_Home', do: [{ checkpoint: true }],
       until: { signal: { obj: 'Zone_Home', name: 'entered' } } },
     { id: 'attack',
-      do: [{ reveal: ['Flock'] }, ...['Hollis', 'Tam', 'Mira', 'Wynn', 'Bram'].map(id => ({ npc: { id, role: 'cower' } }))],
+      // No powers yet, so no way to fight back: they can hurt, not kill (until Cael comes).
+      do: [{ reveal: ['Flock'] }, { protect: 35 }, ...['Hollis', 'Tam', 'Mira', 'Wynn', 'Bram'].map(id => ({ npc: { id, role: 'cower' } }))],
       say: ['@Tam Emberwings! Get inside!'],
       objective: 'Get away from them',
       until: { time: 8 } },
     { id: 'awaken',
-      // Far off, the stone cracks; everything answers at once, and the first thing it does is set your own roof alight.
+      // Far off, the stone cracks and everything answers at once. The first time you turn Fire on the birds near
+      // home, the wild jet spills onto your own roof (flameSpill). If you never do, it catches anyway after 25 s.
       do: [{ do: { obj: 'StandingStone', action: 'crack' } }, ...['fire', 'earth', 'water', 'air'].map(el => ({ setElement: { el, state: 'wild' } })),
            { setFlag: { name: 'charm', value: 'none' } },
-           { surge: { el: 'air', cause: 'awakening' } }, { surge: { el: 'fire', target: 'Veyra_House_Home', cause: 'awakening' } },
+           { flameSpill: { target: 'Veyra_House_Home', radius: 9, after: 25 } },
            { npc: { id: 'Hollis', role: 'brigade' } }, { npc: { id: 'Tam', role: 'brigade' } }, { npc: { id: 'Bram', role: 'brigade' } },
-           { hint: 'Something answers you. Touch the well and drag: water. Touch a stone: lift it. Touch yourself and drag: wind.' }, { checkpoint: true }],
-      say: ['@Tam The stone— did you hear the stone?', '@Tam Your roof! Fire— it came off you—', '@Hollis Buckets! To the well!'],
+           { hint: 'Something answers you. Touch a bird and hold: fire from your hands. Touch the well and drag: water.' }, { checkpoint: true }],
+      say: ['@Tam The stone— did you hear the stone?'],
       objective: 'Drive them off. Save what you can.',
       waiting: [
+        { when: { signal: { obj: 'Veyra_House_Home', name: 'burning' } }, say: ['@Tam Your roof! The fire— it came off you—', '@Hollis Buckets! To the well!'] },
         { when: { many: { prefix: 'Veyra_', type: 'timber_house', signal: 'burning', min: 2 } }, say: ['@Bram It\'s spreading! The roofs!'] },
         { when: { ledger: { tally: 'harm', min: 3 } }, say: ['@Mira It came out of you! The fire came out of you!'] },
         { when: { ledger: { tally: 'care', min: 2 } }, say: ['@Hollis Keep it coming! Whatever you are, keep it coming!'] },
@@ -107,7 +110,7 @@ const script = {
         { when: { time: 150 }, next: 'cael' },
       ] },
     { id: 'cael',
-      do: [{ reveal: ['Cael'] }, { douseAll: { by: 'cael' } }, { mood: { name: 'night', secs: 6 } },
+      do: [{ reveal: ['Cael'] }, { protect: 0 }, { douseAll: { by: 'cael' } }, { mood: { name: 'night', secs: 6 } },
            { npc: { id: 'Hollis', role: 'idle' } }, { npc: { id: 'Tam', role: 'idle' } }, { npc: { id: 'Bram', role: 'idle' } }, { npc: { id: 'Mira', role: 'idle' } }, { npc: { id: 'Wynn', role: 'idle' } }],
       say: ['@Cael Enough.', '@Cael Stand still. Breathe. It answers you, so it stops when you do.'],
       mark: 'Cael',

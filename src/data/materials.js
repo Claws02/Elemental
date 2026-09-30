@@ -57,6 +57,10 @@ export const MATERIALS = {
         flammable: { fuel: 6, ignitesAt: 0.8, reach: 2.6 },   // burning straw carries: down the walls, over the ridge, to the next roof
         soaks: 20,
     },
+    door: {
+        name: 'door',                   // no element: anyone can open a door, powers or not
+        use: 'door',                    // a tap opens or closes it
+    },
     barrel: {
         name: 'oil',                    // an oil barrel: burns briefly, then bursts
         change: { element: 'fire', verb: 'ignite', hold: 0.6 },

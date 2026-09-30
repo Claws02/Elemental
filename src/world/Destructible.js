@@ -67,6 +67,7 @@ export class Destructible {
         q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), o.rotY || 0);
         const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), o.rotY || 0);
         for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) {
+            if (o.gaps?.has(`${r},${c}`)) continue;          // an opening (a doorway): no panel
             const local = new THREE.Vector3((c - (o.cols - 1) / 2) * o.pw, o.ph / 2 + r * o.ph, 0).applyQuaternion(rot);
             const pos = local.add(o.origin);
             const mesh = o.build(r * 31 + c * 7 + 1, o.pw, o.ph, o.pd);

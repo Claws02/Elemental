@@ -35,6 +35,25 @@ const SHOTS = path.join(__dirname, 'shots');
     const skip = () => ev(() => { clearInterval(window.__skip); window.__skip = setInterval(() => { if (window.__EL?.story?.talking) __EL.hud.skipLine = true; }, 120); });
     const at = (x, z) => ev(([x, z]) => __EL.player.body.position.set(x, 0.45, z), [x, z]);
 
+    let door = null;
+    // Home's door: shut, it stops you; tapped, it swings in and you can walk inside.
+    async function doorCheck() {
+        const walk = async secs => { await ev(() => { __EL.cam.yaw = -Math.PI / 2; }); await page.keyboard.down('KeyW'); await wait(secs * 1000); await page.keyboard.up('KeyW'); return ev(() => +__EL.player.body.position.x.toFixed(2)); };
+        await at(6.4, 8);
+        await wait(400);
+        const shutX = await walk(1.5);
+        await at(6.4, 8);
+        await wait(300);
+        const tapped = await ev(async () => {
+            const b = __EL.world.objects.get('Veyra_House_Home').building, c = b.door.entry.body.position, s = __screen(new __EL.THREE.Vector3(c.x, 1.6, c.z));     // its upper half: the lower-left of the screen is the move stick
+            __touch('pointerdown', 9, s.x, s.y); await new Promise(r => setTimeout(r, 60)); __touch('pointerup', 9, s.x, s.y);
+            await new Promise(r => setTimeout(r, 1200));
+            return { open: b.door.open, angle: +b.door.angle.toFixed(2), signal: __EL.world.signal('Veyra_House_Home', 'open') };
+        });
+        const inX = await walk(2.5);
+        return { shutX, ...tapped, inX };
+    }
+
     // Morning to the awakening: the same both times.
     async function toTheFire(name) {
         await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -46,7 +65,13 @@ const SHOTS = path.join(__dirname, 'shots');
         await page.click('#title-menu button.primary');               // Begin
         await page.waitForFunction(() => window.__EL?.story?.step === 'morning', null, { timeout: 30000 });
         await skip();
+        await ev(() => {
+            const el = document.getElementById('game');
+            window.__touch = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: 'touch', clientX: x, clientY: y, bubbles: true }));
+            window.__screen = p => { const q = p.clone().project(__EL.cam.cam); return { x: (q.x + 1) / 2 * innerWidth, y: (1 - q.y) / 2 * innerHeight, on: q.z < 1 && Math.abs(q.x) < 0.95 && Math.abs(q.y) < 0.95 }; };
+        });
         await wait(600);
+        if (name === 'Rowan') door = await doorCheck();
         await at(-11, 11);
         const met = await until(() => __EL.story.step === 'bram' && !!__EL.story.choosing, 15000);
         await ev(() => __EL.story.choose(0));
@@ -54,17 +79,39 @@ const SHOTS = path.join(__dirname, 'shots');
         await until(() => __EL.story.step === 'stone', 10000);
         await at(0, 0.6);
         const powerless = await ev(() => ['earth', 'fire', 'water', 'air'].every(el => !__EL.prog.has(el)));
-        const home = await until(() => __EL.story.step === 'home', 15000);
+        const home = await until(() => ['home', 'attack', 'awaken'].includes(__EL.story.step), 15000);
         await ev(() => { window.__fires = []; __EL.EventBus.on('FireStarted', e => __fires.push(e.cause)); });
         await at(6.5, 8);
         await until(() => __EL.story.step === 'attack', 10000);
         await until(() => __EL.vitals.health < 100, 20000);             // they come for you
-        const beforeCrack = await ev(() => ({ fires: __fires.length, hp: Math.round(__EL.vitals.health), any: ['earth', 'fire', 'water', 'air'].some(el => __EL.prog.has(el)) }));
+        await wait(4000);                                               // let them keep at it: they hurt, but can't kill before you have powers
+        const beforeCrack = await ev(() => ({ fires: __fires.length, hp: Math.round(__EL.vitals.health), floor: __EL.vitals.floor, dead: __EL.vitals.dead, any: ['earth', 'fire', 'water', 'air'].some(el => __EL.prog.has(el)) }));
         // The headless browser runs the game at about half speed: move the story's clock on through the waits.
         await ev(() => { if (__EL.story.step === 'attack') __EL.story.t = 8; });
         const woke = await until(() => __EL.story.step === 'awaken', 10000);
-        await ev(() => { __EL.vitals.invulnerable = true; __EL.surges.enabled = false; });
-        return { met, dusk: home, woke, powerless, beforeCrack };
+        await ev(() => { __EL.surges.enabled = false; });
+        // Turn Fire on a bird: touch it and hold. One hit and it falls; and the wild jet spills onto your roof.
+        const fought = await ev(async () => {
+            const hp0 = __EL.vitals.health;
+            const t0 = performance.now();
+            let bird = null;
+            while (!bird && performance.now() - t0 < 8000) {
+                bird = __EL.creatures.all.find(c => c.state !== 'dead' && !c.gone && __screen(new __EL.THREE.Vector3(c.pos.x, c.pos.y, c.pos.z)).on && Math.hypot(c.pos.x - __EL.player.position.x, c.pos.z - __EL.player.position.z) < 10);
+                if (!bird) await new Promise(r => setTimeout(r, 100));
+            }
+            if (!bird) return { err: 'no bird on screen' };
+            const s = __screen(new __EL.THREE.Vector3(bird.pos.x, bird.pos.y, bird.pos.z));
+            __touch('pointerdown', 5, s.x, s.y);
+            const state = __EL.intent.state;
+            const t1 = performance.now();
+            while (bird.state !== 'dead' && performance.now() - t1 < 3000) await new Promise(r => setTimeout(r, 30));
+            const secs = +((performance.now() - t1) / 1000).toFixed(2);
+            await new Promise(r => setTimeout(r, 300));
+            __touch('pointerup', 5, s.x, s.y);
+            return { state, dead: bird.state === 'dead', secs, used: +__EL.jet.used.toFixed(2), home: __EL.world.signal('Veyra_House_Home', 'burning'), spilled: !__EL.jet.spill };
+        });
+        await ev(() => { __EL.vitals.invulnerable = true; });
+        return { met, dusk: home, woke, powerless, beforeCrack, fought };
     }
 
     // ---- 1. Carefully ---------------------------------------------------------------------------------
@@ -72,10 +119,15 @@ const SHOTS = path.join(__dirname, 'shots');
     const opening = await ev(() => ({ name: __EL.session.work.custom.name, hair: __EL.session.work.custom.look.hair, tone: __EL.prog.flags['veyra.tone'] }));
     check(opening.name === 'Rowan' && opening.hair && opening.tone === 'earnest', `New game: a name and a look, then Veyra; the forge choice is remembered (${JSON.stringify(opening)})`);
     check(a.met && a.dusk && a.woke && a.powerless, `the morning (no powers yet) leads to dusk, home, the flock, and the awakening (${JSON.stringify(a)})`);
-    check(a.beforeCrack.fires === 0 && a.beforeCrack.hp < 100 && !a.beforeCrack.any, `the flock goes for you, not the thatch, and you can't answer yet (${JSON.stringify(a.beforeCrack)})`);
-    const woke = await ev(() => ({ states: ['earth', 'fire', 'water', 'air'].map(el => __EL.prog.state(el)).join(), cracked: __EL.world.signal('StandingStone', 'cracked'), home: __EL.world.signal('Veyra_House_Home', 'burning'), by: __fires.join(), harm: __EL.ledger.get('harm'), charm: __EL.prog.flags.charm }));
-    check(woke.states === 'wild,wild,wild,wild' && woke.cracked && woke.home && woke.by === 'awakening,awakening' && woke.harm === 0 && woke.charm === 'none',
-        `the stone cracks, all four answer wild, and your own roof catches: the power's doing, not a choice the ledger holds against you (${JSON.stringify(woke)})`);
+    check(a.beforeCrack.fires === 0 && a.beforeCrack.hp < 100 && a.beforeCrack.hp >= 35 && !a.beforeCrack.dead && !a.beforeCrack.any,
+        `the flock goes for you, not the thatch; you can't answer yet, and they can hurt you but not kill you (${JSON.stringify(a.beforeCrack)})`);
+    check(door && door.shutX < 7.9 && door.open && door.angle > 1.5 && door.signal && door.inX > 8.6,
+        `home's door: shut, it stops you; a tap swings it in and you walk inside (${JSON.stringify(door)})`);
+    check(a.fought.state === 'jet' && a.fought.dead && a.fought.used > 0 && a.fought.home && a.fought.spilled,
+        `touch a bird and hold: flame from your hands, one bird down at once, and the wild jet spills onto your own roof (${JSON.stringify(a.fought)})`);
+    const woke = await ev(() => ({ states: ['earth', 'fire', 'water', 'air'].map(el => __EL.prog.state(el)).join(), cracked: __EL.world.signal('StandingStone', 'cracked'), roof: __fires.filter(c => c === 'awakening').length, harm: __EL.ledger.get('harm'), charm: __EL.prog.flags.charm }));
+    check(woke.states === 'wild,wild,wild,wild' && woke.cracked && woke.roof === 2 && woke.harm === 0 && woke.charm === 'none',
+        `the stone cracks, all four answer wild; the roof's fire is the power's doing, not something the ledger holds against you (${JSON.stringify(woke)})`);
     await shot('P1-awaken');
     // Fight the fire: drive the birds off with water, put out every fire with the stream.
     await ev(async () => {

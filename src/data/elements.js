@@ -80,6 +80,17 @@ export const GLIDE = {
     rise: 3.5,          // the fastest a thermal carries you up
 };
 
+// The flame jet: Fire from the hands to what is touched (elements/FlameJet.js).
+export const FLAME = {
+    range: 12,          // metres from the hands
+    dps: 40,            // fire damage per second to a creature in the jet
+    spray: 1.8,         // wild: things this close to where it lands can catch…
+    sprayEvery: 0.6,    // …checked this often
+    particles: 90,      // per second
+    speed: 16,          // m/s the flame travels
+    pickPx: 70,         // how close on screen a touch must be to a creature to aim at it
+};
+
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
     startIntensity: 0.25,   // a new fire spreads at a quarter strength…

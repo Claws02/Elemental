@@ -11,6 +11,7 @@
 //   Firestorm (Fire + Air): holding a fireball, a second finger on the hero.
 //   Mud (Earth + Water): streaming, a second finger on open ground.
 //   Glide (Air): a fall off anything high becomes a glide; over fire, it rises.
+//   The flame jet: touch a creature and hold; flame from the hands while held.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/abilities.js
 // ============================================================
@@ -277,6 +278,32 @@ const SHOTS = path.join(__dirname, 'shots');
         return { inMud: +inMud.toFixed(2), dry: +dry.toFixed(2) };
     });
     check(wade.inMud < wade.dry * 0.7, `a creature in mud covers far less ground (${JSON.stringify(wade)})`);
+
+    // ---- The flame jet: touch a creature and hold ------------------------------------------------------------
+    await open('arena');
+    await ev(() => { __EL.vitals.invulnerable = true; for (const c of __EL.creatures.all) { c.engaged = false; c.group.engaged = false; c.group.item.aggressive = false; } });
+    const jetOn = await ev(async () => {
+        const hound = __EL.creatures.all.find(c => c.sp.behaviour === 'charge' && c.state !== 'dead');     // the boar: tough enough to outlast the check
+        const h = __EL.player.body.position, f = __EL.cam.yaw + Math.PI;
+        hound.body.position.set(h.x + Math.sin(f) * 6 + 1.5, 0.5, h.z + Math.cos(f) * 6); hound.body.velocity.set(0, 0, 0);
+        await new Promise(r => setTimeout(r, 300));
+        const s = __screen(new __EL.THREE.Vector3(hound.pos.x, hound.pos.y + 0.3, hound.pos.z));
+        const hp0 = hound.hp;
+        __touch('pointerdown', 1, s.x, s.y);
+        window.__jetHound = hound; window.__jetS = s; window.__jetHp = hp0;
+        await new Promise(r => setTimeout(r, 700));
+        return { state: __EL.intent.state, on: __EL.jet.on, hurt: +(hp0 - hound.hp).toFixed(1) };
+    });
+    await shot('A7-flamejet');
+    const jetOff = await ev(async () => {
+        __touch('pointerup', 1, __jetS.x, __jetS.y);
+        await new Promise(r => setTimeout(r, 100));
+        const hp = __jetHound.hp;
+        await new Promise(r => setTimeout(r, 600));
+        return { on: __EL.jet.on, state: __EL.intent.state, after: +(hp - __jetHound.hp).toFixed(1) };
+    });
+    check(jetOn.state === 'jet' && jetOn.on && jetOn.hurt > 5 && !jetOff.on && jetOff.after < 1,
+        `touch a creature and hold: a jet of flame from the hands burns it while held, and stops when let go (${JSON.stringify({ jetOn, jetOff })})`);
 
     // ---- Glide, and thermals (Air; Fire + Air) ------------------------------------------------------------
     await open('arena');

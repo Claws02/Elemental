@@ -73,6 +73,8 @@ export const EV = {
     FIRESTORM:          'Firestorm',
     MUD:                'Mud',
     GLIDE:              'Glide',
+    FLAME_SPILL:        'FlameSpill',
+    DOOR:               'Door',
     CHARM:              'Charm',
     LESSON:             'Lesson',
     PLATE:              'Plate',

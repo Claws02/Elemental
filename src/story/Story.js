@@ -198,6 +198,8 @@ export class Story {
         case 'douseAll': this.hooks.douseAll?.(v); break;
         case 'hint': this.hud.hint?.(this.fill(String(v))); break;
         case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target); break;
+        case 'protect': this.hooks.protect?.(+v || 0); break;
+        case 'flameSpill': this.hooks.flameSpill?.(v); break;
         case 'surge': this.hooks.surge?.(v.el, { cause: v.cause || 'awakening', target: v.target || null }); break;
         default: console.warn('[story] unknown action', a);
         }

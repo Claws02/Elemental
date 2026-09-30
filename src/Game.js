@@ -47,6 +47,7 @@ import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
 import { Mud } from './elements/Mud.js';
 import { Glide } from './elements/Glide.js';
+import { FlameJet } from './elements/FlameJet.js';
 
 /**
  * @param {object} o
@@ -107,6 +108,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const storm = new Firestorm({ fire, fx, creatures });
     const mud = new Mud({ scene, fire, creatures, player });
     const glide = new Glide({ player, prog, fire });
+    const jet = new FlameJet({ scene, player, fire, fx, prog, creatures, interactables });
     const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     let leaving = false;
@@ -129,10 +131,11 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     };
     world.onExit = (to, where) => travel(to, where);
     vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
-    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud });
+    const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o) } }) : null;
+    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
+        protect: v => { vitals.floor = v; }, flameSpill: v => { jet.spill = { target: v.target, radius: v.radius ?? 8, after: v.after || 0, cause: v.cause || 'awakening' }; } } }) : null;
     if (story) hud.story();
     // Cael's charm: refused, it stays in your pocket, and you can put it on any time. Once on, it stays on.
     const wearCharm = () => {
@@ -205,11 +208,13 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         air.update(dt);
         frameInfo.held = channel.held?.entry || null;
         creatures.update(dt);
+        jet.update(dt);
         world.update(dt, frameInfo);
         vitals.update(dt);
         surges.update(dt);
         if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }
         hud.vitals?.(vitals.danger);
+        hud.health?.(vitals.health / 100);
         story?.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
@@ -230,7 +235,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, wearCharm, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];

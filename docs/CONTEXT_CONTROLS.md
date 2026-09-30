@@ -48,6 +48,13 @@ Tune these in `src/data/materials.js`, nowhere else.
 | Touch empty world | Camera drag, as before. |
 | Touch in the bottom-left quarter | Always the move stick. A rock lying there has to be approached from another angle. |
 
+## The flame jet, and doors
+
+- **Touch a creature and hold:** a jet of flame runs from the hero's hands to it and follows it while the finger stays down (`src/elements/FlameJet.js`, `FLAME` in `data/elements.js`). A touch within 70 px of a creature on screen counts, because birds move. Creatures are checked before anything else under the finger.
+- **Touch timber and hold:** the same jet plays on it while Fire's hold ring fills, then it catches.
+- **Wild Fire sprays:** things that burn near where the jet lands can catch too.
+- **Doors:** a tap on a house's door opens or closes it, from within 4 m. Doors need no element, so they work before the awakening.
+
 ## Combinations and abilities
 
 See `ABILITIES.md`. They follow the same rule. Two elements at once use two fingers: while streaming, a second finger on the hero freezes the water.

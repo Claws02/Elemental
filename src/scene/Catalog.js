@@ -510,6 +510,7 @@ export const CATALOG = {
             return {
                 mesh: b.group, entries: [...b.pieces.map(p => p.entry), ...b.entries], building: b, pieces: b.pieces,
                 wire: sys => b.wire(sys), update: dt => b.update(dt), signal: n => b.signal(n),
+                act: n => { if (n === 'open' || n === 'close') b.toggle(n === 'open'); },
                 restoreState: s => b.restoreState(s), dispose: () => b.dispose(),
             };
         },

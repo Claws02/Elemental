@@ -42,6 +42,7 @@ export class Vitals {
         this.dead = false;
         this.onDeath = null;
         this.invulnerable = false;  // QA and cutscenes
+        this.floor = 0;             // health can't be taken below this (the story sets it where the player can't yet fight back)
         this._vy = 0;
         this.off = [
             EventBus.on(EV.EXPLOSION, e => {
@@ -58,7 +59,7 @@ export class Vitals {
 
     hurt(amount, cause = 'unknown', from = null) {
         if (this.dead || this.invulnerable || amount <= 0) return;
-        this.health = Math.max(0, this.health - amount);
+        this.health = Math.max(this.floor, this.health - amount);
         this.since = 0;
         EventBus.emit(EV.HURT, { amount: Math.round(amount), cause, from, health: Math.round(this.health) });
         if (this.health <= 0) this._die(cause);

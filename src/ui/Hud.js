@@ -21,6 +21,7 @@ export class Hud {
         this.root = root;
         root.innerHTML = `
             <div class="hud-element" id="hud-element"><span class="rune"></span><span class="label"></span></div>
+            <div class="hud-health" id="hud-health" role="meter" aria-label="Health" aria-valuemin="0" aria-valuemax="100"><i></i></div>
             <div class="hud-hint" id="hud-hint">
                 <div><b>Bottom-left thumb</b> move</div>
                 <div><b>Touch a rock</b> grab · <b>flick</b> throw</div>
@@ -178,6 +179,18 @@ export class Hud {
         el.classList.add('on');
         clearTimeout(this._tipT);
         this._tipT = setTimeout(() => el.classList.remove('on'), 6000);
+    }
+
+    /** The health bar: 0..1. Flashes when it drops. */
+    health(frac) {
+        const f = Math.max(0, Math.min(1, frac));
+        if (Math.abs(f - (this._hp ?? -1)) < 0.002) return;
+        const el = this.el('hud-health');
+        if (this._hp !== undefined && f < this._hp - 0.001) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+        this._hp = f;
+        el.querySelector('i').style.width = (f * 100).toFixed(1) + '%';
+        el.classList.toggle('low', f < 0.3);
+        el.setAttribute('aria-valuenow', String(Math.round(f * 100)));
     }
 
     /** Health, shown only as the screen's edges reddening: 0 well … 1 nearly gone. */

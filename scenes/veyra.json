@@ -726,6 +726,8 @@
    "aggressive": true,
    "elite": false,
    "embers": false,
+   "fragile": true,
+   "damage": 0.3,
    "hidden": true
   },
   {
@@ -940,6 +942,9 @@
       ]
      },
      {
+      "protect": 35
+     },
+     {
       "npc": {
        "id": "Hollis",
        "role": "cower"
@@ -1018,16 +1023,10 @@
       }
      },
      {
-      "surge": {
-       "el": "air",
-       "cause": "awakening"
-      }
-     },
-     {
-      "surge": {
-       "el": "fire",
+      "flameSpill": {
        "target": "Veyra_House_Home",
-       "cause": "awakening"
+       "radius": 9,
+       "after": 25
       }
      },
      {
@@ -1049,19 +1048,29 @@
       }
      },
      {
-      "hint": "Something answers you. Touch the well and drag: water. Touch a stone: lift it. Touch yourself and drag: wind."
+      "hint": "Something answers you. Touch a bird and hold: fire from your hands. Touch the well and drag: water."
      },
      {
       "checkpoint": true
      }
     ],
     "say": [
-     "@Tam The stone— did you hear the stone?",
-     "@Tam Your roof! Fire— it came off you—",
-     "@Hollis Buckets! To the well!"
+     "@Tam The stone— did you hear the stone?"
     ],
     "objective": "Drive them off. Save what you can.",
     "waiting": [
+     {
+      "when": {
+       "signal": {
+        "obj": "Veyra_House_Home",
+        "name": "burning"
+       }
+      },
+      "say": [
+       "@Tam Your roof! The fire— it came off you—",
+       "@Hollis Buckets! To the well!"
+      ]
+     },
      {
       "when": {
        "many": {
@@ -1155,6 +1164,9 @@
       "reveal": [
        "Cael"
       ]
+     },
+     {
+      "protect": 0
      },
      {
       "douseAll": {

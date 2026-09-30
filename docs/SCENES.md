@@ -37,9 +37,9 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Props | crate, oil barrel, training dummy, market stall |
 | Puzzle | timber barricade, portcullis gate, pressure plate, trigger zone |
 | Characters | player start (one per scene), character (looks: Cael, villager, elder, guard, smith, baker, youth; `role`: idle, walk, brigade — carries water from the nearest basin to the nearest fire — or cower — keeps away from creatures) |
-| Village | **timber house** (`kind` house or barn; `cols` × `depth` panels, `rows` high, thatch roof): every wall panel breaks and burns, the roof burns from the thatch; *burned* when half of it has. **standing stone** (`cracked`; action `crack`) |
+| Village | **timber house** (`kind` house or barn; `cols` × `depth` panels, `rows` high, thatch roof): every wall panel breaks and burns, the roof burns from the thatch; *burned* when half of it has. A door in the front wall opens with a tap onto an empty, boarded room. **standing stone** (`cracked`; action `crack`) |
 | Buildings | wall (stone, timber or plaster; door, window, two windows or arch), floor, roof, stairs, fence, post, and **prefab buildings** (cottage, town house, smithy, watchtower, shed) |
-| Creatures | creature groups: Emberwing (flying fire bird), Bristleback (charging boar), Thornhound (pack hunter); a count, a spread, attacks on sight, one elite; `embers` off makes Emberwings go only for the player |
+| Creatures | creature groups: Emberwing (flying fire bird), Bristleback (charging boar), Thornhound (pack hunter); a count, a spread, attacks on sight, one elite; `embers` off makes Emberwings go only for the player; `fragile` (a first fight: any hit kills) and `damage` (× what they do) |
 | Travel | exit to another scene |
 | Ground | ground patch (grass, dirt, cobble, sand, flagstone; square or round) |
 
@@ -72,7 +72,7 @@ A wire watches **signals** and runs **actions** on objects:
 | crate, barrel, dummy | burning, burned, moved | |
 | hay | burning, burned | |
 | creature | gone (every one dead or driven off), engaged (they've seen you) | release |
-| timber house | intact, damaged, burning, burned | |
+| timber house | intact, damaged, burning, burned, open | open, close (its door) |
 | standing stone | cracked | crack |
 | anything that can start hidden | visible | reveal, hide |
 
@@ -98,7 +98,7 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **Conditions** (one key each): `talking` · `time` (seconds in the step) · `held` (an object id, or `*`) · `heldFor` `{obj, secs, lost}` · `signal` `{obj, name}` · `wire` · `broken` / `burned` `{obj, min}` · `burning` · `count` `{name, min}` · `flag` `{name, is}` · `state` `{id, is}` (a remembered world state) · `ledger` `{tally, min, region?}` · `standing` `{region, atLeast}` (0 the cause of all this … 4 saviour) · `many` `{prefix, type?, signal, min?, max?}` (how many objects whose id starts with `prefix` show `signal`: "three houses burned") · `all` / `any` (lists) · `not`.
 
-**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name, and checkpoint) · `card` (show the end card) · `checkpoint` · `travel` `{scene, at}` · `setFlag` `{name, value}` · `setState` `{id, value}` · `ledger` `{tally, add}` · `setElement` `{el, state, power?}` (locked / wild / trained) · `mood` `{name, secs}` (day, dusk, night: the light changes over `secs`) · `douseAll` `{by}` (every fire out) · `hint` (a one-line tip) · `npc` `{id, role, target?}` (target `{x, z}` for walk) · `surge` `{el, target?, cause?}` (the player's wild power goes off: fire lights the nearest things, or `target`'s pieces; earth jolts; water lashes; air blasts. `cause` `awakening`, the default, isn't held against the player; `surge` is).
+**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name, and checkpoint) · `card` (show the end card) · `checkpoint` · `travel` `{scene, at}` · `setFlag` `{name, value}` · `setState` `{id, value}` · `ledger` `{tally, add}` · `setElement` `{el, state, power?}` (locked / wild / trained) · `mood` `{name, secs}` (day, dusk, night: the light changes over `secs`) · `douseAll` `{by}` (every fire out) · `hint` (a one-line tip) · `npc` `{id, role, target?}` (target `{x, z}` for walk) · `protect` (a number: health can't drop below it; 0 ends it) · `flameSpill` `{target, radius, after?}` (the first flame jet near `target` spills onto it, cause `awakening`; after `after` seconds it happens anyway) · `surge` `{el, target?, cause?}` (the player's wild power goes off: fire lights the nearest things, or `target`'s pieces; earth jolts; water lashes; air blasts. `cause` `awakening`, the default, isn't held against the player; `surge` is).
 
 **Reactions** answer the player at any point: `playerFire`, `tooHeavy`, `playerBreak`, `playerThrow`, `playerSurge` (their wild power went off on its own). Each can count (`count`), change a flag, say the nth of its `lines` (or cycle through them), wait `throttle` seconds before speaking again, and follow up later (`followUp`: after N seconds, if a condition holds).
 
