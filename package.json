@@ -11,6 +11,7 @@
     "lesson": "node qa/lesson.js",
     "core": "node qa/core.js",
     "creatures": "node qa/creatures.js",
+    "prologue": "node qa/prologue.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",
     "scenes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-scenes.mjs",
     "build:web": "node scripts/build-web.js",

@@ -30,8 +30,10 @@ import { rock, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, br
 import { buildingWall, buildingFloor, buildingRoof, buildingStairs, buildingFence, buildingPost, tree, stall, gate, groundPatch } from '../art/TownModels.js';
 import { Destructible, STATE } from '../world/Destructible.js';
 import { Plate } from '../world/Plates.js';
+import { Building, buildingModel } from '../world/Building.js';
 import { Npc, npcModel } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
+import { EventBus, EV } from '../core/EventBus.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { SPECIES } from '../data/creatures.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
@@ -139,6 +141,33 @@ function _sealedDoor(w, h) {
     for (const [col, lit, dx, dy] of runes) {
         const c = new THREE.Color(col).multiplyScalar(lit);
         k.box(lit > 0.5 ? 'glow' : 'body', 0.26, 0.26, 0.04, at(dx, h / 2 + dy, 0.58, 0, 0, Math.PI / 4), c);
+    }
+    return k.build();
+}
+
+// A standing stone: a rough monolith with an Earth rune. Cracked, light shows through it.
+function _standingStone(it, cracked) {
+    const k = new Kit(), H = it.height;
+    k.box('body', 1.6, 0.35, 1.3, at(0, 0.17, 0), WORLD.stoneDark, { ch: 0.08 });
+    const segs = 5;
+    for (let i = 0; i < segs; i++) {
+        const y0 = 0.35 + (H - 0.35) * i / segs, h = (H - 0.35) / segs + 0.02, w = 1.05 - i * 0.1;
+        k.box('body', w, h, w * 0.62, at((seeded(it.seed + i) - 0.5) * 0.06, y0 + h / 2, 0, 0, (seeded(i * 3 + it.seed) - 0.5) * 0.12, 0), WORLD.stone[(i + it.seed) % 4], { ch: 0.06, top: WORLD.stoneTop });
+    }
+    k.box('body', 0.5, 0.05, 0.35, at(0.1, H - 0.05, 0.05), WORLD.moss[1]);
+    const ry = H * 0.55, z = 0.62 * (1.05 - 0.2) / 2 + 0.02;
+    for (const [dx, dy, w, h, rz] of [[0, 0.26, 0.36, 0.05, 0], [0, -0.26, 0.36, 0.05, 0], [0, 0, 0.05, 0.36, 0], [-0.12, 0.08, 0.26, 0.045, 0.8], [0.12, 0.08, 0.26, 0.045, -0.8]]) {
+        k.box('glow', w, h, 0.02, at(dx, ry + dy, z + 0.01, 0, 0, rz), ELEMENT.earth.rune);
+    }
+    if (cracked) {
+        // A crack running the height of it, lit from inside: gold, with a thread of the other three elements.
+        let x = 0, y = 0.4;
+        for (let i = 0; i < 9; i++) {
+            const nx = (seeded(i * 5.3 + it.seed) - 0.5) * 0.5, ny = y + (H - 0.6) / 9;
+            const len = Math.hypot(nx - x, ny - y), a = Math.atan2(ny - y, nx - x);
+            k.box('glow', len + 0.03, 0.05, 0.03, at((x + nx) / 2, (y + ny) / 2, z + 0.02, 0, 0, a), [ELEMENT.earth.rune, ELEMENT.fire.rune, ELEMENT.water.rune, ELEMENT.air.rune][i % 4]);
+            x = nx; y = ny;
+        }
     }
     return k.build();
 }
@@ -447,6 +476,45 @@ export const CATALOG = {
         },
     },
 
+    standing_stone: {
+        model: it => _standingStone(it, it.cracked),
+        spawn(ctx, it) {
+            const root = _place(new THREE.Group(), it);
+            let look = _standingStone(it, it.cracked);
+            root.add(look);
+            ctx.scene.add(root);
+            const entries = _boxes(ctx, it, [{ x: 0, y: it.height / 2, z: 0, w: 1.1, h: it.height, d: 0.8 }], { solid: root });
+            let cracked = !!it.cracked;
+            const crack = (quiet = false) => {
+                if (cracked) return;
+                cracked = true;
+                root.remove(look);
+                look = _standingStone(it, true);
+                root.add(look);
+                if (!quiet) { ctx.world.onGate?.(it.id, 'cracked'); EventBus.emit(EV.STRUCTURE_STATE, { id: it.id, from: 'Intact', to: 'Cracked', cause: 'awakening', name: 'The standing stone' }); }
+            };
+            return {
+                mesh: root, entries,
+                signal: n => n === 'cracked' && cracked,
+                act: n => { if (n === 'crack') crack(); },
+                restoreState: s => { if (s === 'cracked') crack(true); },
+                top: () => (it.y || 0) + it.height,
+            };
+        },
+    },
+
+    timber_house: {
+        model: it => buildingModel(it),
+        spawn(ctx, it) {
+            const b = new Building(ctx, it);
+            return {
+                mesh: b.group, entries: [...b.pieces.map(p => p.entry), ...b.entries], building: b, pieces: b.pieces,
+                wire: sys => b.wire(sys), update: dt => b.update(dt), signal: n => b.signal(n),
+                restoreState: s => b.restoreState(s), dispose: () => b.dispose(),
+            };
+        },
+    },
+
     creature: {
         // The editor shows the group: one model per member, where they'll stand.
         model(it) {
@@ -479,7 +547,11 @@ export const CATALOG = {
         spawn(ctx, it) {
             const n = new Npc(ctx.scene, { id: it.id, name: it.name, look: it.look, pos: new THREE.Vector3(it.x, it.y || 0, it.z), facing: it.rotY || 0 });
             ctx.world.npcs.push(n);
-            return { mesh: n.rig.root, entries: [n.entry], npc: n, update: (dt, f) => n.update(dt, f.hero), top: () => (it.y || 0) + 2 };
+            if (it.role && it.role !== 'idle') n.setRole(it.role);
+            return {
+                mesh: n.rig.root, entries: [n.entry], npc: n, update: (dt, f) => n.update(dt, f.hero), top: () => (it.y || 0) + 2,
+                wire: sys => { n.sys = { fire: sys.fire, fx: sys.fire.fx, world: ctx.world }; },
+            };
         },
     },
 

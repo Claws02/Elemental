@@ -20,8 +20,9 @@ const ACCEL = 28, DECEL = 36;
 const TURN = 12;           // rad/s toward the direction of travel
 
 export class PlayerController {
-    constructor(scene, spawn) {
-        this.rig = buildHero();
+    /** `look`: the protagonist's colours from the character creator (art/Palette.js HERO keys). */
+    constructor(scene, spawn, look = null) {
+        this.rig = buildHero(look || undefined);
         this.anim = new HeroAnimator(this.rig);
         scene.add(this.rig.root);
 

@@ -1,14 +1,14 @@
 {
  "format": 1,
  "id": "lesson1",
- "name": "Lesson I \u00b7 The Quiet Element",
+ "name": "Lesson I · The Quiet Element",
  "settings": {
   "ground": {
    "half": 28,
    "style": "flagstone"
   },
   "profile": "story",
-  "resetProgress": true,
+  "resetProgress": false,
   "resetAfter": 0,
   "region": "verdant",
   "persistent": true
@@ -481,7 +481,7 @@
       "Fire again."
      ],
      [
-      "Every time you reach for that, something burns that didn\u2019t have to."
+      "Every time you reach for that, something burns that didn’t have to."
      ],
      [
       "Stop."
@@ -541,7 +541,7 @@
    },
    {
     "id": "steady",
-    "objective": "Hold it steady \u00b7 {held} / 3 s",
+    "objective": "Hold it steady · {held} / 3 s",
     "until": {
      "heldFor": {
       "obj": "TestRoom_Rock_02",
@@ -563,7 +563,7 @@
      ],
      "say": [
       "Steadier.",
-      "Now set it down on the plate. Set it. Don\u2019t drop it."
+      "Now set it down on the plate. Set it. Don’t drop it."
      ]
     }
    },
@@ -640,7 +640,7 @@
      "say": [
       "There.",
       "Stone remembers how it was treated. So do people.",
-      "More stones. Some you can lift. Some you can\u2019t, yet."
+      "More stones. Some you can lift. Some you can’t, yet."
      ]
     }
    },
@@ -868,11 +868,11 @@
    }
   ],
   "card": {
-   "title": "Lesson I \u00b7 The Quiet Element",
+   "title": "Lesson I · The Quiet Element",
    "lines": [
     "{outcome|quiet=You opened it without breaking it.|loud=You broke it open.|burned=You burned it open.}",
-    "Earth \u00b7 Power {earth.power} \u00b7 Control {earth.control}",
-    "Fire \u00b7 wild \u00b7 Power {fire.power}",
+    "Earth · Power {earth.power} · Control {earth.control}",
+    "Fire · wild · Power {fire.power}",
     "{fireSeen|0=You left the fire alone.|1=You reached for fire once. Cael noticed.|*=You reached for fire # times. Cael noticed.}"
    ],
    "buttons": [

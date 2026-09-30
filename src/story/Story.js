@@ -80,10 +80,40 @@ export class Story {
             if (this.sayT <= 0 || this.hud.skipLine) { this.hud.skipLine = false; this.sayT = 0; this.hud.say(null); }
             return;
         }
-        const line = this.queue.shift();
+        let line = this.queue.shift();
         if (!line) return;
-        this.hud.say(this.speakerName, line);
+        // "@Bram It's harvest eve!" is Bram speaking; "@you …" the protagonist; otherwise the script's speaker.
+        let who = this.speakerName;
+        const m = /^@(\S+)\s+/.exec(line);
+        if (m) {
+            line = line.slice(m[0].length);
+            who = m[1] === 'you' ? (this.hooks.session?.work.custom?.name || 'You') : (this.world.objects.get(m[1])?.item.name || m[1]);
+        }
+        line = this.fill(line);
+        this.hud.say(who, line);
         this.sayT = 1.6 + line.length * 0.055;
+    }
+
+    // ---- choices: the step waits until the player picks ------------------------------------
+
+    _offerChoices(s) {
+        if (this.choosing || this.talking || !s.choices?.length) return;
+        this.choosing = s;
+        this.hud.choices?.(s.choices.map(c => this.fill(c.label)), i => this.choose(i));
+    }
+
+    /** Pick choice `i` of the current step (the HUD's buttons call this; so can a test). */
+    choose(i) {
+        const s = this.choosing;
+        const c = s?.choices?.[i];
+        if (!c) return;
+        this.choosing = null;
+        this.hud.choices?.(null);
+        if (c.flag) this.prog.flags[c.flag.name] = c.flag.value ?? true;
+        EventBus.emit(EV.LESSON, { id: this.id, step: this.step, choice: i, label: c.label });
+        this.say(c.say);
+        this.act(c.do);
+        this.go(c.next || this._next(s));
     }
 
     get talking() { return this.sayT > 0 || this.queue.length > 0; }
@@ -127,6 +157,11 @@ export class Story {
         case 'state': return String(this.hooks.session?.state(v.id) ?? '') === String(v.is ?? '');
         case 'ledger': return (this.hooks.ledger?.get(v.tally, v.region) || 0) >= (v.min ?? 1);
         case 'standing': return (this.hooks.ledger?.standing(v.region) ?? 2) >= (v.atLeast ?? 0);
+        case 'many': {                 // how many objects whose names start with `prefix` give `signal`
+            let n = 0;
+            for (const [id, o] of this.world.objects) if (id.startsWith(v.prefix || '') && (!v.type || o.type === v.type) && this.world.signal(id, v.signal)) n++;
+            return n >= (v.min ?? 0) && n <= (v.max ?? Infinity);
+        }
         case 'all': return v.every(x => this.test(x));
         case 'any': return v.some(x => this.test(x));
         case 'not': return !this.test(v);
@@ -157,6 +192,11 @@ export class Story {
         case 'setFlag': this.prog.flags[v.name] = v.value === 'true' ? true : v.value === 'false' ? false : isNaN(+v.value) || v.value === '' ? v.value : +v.value; break;
         case 'setState': this.hooks.session?.setState(v.id, v.value || null); break;
         case 'ledger': this.hooks.ledger?.add(v.tally, v.add, v.region); break;
+        case 'setElement': this.prog.setState(v.el, v.state); if (v.power !== undefined) this.prog.els[v.el].power = v.power; this.prog._save(); break;
+        case 'mood': this.hooks.mood?.(v.name, v.secs ?? 0); break;
+        case 'douseAll': this.hooks.douseAll?.(v); break;
+        case 'hint': this.hud.hint?.(this.fill(String(v))); break;
+        case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target); break;
         default: console.warn('[story] unknown action', a);
         }
     }
@@ -166,6 +206,7 @@ export class Story {
     get current() { return this.steps.find(s => s.id === this.step) || null; }
 
     go(id) {
+        if (this.choosing) { this.choosing = null; this.hud.choices?.(null); }
         this.step = id || 'done';
         this.t = 0;
         this.heldT = 0;
@@ -225,6 +266,7 @@ export class Story {
             if (now && !was) { this.say(w.say); this.act(w.do); }
         });
 
+        if (s.choices?.length) { this._offerChoices(s); return; }
         const ends = s.ends || (s.until ? [{ when: s.until, ...(s.then || {}) }] : []);
         for (const e of ends) {
             if (!this.test(e.when)) continue;
@@ -280,6 +322,7 @@ export class Story {
             const [key, ...cases] = body.split('|');
             let val;
             if (key === 'outcome') val = this.outcome;
+            else if (key === 'name') val = this.hooks.session?.work.custom?.name || 'you';
             else if (/^(earth|fire|water|air)\.(power|control)$/.test(key)) { const [el, tr] = key.split('.'); val = this.prog.level(el, tr); }
             else if (/^(earth|fire|water|air)\.state$/.test(key)) val = this.prog.state(key.split('.')[0]);
             else if (key in this.counters) val = this.counters[key];

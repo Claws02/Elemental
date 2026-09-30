@@ -1,0 +1,1378 @@
+{
+ "format": 1,
+ "id": "veyra",
+ "name": "Prologue · The Veyra Fire",
+ "settings": {
+  "ground": {
+   "half": 30,
+   "style": "grass"
+  },
+  "profile": "story",
+  "resetProgress": true,
+  "resetAfter": 0,
+  "region": "verdant",
+  "persistent": true,
+  "mood": "day"
+ },
+ "objects": [
+  {
+   "id": "Spawn",
+   "type": "spawn",
+   "x": 4,
+   "y": 0,
+   "z": 13,
+   "rotY": -1.5707963267948966,
+   "name": "start"
+  },
+  {
+   "id": "Square",
+   "type": "patch",
+   "x": 0,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "width": 14,
+   "depth": 12,
+   "style": "cobble",
+   "round": false
+  },
+  {
+   "id": "Lane_East",
+   "type": "patch",
+   "x": 12,
+   "y": 0,
+   "z": 5,
+   "rotY": 0,
+   "width": 12,
+   "depth": 3,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "Lane_North",
+   "type": "patch",
+   "x": 0,
+   "y": 0,
+   "z": -12,
+   "rotY": 0,
+   "width": 3,
+   "depth": 12,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "Road_South",
+   "type": "patch",
+   "x": 0,
+   "y": 0,
+   "z": 18,
+   "rotY": 0,
+   "width": 4,
+   "depth": 14,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "Field",
+   "type": "patch",
+   "x": 19,
+   "y": 0,
+   "z": -9,
+   "rotY": 0,
+   "width": 12,
+   "depth": 12,
+   "style": "dirt",
+   "round": false
+  },
+  {
+   "id": "StandingStone",
+   "type": "standing_stone",
+   "x": 0,
+   "y": 0,
+   "z": -2,
+   "rotY": 0,
+   "height": 3.2,
+   "cracked": false,
+   "seed": 4
+  },
+  {
+   "id": "Well",
+   "type": "basin",
+   "x": 4.5,
+   "y": 0,
+   "z": 2.5,
+   "rotY": 0,
+   "seed": 3,
+   "owner": "civilian"
+  },
+  {
+   "id": "Trough",
+   "type": "basin",
+   "x": -6,
+   "y": 0,
+   "z": -12,
+   "rotY": 0,
+   "seed": 5,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_House_Mira",
+   "type": "timber_house",
+   "x": -10.5,
+   "y": 0,
+   "z": -4.5,
+   "rotY": 1.5707963267948966,
+   "kind": "house",
+   "cols": 5,
+   "depth": 4,
+   "rows": 3,
+   "seed": 11,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_House_Wynn",
+   "type": "timber_house",
+   "x": -10.5,
+   "y": 0,
+   "z": 5,
+   "rotY": 1.5707963267948966,
+   "kind": "house",
+   "cols": 5,
+   "depth": 4,
+   "rows": 3,
+   "seed": 12,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_House_Home",
+   "type": "timber_house",
+   "x": 10,
+   "y": 0,
+   "z": 8,
+   "rotY": -1.5707963267948966,
+   "kind": "house",
+   "cols": 5,
+   "depth": 4,
+   "rows": 3,
+   "seed": 13,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_House_Tam",
+   "type": "timber_house",
+   "x": 10,
+   "y": 0,
+   "z": -3.5,
+   "rotY": -1.5707963267948966,
+   "kind": "house",
+   "cols": 4,
+   "depth": 4,
+   "rows": 3,
+   "seed": 14,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Barn_Holloway",
+   "type": "timber_house",
+   "x": -3,
+   "y": 0,
+   "z": -15.5,
+   "rotY": 0,
+   "kind": "barn",
+   "cols": 7,
+   "depth": 5,
+   "rows": 3,
+   "seed": 15,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Barn_North",
+   "type": "timber_house",
+   "x": 7.5,
+   "y": 0,
+   "z": -15.5,
+   "rotY": 0,
+   "kind": "barn",
+   "cols": 6,
+   "depth": 5,
+   "rows": 3,
+   "seed": 16,
+   "owner": "civilian"
+  },
+  {
+   "id": "Forge",
+   "type": "prefab",
+   "x": -15,
+   "y": 0,
+   "z": 13,
+   "rotY": 1.5707963267948966,
+   "prefab": "smithy",
+   "style": "prefab",
+   "seed": 3
+  },
+  {
+   "id": "Veyra_Hay_01",
+   "type": "hay",
+   "x": -1.5,
+   "y": 0,
+   "z": -11.5,
+   "rotY": 0,
+   "seed": 1,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_02",
+   "type": "hay",
+   "x": -0.6,
+   "y": 0,
+   "z": -11.8,
+   "rotY": 0,
+   "seed": 2,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_03",
+   "type": "hay",
+   "x": -5.5,
+   "y": 0,
+   "z": -10.5,
+   "rotY": 0,
+   "seed": 3,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_04",
+   "type": "hay",
+   "x": 3.5,
+   "y": 0,
+   "z": -11.8,
+   "rotY": 0,
+   "seed": 4,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_05",
+   "type": "hay",
+   "x": 4.4,
+   "y": 0,
+   "z": -11.2,
+   "rotY": 0,
+   "seed": 5,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_06",
+   "type": "hay",
+   "x": 11.5,
+   "y": 0,
+   "z": -11.5,
+   "rotY": 0,
+   "seed": 6,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_07",
+   "type": "hay",
+   "x": -7.5,
+   "y": 0,
+   "z": 0.5,
+   "rotY": 0,
+   "seed": 7,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_08",
+   "type": "hay",
+   "x": 7.5,
+   "y": 0,
+   "z": 3.5,
+   "rotY": 0,
+   "seed": 8,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_09",
+   "type": "hay",
+   "x": 15.5,
+   "y": 0,
+   "z": -12.5,
+   "rotY": 0,
+   "seed": 9,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_10",
+   "type": "hay",
+   "x": 15.5,
+   "y": 0,
+   "z": -9.9,
+   "rotY": 0,
+   "seed": 10,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_11",
+   "type": "hay",
+   "x": 15.5,
+   "y": 0,
+   "z": -7.3,
+   "rotY": 0,
+   "seed": 11,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_12",
+   "type": "hay",
+   "x": 17.7,
+   "y": 0,
+   "z": -12.5,
+   "rotY": 0,
+   "seed": 12,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_13",
+   "type": "hay",
+   "x": 17.7,
+   "y": 0,
+   "z": -9.9,
+   "rotY": 0,
+   "seed": 13,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_14",
+   "type": "hay",
+   "x": 17.7,
+   "y": 0,
+   "z": -7.3,
+   "rotY": 0,
+   "seed": 14,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_15",
+   "type": "hay",
+   "x": 19.9,
+   "y": 0,
+   "z": -12.5,
+   "rotY": 0,
+   "seed": 15,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_16",
+   "type": "hay",
+   "x": 19.9,
+   "y": 0,
+   "z": -9.9,
+   "rotY": 0,
+   "seed": 16,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_17",
+   "type": "hay",
+   "x": 19.9,
+   "y": 0,
+   "z": -7.3,
+   "rotY": 0,
+   "seed": 17,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_18",
+   "type": "hay",
+   "x": 22.1,
+   "y": 0,
+   "z": -12.5,
+   "rotY": 0,
+   "seed": 18,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_19",
+   "type": "hay",
+   "x": 22.1,
+   "y": 0,
+   "z": -9.9,
+   "rotY": 0,
+   "seed": 19,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Hay_20",
+   "type": "hay",
+   "x": 22.1,
+   "y": 0,
+   "z": -7.3,
+   "rotY": 0,
+   "seed": 20,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Cart_1",
+   "type": "crate",
+   "x": 6.5,
+   "y": 0,
+   "z": -6,
+   "rotY": 0,
+   "size": 1.1,
+   "seed": 20,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Cart_2",
+   "type": "crate",
+   "x": -6.5,
+   "y": 0,
+   "z": 4,
+   "rotY": 0.4,
+   "size": 1.1,
+   "seed": 21,
+   "owner": "civilian"
+  },
+  {
+   "id": "Veyra_Cart_3",
+   "type": "crate",
+   "x": -3,
+   "y": 0,
+   "z": 8,
+   "rotY": 0.8,
+   "size": 1.1,
+   "seed": 22,
+   "owner": "civilian"
+  },
+  {
+   "id": "Stall_Bread",
+   "type": "stall",
+   "x": -5,
+   "y": 0,
+   "z": -4.5,
+   "rotY": 1.5707963267948966,
+   "width": 2.4,
+   "awning": "ochre",
+   "seed": 1
+  },
+  {
+   "id": "Stall_Apples",
+   "type": "stall",
+   "x": 5,
+   "y": 0,
+   "z": -5,
+   "rotY": -1.5707963267948966,
+   "width": 2.2,
+   "awning": "red",
+   "seed": 2
+  },
+  {
+   "id": "Veyra_Stone_1",
+   "type": "rock",
+   "x": 2.5,
+   "y": 0,
+   "z": 5.5,
+   "rotY": 0,
+   "radius": 0.35,
+   "seed": 300
+  },
+  {
+   "id": "Veyra_Stone_2",
+   "type": "rock",
+   "x": -2.5,
+   "y": 0,
+   "z": 6,
+   "rotY": 1,
+   "radius": 0.4,
+   "seed": 311
+  },
+  {
+   "id": "Veyra_Stone_3",
+   "type": "rock",
+   "x": -4,
+   "y": 0,
+   "z": -8,
+   "rotY": 2,
+   "radius": 0.38,
+   "seed": 322
+  },
+  {
+   "id": "Veyra_Stone_4",
+   "type": "rock",
+   "x": 6,
+   "y": 0,
+   "z": -9,
+   "rotY": 3,
+   "radius": 0.42,
+   "seed": 333
+  },
+  {
+   "id": "Veyra_Stone_5",
+   "type": "rock",
+   "x": 3.5,
+   "y": 0,
+   "z": -3,
+   "rotY": 4,
+   "radius": 0.36,
+   "seed": 344
+  },
+  {
+   "id": "Veyra_Stone_6",
+   "type": "rock",
+   "x": -3,
+   "y": 0,
+   "z": 1.5,
+   "rotY": 5,
+   "radius": 0.4,
+   "seed": 355
+  },
+  {
+   "id": "Tree_1",
+   "type": "tree",
+   "x": -22,
+   "y": 0,
+   "z": -10,
+   "rotY": 0,
+   "height": 5.2,
+   "kind": "oak",
+   "seed": 7
+  },
+  {
+   "id": "Tree_2",
+   "type": "tree",
+   "x": -20,
+   "y": 0,
+   "z": 4,
+   "rotY": 1,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 8
+  },
+  {
+   "id": "Tree_3",
+   "type": "tree",
+   "x": -18,
+   "y": 0,
+   "z": 20,
+   "rotY": 2,
+   "height": 5.2,
+   "kind": "oak",
+   "seed": 9
+  },
+  {
+   "id": "Tree_4",
+   "type": "tree",
+   "x": 22,
+   "y": 0,
+   "z": 12,
+   "rotY": 3,
+   "height": 5.2,
+   "kind": "oak",
+   "seed": 10
+  },
+  {
+   "id": "Tree_5",
+   "type": "tree",
+   "x": 24,
+   "y": 0,
+   "z": -2,
+   "rotY": 4,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 11
+  },
+  {
+   "id": "Tree_6",
+   "type": "tree",
+   "x": -8,
+   "y": 0,
+   "z": 22,
+   "rotY": 5,
+   "height": 5.2,
+   "kind": "oak",
+   "seed": 12
+  },
+  {
+   "id": "Tree_7",
+   "type": "tree",
+   "x": 14,
+   "y": 0,
+   "z": 20,
+   "rotY": 6,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 13
+  },
+  {
+   "id": "Tree_8",
+   "type": "tree",
+   "x": -24,
+   "y": 0,
+   "z": -22,
+   "rotY": 7,
+   "height": 6.5,
+   "kind": "pine",
+   "seed": 14
+  },
+  {
+   "id": "Tree_9",
+   "type": "tree",
+   "x": 4,
+   "y": 0,
+   "z": -24,
+   "rotY": 8,
+   "height": 5.2,
+   "kind": "oak",
+   "seed": 15
+  },
+  {
+   "id": "Fence_Field_1",
+   "type": "b_fence",
+   "x": 19,
+   "y": 0,
+   "z": -2.5,
+   "rotY": 0,
+   "length": 12,
+   "height": 1.1,
+   "seed": 1
+  },
+  {
+   "id": "Fence_Field_2",
+   "type": "b_fence",
+   "x": 12.5,
+   "y": 0,
+   "z": -9,
+   "rotY": 1.5707963267948966,
+   "length": 12,
+   "height": 1.1,
+   "seed": 2
+  },
+  {
+   "id": "Bram",
+   "type": "npc",
+   "x": -11.5,
+   "y": 0,
+   "z": 10.5,
+   "rotY": 1.5707963267948966,
+   "name": "Bram",
+   "look": "youth",
+   "role": "idle"
+  },
+  {
+   "id": "Hollis",
+   "type": "npc",
+   "x": -13.5,
+   "y": 0,
+   "z": 12,
+   "rotY": 1.5707963267948966,
+   "name": "Hollis",
+   "look": "smith",
+   "role": "idle"
+  },
+  {
+   "id": "Mira",
+   "type": "npc",
+   "x": -7.5,
+   "y": 0,
+   "z": -4.5,
+   "rotY": 1.5707963267948966,
+   "name": "Mira",
+   "look": "baker",
+   "role": "idle"
+  },
+  {
+   "id": "Wynn",
+   "type": "npc",
+   "x": 1.6,
+   "y": 0,
+   "z": -3.8,
+   "rotY": -0.6,
+   "name": "Elder Wynn",
+   "look": "elder",
+   "role": "idle"
+  },
+  {
+   "id": "Tam",
+   "type": "npc",
+   "x": 15,
+   "y": 0,
+   "z": -6,
+   "rotY": -1.5707963267948966,
+   "name": "Tam",
+   "look": "villager",
+   "role": "idle"
+  },
+  {
+   "id": "Cael",
+   "type": "npc",
+   "x": 0,
+   "y": 0,
+   "z": 22,
+   "rotY": 3.141592653589793,
+   "name": "Cael",
+   "look": "cael",
+   "role": "idle",
+   "hidden": true
+  },
+  {
+   "id": "Flock",
+   "type": "creature",
+   "x": 2,
+   "y": 0,
+   "z": -12,
+   "rotY": 0,
+   "species": "emberwing",
+   "count": 5,
+   "spread": 6,
+   "aggressive": true,
+   "elite": false,
+   "hidden": true
+  },
+  {
+   "id": "Zone_Forge",
+   "type": "trigger",
+   "x": -11,
+   "y": 0,
+   "z": 11,
+   "rotY": 0,
+   "width": 6,
+   "depth": 6,
+   "height": 3
+  },
+  {
+   "id": "Zone_Square",
+   "type": "trigger",
+   "x": 0,
+   "y": 0,
+   "z": 1,
+   "rotY": 0,
+   "width": 9,
+   "depth": 8,
+   "height": 3
+  },
+  {
+   "id": "Zone_Stone",
+   "type": "trigger",
+   "x": 0,
+   "y": 0,
+   "z": -1,
+   "rotY": 0,
+   "width": 4.5,
+   "depth": 4.5,
+   "height": 3
+  }
+ ],
+ "wires": [],
+ "script": {
+  "id": "Prologue",
+  "speaker": "Bram",
+  "face": "Bram",
+  "flags": {},
+  "reactions": [
+   {
+    "on": "playerFire",
+    "count": "fires",
+    "throttle": 14,
+    "lines": [
+     [
+      "@Wynn Fire from their hands. Gods keep us."
+     ],
+     [
+      "@Mira Stop! You're making it worse!"
+     ],
+     [
+      "@Bram Put it down! Whatever you're doing, put it down!"
+     ]
+    ]
+   }
+  ],
+  "steps": [
+   {
+    "id": "morning",
+    "objective": "Find Bram at the forge",
+    "mark": "Bram",
+    "do": [
+     {
+      "mood": {
+       "name": "day",
+       "secs": 0
+      }
+     },
+     {
+      "hint": "Bottom-left thumb: walk. Drag anywhere else: look around."
+     }
+    ],
+    "until": {
+     "signal": {
+      "obj": "Zone_Forge",
+      "name": "entered"
+     }
+    }
+   },
+   {
+    "id": "bram",
+    "say": [
+     "@Bram There you are. Dad's had me on the bellows since dawn.",
+     "@Bram Festival tonight. Lanterns at the stone when the sun goes down.",
+     "@Bram And then dancing. Don't pretend you won't."
+    ],
+    "choices": [
+     {
+      "label": "I'll be there.",
+      "flag": {
+       "name": "veyra.tone",
+       "value": "earnest"
+      },
+      "say": [
+       "@Bram Good. Save me the first bread off Mira's cart."
+      ]
+     },
+     {
+      "label": "Only if you dance first.",
+      "flag": {
+       "name": "veyra.tone",
+       "value": "teasing"
+      },
+      "say": [
+       "@Bram Deal. You'll regret it."
+      ]
+     }
+    ]
+   },
+   {
+    "id": "village",
+    "objective": "Walk to the square",
+    "until": {
+     "signal": {
+      "obj": "Zone_Square",
+      "name": "entered"
+     }
+    },
+    "then": {
+     "say": [
+      "@Mira Oven's full. If anything burns tonight, let it be my bread and not my roof."
+     ]
+    }
+   },
+   {
+    "id": "stone",
+    "objective": "Go to the standing stone",
+    "mark": "StandingStone",
+    "until": {
+     "signal": {
+      "obj": "Zone_Stone",
+      "name": "entered"
+     }
+    },
+    "then": {
+     "say": [
+      "@Wynn Older than the valley, that stone.",
+      "@Wynn My grandmother said it hums on harvest nights. Don't lean on it."
+     ],
+     "do": [
+      {
+       "mood": {
+        "name": "dusk",
+        "secs": 8
+       }
+      }
+     ]
+    }
+   },
+   {
+    "id": "dusk",
+    "say": [
+     "@Bram Lanterns! Everyone to the stone!"
+    ],
+    "until": {
+     "time": 9
+    }
+   },
+   {
+    "id": "attack",
+    "do": [
+     {
+      "reveal": [
+       "Flock"
+      ]
+     },
+     {
+      "npc": {
+       "id": "Hollis",
+       "role": "brigade"
+      }
+     },
+     {
+      "npc": {
+       "id": "Tam",
+       "role": "brigade"
+      }
+     },
+     {
+      "npc": {
+       "id": "Mira",
+       "role": "cower"
+      }
+     },
+     {
+      "npc": {
+       "id": "Wynn",
+       "role": "cower"
+      }
+     },
+     {
+      "npc": {
+       "id": "Bram",
+       "role": "brigade"
+      }
+     }
+    ],
+    "say": [
+     "@Wynn Emberwings! In the thatch!",
+     "@Hollis Buckets! To the well!"
+    ],
+    "objective": "Stay close to the stone",
+    "until": {
+     "time": 11
+    }
+   },
+   {
+    "id": "awaken",
+    "do": [
+     {
+      "do": {
+       "obj": "StandingStone",
+       "action": "crack"
+      }
+     },
+     {
+      "setElement": {
+       "el": "fire",
+       "state": "wild"
+      }
+     },
+     {
+      "setElement": {
+       "el": "earth",
+       "state": "wild"
+      }
+     },
+     {
+      "setElement": {
+       "el": "water",
+       "state": "wild"
+      }
+     },
+     {
+      "hint": "Something answers you. Touch the well and drag: water. Touch a stone: lift it. Hold still on fire: it grows."
+     },
+     {
+      "checkpoint": true
+     }
+    ],
+    "say": [
+     "@Wynn The stone— it broke open—",
+     "@Bram What is that? What are you doing?"
+    ],
+    "objective": "Save what you can",
+    "waiting": [
+     {
+      "when": {
+       "many": {
+        "prefix": "Veyra_",
+        "type": "timber_house",
+        "signal": "burning",
+        "min": 2
+       }
+      },
+      "say": [
+       "@Bram It's spreading! The roofs!"
+      ]
+     },
+     {
+      "when": {
+       "ledger": {
+        "tally": "harm",
+        "min": 3
+       }
+      },
+      "say": [
+       "@Mira It came out of you! The fire came out of you!"
+      ]
+     },
+     {
+      "when": {
+       "ledger": {
+        "tally": "care",
+        "min": 2
+       }
+      },
+      "say": [
+       "@Hollis Keep it coming! Whatever you are, keep it coming!"
+      ]
+     },
+     {
+      "when": {
+       "signal": {
+        "obj": "Flock",
+        "name": "gone"
+       }
+      },
+      "say": [
+       "@Tam The birds are gone!"
+      ]
+     }
+    ],
+    "ends": [
+     {
+      "when": {
+       "all": [
+        {
+         "signal": {
+          "obj": "Flock",
+          "name": "gone"
+         }
+        },
+        {
+         "many": {
+          "prefix": "Veyra_House",
+          "signal": "burning",
+          "max": 0
+         }
+        },
+        {
+         "many": {
+          "prefix": "Veyra_Barn",
+          "signal": "burning",
+          "max": 0
+         }
+        },
+        {
+         "time": 8
+        }
+       ]
+      },
+      "next": "cael"
+     },
+     {
+      "when": {
+       "time": 150
+      },
+      "next": "cael"
+     }
+    ]
+   },
+   {
+    "id": "cael",
+    "do": [
+     {
+      "reveal": [
+       "Cael"
+      ]
+     },
+     {
+      "douseAll": {
+       "by": "cael"
+      }
+     },
+     {
+      "mood": {
+       "name": "night",
+       "secs": 6
+      }
+     },
+     {
+      "npc": {
+       "id": "Hollis",
+       "role": "idle"
+      }
+     },
+     {
+      "npc": {
+       "id": "Tam",
+       "role": "idle"
+      }
+     },
+     {
+      "npc": {
+       "id": "Bram",
+       "role": "idle"
+      }
+     },
+     {
+      "npc": {
+       "id": "Mira",
+       "role": "idle"
+      }
+     },
+     {
+      "npc": {
+       "id": "Wynn",
+       "role": "idle"
+      }
+     }
+    ],
+    "say": [
+     "@Cael Enough.",
+     "@Cael Stand still. Breathe. It answers you, so it stops when you do."
+    ],
+    "mark": "Cael",
+    "until": {
+     "talking": false
+    }
+   },
+   {
+    "id": "damage",
+    "ends": [
+     {
+      "when": {
+       "many": {
+        "prefix": "Veyra_",
+        "type": "timber_house",
+        "signal": "burned",
+        "min": 3
+       }
+      },
+      "say": [
+       "@Wynn Half the village. In one night.",
+       "@Mira My ovens. My house."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.fire",
+         "value": "ruin"
+        }
+       }
+      ]
+     },
+     {
+      "when": {
+       "many": {
+        "prefix": "Veyra_",
+        "type": "timber_house",
+        "signal": "burned",
+        "min": 1
+       }
+      },
+      "say": [
+       "@Wynn We lost some. We kept more."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.fire",
+         "value": "some"
+        }
+       }
+      ]
+     },
+     {
+      "when": {
+       "time": 0
+      },
+      "say": [
+       "@Wynn Not one roof lost. I don't know how."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.fire",
+         "value": "none"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "barn",
+    "ends": [
+     {
+      "when": {
+       "signal": {
+        "obj": "Veyra_Barn_Holloway",
+        "name": "burned"
+       }
+      },
+      "say": [
+       "@Bram The barn's gone. Dad's forge is standing. That's something."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "bram.barn",
+         "value": "burned"
+        }
+       }
+      ]
+     },
+     {
+      "when": {
+       "time": 0
+      },
+      "say": [
+       "@Bram You kept it off our barn. I saw you."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "bram.barn",
+         "value": "saved"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "blame",
+    "ends": [
+     {
+      "when": {
+       "ledger": {
+        "tally": "harm",
+        "min": 4
+       }
+      },
+      "say": [
+       "@Mira I saw it come out of you. I saw it."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.blame",
+         "value": "you"
+        }
+       }
+      ]
+     },
+     {
+      "when": {
+       "ledger": {
+        "tally": "care",
+        "min": 2
+       }
+      },
+      "say": [
+       "@Tam You were at the well with us. I saw that too."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.blame",
+         "value": "birds"
+        }
+       }
+      ]
+     },
+     {
+      "when": {
+       "time": 0
+      },
+      "say": [
+       "@Hollis Birds. Fire. A stone that breaks. I don't know what I saw tonight."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "veyra.blame",
+         "value": "unsure"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "choice",
+    "say": [
+     "@Cael You can't stay in the village tonight. Not like this."
+    ],
+    "choices": [
+     {
+      "label": "Help clear the ashes first.",
+      "flag": {
+       "name": "veyra.after",
+       "value": "help"
+      },
+      "do": [
+       {
+        "ledger": {
+         "tally": "care",
+         "add": 2
+        }
+       }
+      ],
+      "say": [
+       "@Cael Good. Then we go."
+      ]
+     },
+     {
+      "label": "Find the birds that did this.",
+      "flag": {
+       "name": "veyra.after",
+       "value": "hunt"
+      },
+      "say": [
+       "@Cael They're long gone. Out there you'd only find more fire."
+      ]
+     },
+     {
+      "label": "(Say nothing.)",
+      "flag": {
+       "name": "veyra.after",
+       "value": "silent"
+      },
+      "say": [
+       "@Cael Then walk with me. Silence is fine."
+      ]
+     }
+    ]
+   },
+   {
+    "id": "prophecy",
+    "say": [
+     "@Cael My name is Cael. I read old stones for a living.",
+     "@Cael That one cracked tonight. So did something in you.",
+     "@Cael There's a verse on the oldest of them. Two. One who saves the world. One who changes it.",
+     "@Cael I came here following the stones. I didn't expect to find a person.",
+     "@Cael Fire is the loudest thing in you. I'll teach you something quieter first."
+    ],
+    "do": [
+     {
+      "setElement": {
+       "el": "water",
+       "state": "locked"
+      }
+     },
+     {
+      "setElement": {
+       "el": "earth",
+       "state": "trained"
+      }
+     },
+     {
+      "setFlag": {
+       "name": "prologue",
+       "value": "done"
+      }
+     }
+    ],
+    "until": {
+     "talking": false
+    },
+    "then": {
+     "do": [
+      {
+       "travel": {
+        "scene": "lesson1",
+        "at": "start"
+       }
+      }
+     ]
+    }
+   }
+  ],
+  "card": null
+ }
+}

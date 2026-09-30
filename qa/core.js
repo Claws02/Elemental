@@ -34,11 +34,16 @@ const SHOTS = path.join(__dirname, 'shots');
     const menu = await ev(() => [...document.querySelectorAll('#title-menu button')].map(b => b.firstChild.textContent));
     check(menu.join() === 'New game', `a first launch offers only New game (${menu.join(', ')})`);
     await shot('C0-title');
-    await page.click('#title-menu button');
+    await page.click('#title-menu button');                       // New game → the creator
+    await page.click('#title-menu button.primary');               // Begin
     await ready();
     await wait(800);
-    const slot = await ev(() => { const s = JSON.parse(localStorage.getItem('elemental.save.1')); return { scene: s?.meta.scene, cp: s?.checkpoint?.scene }; });
-    check(slot.scene === 'lesson1' && slot.cp === 'lesson1', `New game starts the story and checkpoints on arrival (${JSON.stringify(slot)})`);
+    const slot = await ev(() => { const s = JSON.parse(localStorage.getItem('elemental.save.1')); return { scene: s?.meta.scene, cp: s?.checkpoint?.scene, name: s?.custom?.name }; });
+    check(slot.scene === 'veyra' && slot.cp === 'veyra' && slot.name === 'Ash', `New game starts the prologue and checkpoints on arrival (${JSON.stringify(slot)})`);
+    // The rest of this suite runs in Lesson I: travel there the way the prologue does.
+    await ev(() => __EL.travel('lesson1', 'start'));
+    await page.waitForFunction(() => window.__EL?.mode === 'lesson1' && __EL.story?.step, null, { timeout: 30000 });
+    await wait(800);
 
     // 2. Health: fire hurts, and it heals (waiting on the game's own clock, not the wall's).
     const hurt = await ev(async () => {

@@ -10,6 +10,8 @@ Agreed 2026-09-29. The player does not start with every element. They gather the
 | **Wild** | It answers, but untrained. Dangerous (see Wild Fire). |
 | **Trained** | Learned from Cael. Grows in Power and Control. |
 
+**The prologue (Veyra):** every element locked until the stone cracks; then Fire, Earth and Water answer at once, all wild. When it ends, Water goes quiet again and Earth becomes Cael's to teach.
+
 **Story start (Lesson I):** Earth trained (Power 1, Control 1), Fire **wild**, Water and Air locked. Fire woke in Veyra, in the prologue; Cael judges it too uncontrollable to start with, so he teaches Earth first. The player can still reach for Fire, and Cael notices every time.
 
 **Sandbox:** everything trained, at full Power and Control.

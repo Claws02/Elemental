@@ -33,6 +33,8 @@ export class Hud {
             <div class="hud-card" id="hud-card"></div>
             <div class="hold-ring" id="hold-ring"></div>
             <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>
+            <div class="hud-choices" id="hud-choices"></div>
+            <div class="hud-tip" id="hud-tip"></div>
             <div class="hud-vignette" id="hud-vignette"></div>
             <div class="hud-died" id="hud-died"><span></span></div>`;
         this.el = id => root.querySelector('#' + id);
@@ -52,17 +54,19 @@ export class Hud {
         EventBus.on(EV.OBJECT_THROWN, () => this.el('hud-hint').classList.add('gone'));
         EventBus.on(EV.CHECKPOINT, () => { if (this._shown) this.log('Checkpoint'); this._shown = true; });
         EventBus.on(EV.STRUCTURE_STATE, e => {
+            if (/_W\d$/.test(e.id)) return;             // one wall of a building: the building speaks for itself
             if (e.cause === 'rebuilt') { this._onFire.delete(e.id); this.log(`${e.id.includes('Props') ? 'Obstacles' : 'Barricade'} · reset`); return; }
             const who = e.cause === 'player' ? 'by you' : '';
-            this.log(`Barricade · ${e.to} ${who}`.trim());
+            this.log(`${e.name || 'Barricade'} · ${e.to} ${who}`.trim());
         });
         // Fire is logged once per structure it takes hold of, not per plank.
         this._onFire = new Set();
         EventBus.on(EV.FIRE_STARTED, e => {
-            const key = e.id.replace(/_P\d+$/, '');
+            const key = e.id.replace(/(_W\d+)?(_P\d+|_R\d+)$/, '');
             if (key === e.id || this._onFire.has(key)) return;
             this._onFire.add(key);
-            this.log(`Barricade · on fire${e.cause === 'player' ? ' by you' : ''}`);
+            const what = key.includes('Barricade') ? 'Barricade' : key.replace(/_\d+$/, '').replace(/^.*_/, '');
+            this.log(`${what} · on fire${e.cause === 'player' ? ' by you' : ''}`);
         });
     }
 
@@ -138,6 +142,29 @@ export class Hud {
             a.addEventListener('click', e => { if (this.onLink) { e.preventDefault(); this.onLink(buttons[i].href); } });
         });
         el.classList.add('on');
+    }
+
+    /** A choice: short replies as buttons; `null` clears them. */
+    choices(labels, pick) {
+        const el = this.el('hud-choices');
+        el.replaceChildren();
+        el.classList.toggle('on', !!labels);
+        if (!labels) return;
+        labels.forEach((l, i) => {
+            const b = document.createElement('button');
+            b.textContent = l;
+            b.addEventListener('pointerdown', e => { e.stopPropagation(); pick(i); });
+            el.append(b);
+        });
+    }
+
+    /** A one-line tip for a few seconds (the prologue teaching a gesture). */
+    hint(text) {
+        const el = this.el('hud-tip');
+        el.textContent = text;
+        el.classList.add('on');
+        clearTimeout(this._tipT);
+        this._tipT = setTimeout(() => el.classList.remove('on'), 6000);
     }
 
     /** Health, shown only as the screen's edges reddening: 0 well … 1 nearly gone. */

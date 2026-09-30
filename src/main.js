@@ -17,9 +17,10 @@
 
 import { startGame } from './Game.js';
 import { Session, readSlot, listSlots, deleteSlot, blankSave } from './core/SaveGame.js';
+import { CREATOR, lookFrom } from './data/looks.js';
 
 const ALIAS = { lesson: 'lesson1', sandbox: 'courtyard' };
-const NEW_GAME_SCENE = 'lesson1';        // becomes the Veyra prologue when it is built
+const NEW_GAME_SCENE = 'veyra';          // the prologue: the night of the fire
 
 let game = null, session = null;
 const cache = new Map();
@@ -83,10 +84,38 @@ function title() {
         return b;
     };
     const when = s => s.savedAt ? new Date(s.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    const begin = slot => {
-        t.classList.remove('on');
-        session = new Session(slot, blankSave(slot));
-        play(NEW_GAME_SCENE, { fresh: true }).catch(fail);
+    const begin = slot => creator(slot);
+    // Who you are: a name and a look. Nothing else; the rest is what you do.
+    const creator = slot => {
+        const picks = { skin: CREATOR.skin[2], hair: CREATOR.hair[1], tunic: CREATOR.tunic[0], cloak: CREATOR.cloak[0] };
+        menu.replaceChildren();
+        const name = Object.assign(document.createElement('input'), { id: 'creator-name', value: 'Ash', maxLength: 16, placeholder: 'Your name' });
+        name.className = 'creator-name';
+        menu.append(Object.assign(document.createElement('label'), { htmlFor: 'creator-name', className: 'creator-label', textContent: 'Name' }), name);
+        for (const [key, label] of [['skin', 'Skin'], ['hair', 'Hair'], ['tunic', 'Tunic'], ['cloak', 'Cloak']]) {
+            const row = document.createElement('div');
+            row.className = 'swatches';
+            row.setAttribute('role', 'radiogroup');
+            row.setAttribute('aria-label', label);
+            menu.append(Object.assign(document.createElement('span'), { className: 'creator-label', textContent: label }), row);
+            for (const c of CREATOR[key]) {
+                const b = document.createElement('button');
+                b.style.background = '#' + c.toString(16).padStart(6, '0');
+                b.setAttribute('aria-label', `${label} ${CREATOR[key].indexOf(c) + 1}`);
+                b.setAttribute('aria-checked', String(c === picks[key]));
+                b.setAttribute('role', 'radio');
+                b.onclick = () => { picks[key] = c; row.querySelectorAll('button').forEach(x => x.setAttribute('aria-checked', String(x === b))); };
+                row.append(b);
+            }
+        }
+        menu.append(btn('Begin', 'Harvest eve in Veyra', () => {
+            t.classList.remove('on');
+            const save = blankSave(slot);
+            save.custom = { name: name.value.trim() || 'Ash', look: lookFrom(picks) };
+            save.meta.name = save.custom.name;
+            session = new Session(slot, save);
+            play(NEW_GAME_SCENE, { fresh: true }).catch(fail);
+        }, 'primary'), btn('Back', '', main));
     };
     const resume = s => {
         t.classList.remove('on');

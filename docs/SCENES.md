@@ -22,6 +22,7 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 
 - **settings.ground**: the base floor, `half` metres each way from the centre; `style` is flagstone, grass, dirt, cobble or sand.
 - **settings.region**: the kingdom the scene is in (verdant, emberwall, saltmere, skyreach, glass, capital); the ledger counts what you do there against it.
+- **settings.mood**: the light the scene opens in (`day`, `dusk`, `night`); the story can change it.
 - **settings.persistent**: the scene remembers what happens to its objects in the save (a barricade burned, a stone revealed, a gate opened, a hay bale burned) and puts it back when you return.
 - **settings.profile**: `story` (the story's element states, saved on the device) or `sandbox` (everything trained, never saved). `resetProgress` starts the story over; `resetAfter` is the testing aid that puts disturbed props back after that many quiet seconds (0 = off).
 - **objects**: every object has an `id` (unique), a `type`, a position (`x`, `z`; `y` is the height of its base) and a turn (`rotY`, radians; the object's front faces +Z before turning). The rest are the type's properties. `src/scene/schema.js` lists them all, with defaults and ranges.
@@ -35,7 +36,8 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Elements | brazier (a fire source), basin (a water source) |
 | Props | crate, oil barrel, training dummy, market stall |
 | Puzzle | timber barricade, portcullis gate, pressure plate, trigger zone |
-| Characters | player start (one per scene), character (Cael, villager, elder, guard) |
+| Characters | player start (one per scene), character (looks: Cael, villager, elder, guard, smith, baker, youth; `role`: idle, walk, brigade — carries water from the nearest basin to the nearest fire — or cower — keeps away from creatures) |
+| Village | **timber house** (`kind` house or barn; `cols` × `depth` panels, `rows` high, thatch roof): every wall panel breaks and burns, the roof burns from the thatch; *burned* when half of it has. **standing stone** (`cracked`; action `crack`) |
 | Buildings | wall (stone, timber or plaster; door, window, two windows or arch), floor, roof, stairs, fence, post, and **prefab buildings** (cottage, town house, smithy, watchtower, shed) |
 | Creatures | creature groups: Emberwing (flying fire bird), Bristleback (charging boar), Thornhound (pack hunter); a count, a spread, attacks on sight, one elite |
 | Travel | exit to another scene |
@@ -70,6 +72,8 @@ A wire watches **signals** and runs **actions** on objects:
 | crate, barrel, dummy | burning, burned, moved | |
 | hay | burning, burned | |
 | creature | gone (every one dead or driven off), engaged (they've seen you) | release |
+| timber house | intact, damaged, burning, burned | |
+| standing stone | cracked | crack |
 | anything that can start hidden | visible | reveal, hide |
 
 ## The script: story steps
@@ -88,11 +92,13 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 - On entering a step: its lines (`say`), then its actions (`do`). `mark` puts the Earth ring over an object, and the speaker points at it.
 - `waiting`: while in the step, each time a condition *becomes* true, say and do something.
 - `ends`: the first ending whose condition holds finishes the step: its lines, its actions, then the `next` step (or the one after it; `done` ends the story). An ending can set the `outcome` the card and the save read. (`until` + `then` is shorthand for one ending.)
+- `choices`: a list of `{ label, say?, do?, next? }`. When the step's lines are done, the replies show as buttons; the pick's lines and actions run, then its `next`.
+- A line starting `@Name ` is spoken by that character instead of the speaker (`"@Bram Watch the sparks!"`). `{name}` is the player's name from the character creator.
 - An objective containing `{held}` shows the held-steady timer and a progress bar.
 
-**Conditions** (one key each): `talking` · `time` (seconds in the step) · `held` (an object id, or `*`) · `heldFor` `{obj, secs, lost}` · `signal` `{obj, name}` · `wire` · `broken` / `burned` `{obj, min}` · `burning` · `count` `{name, min}` · `flag` `{name, is}` · `state` `{id, is}` (a remembered world state) · `ledger` `{tally, min, region?}` · `standing` `{region, atLeast}` (0 the cause of all this … 4 saviour) · `all` / `any` (lists) · `not`.
+**Conditions** (one key each): `talking` · `time` (seconds in the step) · `held` (an object id, or `*`) · `heldFor` `{obj, secs, lost}` · `signal` `{obj, name}` · `wire` · `broken` / `burned` `{obj, min}` · `burning` · `count` `{name, min}` · `flag` `{name, is}` · `state` `{id, is}` (a remembered world state) · `ledger` `{tally, min, region?}` · `standing` `{region, atLeast}` (0 the cause of all this … 4 saviour) · `many` `{prefix, type?, signal, min?, max?}` (how many objects whose id starts with `prefix` show `signal`: "three houses burned") · `all` / `any` (lists) · `not`.
 
-**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name, and checkpoint) · `card` (show the end card) · `checkpoint` · `travel` `{scene, at}` · `setFlag` `{name, value}` · `setState` `{id, value}` · `ledger` `{tally, add}`.
+**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name, and checkpoint) · `card` (show the end card) · `checkpoint` · `travel` `{scene, at}` · `setFlag` `{name, value}` · `setState` `{id, value}` · `ledger` `{tally, add}` · `setElement` `{el, state, power?}` (locked / wild / trained) · `mood` `{name, secs}` (day, dusk, night: the light changes over `secs`) · `douseAll` `{by}` (every fire out) · `hint` (a one-line tip) · `npc` `{id, role, x?, z?}`.
 
 **Reactions** answer the player at any point: `playerFire`, `tooHeavy`, `playerBreak`, `playerThrow`. Each can count (`count`), change a flag, say the nth of its `lines` (or cycle through them), wait `throttle` seconds before speaking again, and follow up later (`followUp`: after N seconds, if a condition holds).
 

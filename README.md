@@ -8,7 +8,7 @@ A high-fantasy, physics-driven mobile action-adventure. You learn to move the el
 
 Every place is a scene file in `scenes/` (`docs/SCENES.md`), made in [Elemental-Editor](https://github.com/Claws02/Elemental-Editor): `?scene=village` opens a sample village built from the building kit.
 
-**Begin** on the title screen plays **Lesson I**, Cael's first lesson: the story starts with Earth and a wild, untrained Fire, and powers grow in Power and Control (`docs/PROGRESSION.md`). **Sandbox** has every element, fully trained.
+**New game** on the title screen asks for a name and a look, then plays the **prologue**: harvest eve in Veyra, the Emberwing flock, the stone that cracks, and a village on fire that you save or don't. **Lesson I**, Cael's first lesson, follows: Earth trained, Fire still wild, and powers grow in Power and Control (`docs/PROGRESSION.md`). Three save slots; **Continue** picks up at the last checkpoint. `?scene=courtyard` is the sandbox, every element fully trained.
 
 ![The courtyard](docs/assets/courtyard.png)
 
@@ -47,10 +47,15 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 npm run check      # module parse + dead private-helper check
 npm run scenes     # every scenes/*.json against the scene schema
 npm run smoke      # the Phase 1 gate: boot, move, grab, flick, break, budget (needs a server on :8140)
+npm run unit       # saves, ledger, scene conditions (no browser)
+npm run lesson     # Lesson I, both outcomes           (these need a server on :8140)
+npm run core       # save slots, health, death, checkpoints, travel, ledger
+npm run creatures  # the three creatures and the elite
+npm run prologue   # the Veyra fire, played carefully and recklessly
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
 ```
 
-CI runs all three on every push (`.github/workflows/ci.yml`).
+CI runs all of them but the model sheet on every push (`.github/workflows/ci.yml`).
 
 ## Docs
 

@@ -126,7 +126,8 @@ export function rememberScene(world, session) {
     for (const [id, inst] of world.objects) {
         const s = session.state(id);
         if (!s) continue;
-        if (inst.destructible) {
+        if (inst.restoreState) inst.restoreState(s);
+        else if (inst.destructible) {
             if (s === STATE.BURNED || s === STATE.COLLAPSED) inst.destructible.collapseNow(s === STATE.BURNED);
             else if (s === 'Raised') inst.destructible.raiseNow();
         } else if (s === 'burned' && inst.prop?.thing) world.sys.fire.markBurned(inst.prop.thing);

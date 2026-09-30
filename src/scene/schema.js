@@ -53,6 +53,13 @@ export const TYPES = {
         label: 'Archway', group: 'Ruins',
         props: { width: num('Opening', 5, 1.5, 12, 0.1), height: num('Height', 4.2, 2, 10, 0.1), hidden: HIDDEN },
     },
+    standing_stone: {
+        label: 'Standing stone', group: 'Ruins',
+        props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), seed: SEED, hidden: HIDDEN },
+        signals: ['cracked'],
+        actions: ['crack'],
+        note: 'An Oruun marker: a seal. It cracks at the awakening (and stays cracked in a scene that remembers).',
+    },
     sealed_door: {
         label: 'Sealed door', group: 'Ruins',
         props: { width: num('Width', 6.4, 1.5, 12, 0.1), height: num('Height', 4.6, 2, 10, 0.1), hidden: HIDDEN },
@@ -141,11 +148,21 @@ export const TYPES = {
     },
     npc: {
         label: 'Character', group: 'Characters',
-        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard']), hidden: HIDDEN },
+        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth']), role: select('Does', 'idle', ['idle', 'brigade', 'cower']), hidden: HIDDEN },
         note: 'The script\'s lines are spoken by the character named as its speaker.',
     },
 
     // ---- buildings (modular kit; prefabs are groups of these) -----------------------------
+    timber_house: {
+        label: 'Timber house (burns)', group: 'Buildings',
+        props: {
+            kind: select('Kind', 'house', ['house', 'barn']),
+            cols: int('Front, in panels (1 m)', 5, 2, 10), depth: int('Side, in panels (1 m)', 4, 2, 10), rows: int('Height, in panels', 3, 2, 4),
+            seed: SEED, hidden: HIDDEN,
+        },
+        signals: ['intact', 'damaged', 'burning', 'burned'],
+        note: 'A village house or barn built to burn: timber walls that break panel by panel and a thatch roof that falls in. Half burned is "burned", and a scene that remembers keeps it a charred frame.',
+    },
     b_wall: {
         label: 'Wall', group: 'Buildings',
         props: {
@@ -212,7 +229,7 @@ export const TYPES = {
 //   flagName=value    a flag equals a value
 //   state:ObjectId=v  a remembered world state (burned, Collapsed, revealed…)
 // Things someone owns (`owner`) count against the player when harmed (Ledger).
-const OWNED = ['barricade', 'gate', 'crate', 'barrel', 'hay', 'stall', 'brazier', 'basin', 'b_wall', 'b_floor', 'b_roof', 'b_stairs', 'b_fence', 'b_post', 'prefab', 'tree'];
+const OWNED = ['timber_house', 'barricade', 'gate', 'crate', 'barrel', 'hay', 'stall', 'brazier', 'basin', 'b_wall', 'b_floor', 'b_roof', 'b_stairs', 'b_fence', 'b_post', 'prefab', 'tree'];
 for (const [type, t] of Object.entries(TYPES)) {
     if (OWNED.includes(type)) t.props.owner = select('Belongs to', 'none', ['none', 'civilian', 'empire']);
     t.props.showWhen = text('Only when', '');
@@ -241,6 +258,7 @@ export const CONDITIONS = {
     state:    { label: 'World state', arg: { id: 'ref', is: 'text' } },
     ledger:   { label: 'The ledger', arg: { tally: 'tally', min: 'number' } },
     standing: { label: 'How a kingdom sees you', arg: { region: 'region', atLeast: 'int' } },
+    many:     { label: 'How many objects give a signal', arg: { prefix: 'text', type: 'text', signal: 'text', min: 'int', max: 'int' } },
     all:      { label: 'All of', arg: 'list' },
     any:      { label: 'Any of', arg: 'list' },
     not:      { label: 'Not', arg: 'cond' },
@@ -257,6 +275,11 @@ export const ACTIONS = {
     count:    { label: 'Add to a counter', arg: { name: 'text', add: 'int' } },
     saveFlag: { label: 'Save the outcome as', arg: 'text' },
     card:     { label: 'Show the end card', arg: 'bool' },
+    setElement: { label: 'Set an element', arg: { el: 'element', state: 'elstate' } },
+    mood:     { label: 'Change the light', arg: { name: 'mood', secs: 'number' } },
+    douseAll: { label: 'Put out every fire', arg: { by: 'text' } },
+    hint:     { label: 'Show a tip', arg: 'text' },
+    npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role' } },
     checkpoint: { label: 'Checkpoint (save)', arg: 'bool' },
     travel:   { label: 'Travel to a scene', arg: { scene: 'text', at: 'text' } },
     setFlag:  { label: 'Set a saved flag', arg: { name: 'text', value: 'text' } },

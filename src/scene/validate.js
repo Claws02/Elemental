@@ -130,7 +130,8 @@ export function validateScene(data) {
             for (const w of st.waiting || []) { cond(where, w.when); acts(where, w.do); }
             if (st.until) { cond(where, st.until); acts(where, st.then?.do); next(where, st.then?.next); }
             for (const e of st.ends || []) { cond(where, e.when); acts(where, e.do); next(where, e.next); }
-            if (!st.until && !(st.ends || []).length) warn(where, 'never ends: give it "until" or an ending');
+            for (const c of st.choices || []) { if (!c.label) err(where, 'a choice has no words'); acts(where, c.do); next(where, c.next); }
+            if (!st.until && !(st.ends || []).length && !(st.choices || []).length) warn(where, 'never ends: give it "until", an ending or choices');
         }
         for (const r of s.reactions || []) if (!REACTION_EVENTS[r.on]) err('script', `unknown reaction "${r.on}"`);
     }

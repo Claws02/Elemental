@@ -38,7 +38,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Progression.** Element states (locked / wild / trained), Power and Control per element, saved on the device (`PROGRESSION.md`). *Lesson test.*
 - [x] **Wild Fire.** Quick to catch, sparks, can't be taken back, unstable fireballs, Power without Control; Cael notices. *Lesson test.*
 - [x] **Lesson I: The Quiet Element.** Cael (placeholder model), subtitles, objectives, pressure plates, counterweight barricade; quiet and loud outcomes; end card; title screen with Begin and Sandbox. *Lesson test: 24 checks; screenshots. Played once: lines read well; changed after it: the wobble became a slow, small sway, untrained Fire can't heat a held stone, the story opens on Cael, three stones (two too heavy, Cael says so) until the first plate, and every plate is raised to eye level.*
-- [ ] **The Veyra prologue** ← next story beat: the awakening, Fire bursting out, Cael appearing and defeating the player.
+- [x] **The Veyra prologue** (`scenes/veyra.json`). A name and a look, then harvest eve in Veyra: Bram at the forge (a first choice), the square, the standing stone at dusk. The Emberwing flock comes; the stone cracks and Fire, Earth and Water answer, all wild. The villagers make a bucket brigade or hide; you save what you can, or don't. Cael puts the fire out. What burned, Bram's barn, and who the village blames all come from what you did; a last choice; the prophecy; on to Lesson I with Fire still wild, Earth his to teach, Water gone again. Burned houses stay burned. *Prologue test: 9 checks, a careful night and a reckless one.*
 
 ## Tools: scenes and the editor
 
@@ -56,7 +56,8 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Consequence ledger and standing.** Harm, care, excess, spared, killed, by kingdom; five standings from saviour to the cause of all this; story conditions read them. *Unit + core tests.*
 - [x] **Travel.** Exits and named arrival points; a checkpoint on arrival. *Core test.*
 - [x] **Creatures and combat, first three.** Creatures are physics bodies the elements already act on, with small readable minds: the Bristleback charges and stuns itself on walls and boulders, Thornhounds circle, bite, fear fire and the last one runs, Emberwings dive and set what's below alight and fall when wet. Killing and driving off go in the ledger. Species are data (`src/data/creatures.js`). *Creatures test (`scenes/arena.json`): 7 checks.*
-- [ ] **The prologue: the Veyra fire** ← next (waits on the world bible's approval for names and beats).
+- [x] **The prologue: the Veyra fire.** Timber houses and barns whose walls and thatch burn panel by panel (drawn as one mesh until something touches them), moods from day to night, villager roles, story choices. *Prologue test.*
+- [ ] **Elemental expansion** ← next (ROADMAP phase 4).
 
 ## Phase 2: elemental sandbox
 

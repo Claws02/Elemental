@@ -50,6 +50,13 @@ export const MATERIALS = {
         flammable: { fuel: 3.5, ignitesAt: 0.55, flash: 2 },   // flash: goes up at full strength at once, spreads this much faster
         soaks: 20,
     },
+    thatch: {
+        name: 'thatch',                 // a roof of straw: quicker than timber, slower than loose hay
+        change: { element: 'fire', verb: 'ignite', hold: 0.4 },
+        whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
+        flammable: { fuel: 6, ignitesAt: 0.8, reach: 2.6 },   // burning straw carries: down the walls, over the ridge, to the next roof
+        soaks: 20,
+    },
     barrel: {
         name: 'oil',                    // an oil barrel: burns briefly, then bursts
         change: { element: 'fire', verb: 'ignite', hold: 0.6 },

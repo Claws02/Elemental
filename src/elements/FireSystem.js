@@ -66,7 +66,7 @@ export class FireSystem {
 
     addFlammable(thing, { onBurn = null } = {}) {
         const fl = thing.mat.flammable;
-        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
+        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, reach: fl.reach || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
     }
 
     addHeatable(thing) {
@@ -81,6 +81,17 @@ export class FireSystem {
     addSource(thing, pos) { this.sources.push({ thing, pos }); }
 
     isBurning(thing) { return !!this.flammables.get(thing)?.burning; }
+
+    /** Every fire out at once (Cael arriving; the end of a scene). */
+    douseAll(cause = 'environment') {
+        let n = 0;
+        for (const f of this.flammables.values()) {
+            if (f.burning && this.douse(f.thing, cause)) n++;
+            f.heat = 0;                 // and nothing left hot enough to catch again
+            f.heatCause = null;
+        }
+        return n;
+    }
 
     /** How many burning things are within `r` of point `p` (on the ground plane): the hero standing in fire. */
     burningNear(p, r) {
@@ -344,7 +355,7 @@ export class FireSystem {
                 const d = p.distanceTo(q);
                 // Fanned by wind, fire reaches further and faster downwind.
                 const align = fanned && d > 0 ? Math.max(0, q.clone().sub(p).normalize().dot(f.windDir)) : 0;
-                const R = FIRE.spreadRadius * (1 + 0.8 * align);
+                const R = (f.reach || FIRE.spreadRadius) * (1 + 0.8 * align);      // thatch throws fire further than planks
                 if (d >= R) continue;
                 const wind = fanned ? 1.3 + 1.5 * align : 1;
                 o.heat += k * wind * FIRE.spreadRate * (1 - d / R) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;

@@ -31,6 +31,7 @@ jobs:
           node qa/lesson.js
           node qa/core.js
           node qa/creatures.js
+          node qa/prologue.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

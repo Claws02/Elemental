@@ -65,9 +65,10 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     session ||= new Session(0, null, { persist: false });
     const prog = new Progression(profile, { session });
     if (st.resetProgress && fresh) prog.reset();
+    Renderer.setMood(st.mood || 'day');
     const world = buildScene(scene, data, { flag: n => prog.flags[n], state: id => session.state(id) });
     const arrive = spawnAt || world.spawns[at] || world.spawn;
-    const player = new PlayerController(scene, arrive);
+    const player = new PlayerController(scene, arrive, session.work.custom?.look || null);
     const cam = new CameraRig(camera);
     cam.solids = world.solids;
     cam.yaw = player.facing + Math.PI;
@@ -83,7 +84,15 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
     wireScene(world, { interactables, fire, water });
     const forget = rememberScene(world, session);
-    const ledger = new Ledger(session, st.region || 'verdant', id => world.objects.get(id)?.item.owner || 'none');
+    // Whose is it: a piece of a building answers for the building (Veyra_House_02_W1_P03 → Veyra_House_02).
+    const ownerOf = id => {
+        for (let s = String(id); s; s = s.includes('_') ? s.slice(0, s.lastIndexOf('_')) : '') {
+            const o = world.objects.get(s);
+            if (o) return o.item.owner || 'none';
+        }
+        return 'none';
+    };
+    const ledger = new Ledger(session, st.region || 'verdant', ownerOf);
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
     let leaving = false;
@@ -109,7 +118,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session } }) : null;
+    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment') } }) : null;
     if (story) hud.story();
     if (story && !spawnAt) {
         // The story opens looking at what the script names (Lesson I: Cael).
@@ -168,6 +177,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
+        Renderer.updateMood(dt);
         Renderer.followSun(player.position);
         Renderer.render();
 
