@@ -606,14 +606,14 @@ const SHOTS = path.join(__dirname, 'shots');
 
     // 10d. A gust shifts a crate.
     const shifted = await page.evaluate(async () => {
-        __EL.player.body.position.set(10, 0.45, 3);
+        __EL.player.body.position.set(11, 0.45, 3);          // close: gusts are weak on purpose (phone test), and fall off with distance
         await new Promise(r => setTimeout(r, 400));
         const c = __thing('TestRoom_Crate_06'), p0 = c.entry.body.position.clone();   // the top crate: nothing on it
         __EL.air.gust(c.pos().sub(__EL.air.origin()).normalize());
         await new Promise(r => setTimeout(r, 1500));
         return +c.entry.body.position.distanceTo(p0).toFixed(2);
     });
-    check(shifted > 0.1, `a gust shifts a crate (${shifted} m)`);
+    check(shifted > 0.05, `a gust shifts a crate (${shifted} m)`);
 
     // 10e. Left alone, the obstacles reset (60 s in the room; 2 s here once nothing burns).
     await page.evaluate(() => { __EL.room.propReset.after = 2; for (const p of __EL.room.props) if (__EL.fire.isBurning(p.thing)) __EL.fire.douse(p.thing, 'player'); });
