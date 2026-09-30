@@ -37,6 +37,8 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Puzzle | timber barricade, portcullis gate, pressure plate, trigger zone |
 | Characters | player start (one per scene), character (Cael, villager, elder, guard) |
 | Buildings | wall (stone, timber or plaster; door, window, two windows or arch), floor, roof, stairs, fence, post, and **prefab buildings** (cottage, town house, smithy, watchtower, shed) |
+| Creatures | creature groups: Emberwing (flying fire bird), Bristleback (charging boar), Thornhound (pack hunter); a count, a spread, attacks on sight, one elite |
+| Travel | exit to another scene |
 | Ground | ground patch (grass, dirt, cobble, sand, flagstone; square or round) |
 
 **Every object** also takes `showWhen`: it exists only when those conditions hold as the scene loads. Conditions are separated by commas: `flagName`, `!flagName`, `flag=value`, `state:ObjectId=value`. It's how one scene file holds Veyra burned and rebuilt, or a region before and after its seal opens. Things someone owns take `owner` (civilian or empire): harm to them goes in the ledger.
@@ -67,6 +69,7 @@ A wire watches **signals** and runs **actions** on objects:
 | trigger | entered (ever), inside (now) | |
 | crate, barrel, dummy | burning, burned, moved | |
 | hay | burning, burned | |
+| creature | gone (every one dead or driven off), engaged (they've seen you) | release |
 | anything that can start hidden | visible | reveal, hide |
 
 ## The script: story steps

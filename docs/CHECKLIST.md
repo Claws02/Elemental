@@ -55,7 +55,8 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **World memory.** Persistent scenes keep barricades fallen, props burned, stones revealed, gates open; `showWhen` variants by flag or state. *Core test: a broken barricade stays broken after Continue.*
 - [x] **Consequence ledger and standing.** Harm, care, excess, spared, killed, by kingdom; five standings from saviour to the cause of all this; story conditions read them. *Unit + core tests.*
 - [x] **Travel.** Exits and named arrival points; a checkpoint on arrival. *Core test.*
-- [ ] **Creatures and combat** ← next.
+- [x] **Creatures and combat, first three.** Creatures are physics bodies the elements already act on, with small readable minds: the Bristleback charges and stuns itself on walls and boulders, Thornhounds circle, bite, fear fire and the last one runs, Emberwings dive and set what's below alight and fall when wet. Killing and driving off go in the ledger. Species are data (`src/data/creatures.js`). *Creatures test (`scenes/arena.json`): 7 checks.*
+- [ ] **The prologue: the Veyra fire** ← next (waits on the world bible's approval for names and beats).
 
 ## Phase 2: elemental sandbox
 

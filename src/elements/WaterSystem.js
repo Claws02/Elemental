@@ -207,6 +207,7 @@ export class WaterSystem {
             b.wakeUp();
             b.velocity.x += v.x; b.velocity.y += v.y; b.velocity.z += v.z;
             if (v.length() > 0.05) { e.data.thrownBy = 'player'; e.data.thrownAt = performance.now(); }
+            e.data.creature?.react('water', (dir ? amount : 1) * k * 4, 'player');     // soaked, pushed, and for an ember bird, grounded
         }
     }
 

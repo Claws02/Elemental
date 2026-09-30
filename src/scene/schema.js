@@ -36,7 +36,7 @@ const HIDDEN = bool('Starts hidden', false);
 const BSTYLE = select('Style', 'stone', ['stone', 'timber', 'plaster']);
 
 // Library groups, in the order the editor shows them.
-export const GROUPS = ['Ruins', 'Nature', 'Elements', 'Props', 'Puzzle', 'Characters', 'Buildings', 'Ground', 'Travel'];
+export const GROUPS = ['Ruins', 'Nature', 'Elements', 'Props', 'Puzzle', 'Creatures', 'Characters', 'Buildings', 'Ground', 'Travel'];
 
 export const TYPES = {
     // ---- ruins --------------------------------------------------------------
@@ -118,6 +118,19 @@ export const TYPES = {
         props: { width: num('Width', 3, 0.5, 40, 0.1), depth: num('Depth', 3, 0.5, 40, 0.1), height: num('Height', 3, 0.5, 20, 0.1) },
         signals: ['entered', 'inside'],
         note: 'Invisible in the game. "entered" stays true once the player has been inside.',
+    },
+
+    // ---- creatures -----------------------------------------------------------------------
+    creature: {
+        label: 'Creatures', group: 'Creatures',
+        props: {
+            species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound']),
+            count: int('How many', 3, 1, 12), spread: num('Spread (m)', 3, 0, 30, 0.5),
+            aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), hidden: HIDDEN,
+        },
+        signals: ['gone', 'engaged', 'visible'],
+        actions: ['release'],
+        note: 'A group. Hidden, it arrives when revealed (or released). "gone" = every one of them dead or driven off.',
     },
 
     // ---- characters -----------------------------------------------------------------------

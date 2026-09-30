@@ -24,7 +24,7 @@
 import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
-import { Kit, at } from '../engine/Kit.js';
+import { Kit, at, seeded } from '../engine/Kit.js';
 import { WORLD, ELEMENT } from '../art/Palette.js';
 import { rock, ruinWall, pillar, fallenDrum, archway, plankPanel, timberPost, brazier, basin, crate, barrel, dummy, hay } from '../art/PropModels.js';
 import { buildingWall, buildingFloor, buildingRoof, buildingStairs, buildingFence, buildingPost, tree, stall, gate, groundPatch } from '../art/TownModels.js';
@@ -32,6 +32,8 @@ import { Destructible, STATE } from '../world/Destructible.js';
 import { Plate } from '../world/Plates.js';
 import { Npc, npcModel } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
+import { CREATURE_MODELS } from '../art/CreatureModels.js';
+import { SPECIES } from '../data/creatures.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
 import { defaults } from './schema.js';
 
@@ -442,6 +444,33 @@ export const CATALOG = {
                     else if (armed && it.to) { gone = true; ctx.world.onExit?.(it.to, it.at || 'start', it); }
                 },
             };
+        },
+    },
+
+    creature: {
+        // The editor shows the group: one model per member, where they'll stand.
+        model(it) {
+            const g = new THREE.Group(), sp = SPECIES[it.species];
+            for (let i = 0; i < Math.min(it.count, 12); i++) {
+                const a = seeded(i * 7.1 + it.x) * Math.PI * 2, r = (it.spread || 2) * Math.sqrt(seeded(i * 3.3 + it.z));
+                const m = CREATURE_MODELS[it.species](sp.look).root;
+                m.position.set(Math.cos(a) * r, sp.behaviour === 'flyer' ? sp.cruise[0] : 0, Math.sin(a) * r);
+                if (it.elite && i === 0) m.scale.setScalar(1.3);
+                g.add(m);
+            }
+            return g;
+        },
+        spawn(ctx, it) {
+            const mesh = _place(new THREE.Group(), it);
+            const g = { item: it, members: [], spawned: false, engaged: false, inst: null };
+            ctx.world.creatureGroups.push(g);
+            const inst = {
+                mesh, entries: [], group: g,
+                signal: name => name === 'engaged' ? g.engaged : name === 'gone' ? g.spawned && g.members.every(c => c.gone || c.state === 'dead' || c.state === 'flee') : false,
+                act(name) { if (name === 'release') ctx.world.reveal(it.id); },
+            };
+            g.inst = inst;
+            return inst;
         },
     },
 

@@ -163,6 +163,7 @@ export class AirSystem {
             const dv = gust ? AIR.gustPush * m : AIR.windPush * m * dt;
             b.wakeUp();
             b.velocity.x += dir.x * dv; b.velocity.y += (dir.y + 0.25) * dv; b.velocity.z += dir.z * dv;
+            e.data.creature?.react('wind', dv, 'player');
             if (dv > 0.02) { e.data.thrownBy = 'player'; e.data.thrownAt = performance.now(); }
         }
     }

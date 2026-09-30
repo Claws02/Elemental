@@ -431,6 +431,11 @@ export class FireSystem {
                 if (other && other === fb.origin && this.time - fb.created < FIRE.originGrace) continue;
                 const held = c.held;
                 const cause = fb.entry.data.cause || 'player';
+                if (c.other.data?.creature && !held) {          // a fireball thrown into a creature
+                    c.other.data.creature.react('fire', 22, cause);
+                    this._dissipate(fb);
+                    continue;
+                }
                 if (fb.wild && !held) {
                     // A wild fireball bursts wide on whatever it hits.
                     this._wildBurst(fb.entry.mesh.position.clone(), cause);

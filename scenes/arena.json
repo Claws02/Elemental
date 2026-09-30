@@ -1,0 +1,245 @@
+{
+ "format": 1,
+ "id": "arena",
+ "name": "Creature arena (testing)",
+ "settings": {
+  "ground": {
+   "half": 22,
+   "style": "dirt"
+  },
+  "profile": "sandbox",
+  "resetProgress": false,
+  "resetAfter": 0,
+  "region": "verdant",
+  "persistent": false
+ },
+ "objects": [
+  {
+   "id": "Spawn",
+   "type": "spawn",
+   "x": 0,
+   "y": 0,
+   "z": 14,
+   "rotY": 3.14159265,
+   "name": "start"
+  },
+  {
+   "id": "Wall_1",
+   "type": "ruin_wall",
+   "x": 0,
+   "y": 0,
+   "z": -20,
+   "rotY": 0,
+   "length": 40,
+   "height": 2.6,
+   "seed": 80,
+   "runes": false
+  },
+  {
+   "id": "Wall_2",
+   "type": "ruin_wall",
+   "x": 0,
+   "y": 0,
+   "z": 20,
+   "rotY": 3.14159265,
+   "length": 40,
+   "height": 2.6,
+   "seed": 81,
+   "runes": false
+  },
+  {
+   "id": "Wall_3",
+   "type": "ruin_wall",
+   "x": -20,
+   "y": 0,
+   "z": 0,
+   "rotY": 1.570796325,
+   "length": 40,
+   "height": 2.6,
+   "seed": 82,
+   "runes": false
+  },
+  {
+   "id": "Wall_4",
+   "type": "ruin_wall",
+   "x": 20,
+   "y": 0,
+   "z": 0,
+   "rotY": -1.570796325,
+   "length": 40,
+   "height": 2.6,
+   "seed": 83,
+   "runes": false
+  },
+  {
+   "id": "Hounds",
+   "type": "creature",
+   "x": -8,
+   "y": 0,
+   "z": 0,
+   "rotY": 0,
+   "species": "thornhound",
+   "count": 3,
+   "spread": 2.5,
+   "aggressive": true,
+   "elite": false
+  },
+  {
+   "id": "Boar",
+   "type": "creature",
+   "x": 9,
+   "y": 0,
+   "z": -8,
+   "rotY": 0,
+   "species": "bristleback",
+   "count": 1,
+   "spread": 0,
+   "aggressive": true,
+   "elite": false
+  },
+  {
+   "id": "Flock",
+   "type": "creature",
+   "x": 6,
+   "y": 0,
+   "z": 8,
+   "rotY": 0,
+   "species": "emberwing",
+   "count": 4,
+   "spread": 3,
+   "aggressive": true,
+   "elite": false
+  },
+  {
+   "id": "Hay_1",
+   "type": "hay",
+   "x": 8,
+   "y": 0,
+   "z": 10,
+   "rotY": 0,
+   "seed": 1,
+   "owner": "civilian"
+  },
+  {
+   "id": "Hay_2",
+   "type": "hay",
+   "x": 9,
+   "y": 0,
+   "z": 11,
+   "rotY": 0,
+   "seed": 2,
+   "owner": "civilian"
+  },
+  {
+   "id": "Hay_3",
+   "type": "hay",
+   "x": 10,
+   "y": 0,
+   "z": 9.5,
+   "rotY": 0,
+   "seed": 3,
+   "owner": "civilian"
+  },
+  {
+   "id": "Hay_4",
+   "type": "hay",
+   "x": 7,
+   "y": 0,
+   "z": 11.5,
+   "rotY": 0,
+   "seed": 4,
+   "owner": "civilian"
+  },
+  {
+   "id": "Brazier_1",
+   "type": "brazier",
+   "x": -3,
+   "y": 0,
+   "z": 12,
+   "rotY": 0,
+   "seed": 2
+  },
+  {
+   "id": "Basin_1",
+   "type": "basin",
+   "x": 3,
+   "y": 0,
+   "z": 12,
+   "rotY": 0,
+   "seed": 3
+  },
+  {
+   "id": "Rock_01",
+   "type": "rock",
+   "x": -2,
+   "y": 0,
+   "z": 6,
+   "rotY": 0,
+   "radius": 0.6,
+   "seed": 200
+  },
+  {
+   "id": "Rock_02",
+   "type": "rock",
+   "x": 2,
+   "y": 0,
+   "z": 6,
+   "rotY": 1,
+   "radius": 0.5,
+   "seed": 207
+  },
+  {
+   "id": "Rock_03",
+   "type": "rock",
+   "x": 0,
+   "y": 0,
+   "z": 9,
+   "rotY": 2,
+   "radius": 0.7,
+   "seed": 214
+  },
+  {
+   "id": "Rock_04",
+   "type": "rock",
+   "x": -5,
+   "y": 0,
+   "z": 9,
+   "rotY": 3,
+   "radius": 0.45,
+   "seed": 221
+  },
+  {
+   "id": "Rock_05",
+   "type": "rock",
+   "x": 5,
+   "y": 0,
+   "z": 4,
+   "rotY": 4,
+   "radius": 0.8,
+   "seed": 228
+  },
+  {
+   "id": "Rock_06",
+   "type": "rock",
+   "x": -9,
+   "y": 0,
+   "z": 8,
+   "rotY": 5,
+   "radius": 0.55,
+   "seed": 235
+  },
+  {
+   "id": "Pillar_1",
+   "type": "pillar",
+   "x": 10,
+   "y": 0,
+   "z": -2,
+   "rotY": 0,
+   "height": 4,
+   "broken": false,
+   "seed": 3
+  }
+ ],
+ "wires": [],
+ "script": null
+}

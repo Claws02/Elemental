@@ -49,7 +49,7 @@ export function buildScene(scene, data, { flag = () => undefined, state = () => 
     const st = data.settings || {};
     const world = {
         data, scene, solids: [], rocks: [], props: [], braziers: [], basins: [], barricades: [], plates: [], npcs: [],
-        objects: new Map(), spawns: {}, spawn: null, sys: null, rising: [], onExit: null, session: null,
+        objects: new Map(), creatureGroups: [], creatures: null, spawns: {}, spawn: null, sys: null, rising: [], onExit: null, session: null,
     };
 
     // ---- ground ----------------------------------------------------------------

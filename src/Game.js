@@ -39,6 +39,7 @@ import { Session } from './core/SaveGame.js';
 import { Ledger } from './core/Ledger.js';
 import { Vitals } from './player/Vitals.js';
 import { rememberScene } from './scene/Loader.js';
+import { Creatures } from './creatures/Creatures.js';
 
 /**
  * @param {object} o
@@ -84,6 +85,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const forget = rememberScene(world, session);
     const ledger = new Ledger(session, st.region || 'verdant', id => world.objects.get(id)?.item.owner || 'none');
     const vitals = new Vitals({ player, fire });
+    const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
     const checkpoint = () => {
@@ -158,6 +160,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         water.update(dt);
         air.update(dt);
         frameInfo.held = channel.held?.entry || null;
+        creatures.update(dt);
         world.update(dt, frameInfo);
         vitals.update(dt);
         hud.vitals?.(vitals.danger);
@@ -180,7 +183,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, checkpoint, travel,
+        session, ledger, vitals, creatures, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
@@ -194,6 +197,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         cancelAnimationFrame(raf);
         story?.dispose();
         ledger.dispose();
+        creatures.dispose();
         vitals.dispose();
         forget();
         input.dispose();
