@@ -47,6 +47,16 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
 - [x] **Elemental-Editor** ([Claws02/Elemental-Editor](https://github.com/Claws02/Elemental-Editor)): place and edit everything on an iPad, wire puzzles, write story steps, play the scene in the editor, save for Claude. *Editor test: 25 checks on the built page (touch drag, turn, inspector, undo, rename, wires, story, break apart, Play/Stop, save, reload, phone width); a scene saved from it validates and plays here. Not yet used on a real iPad.*
 - [ ] **Pull a scene from the editor** ← next: build the first town, Save for Claude, and Claude brings it into `scenes/`.
 
+## The full game: core systems (docs/ROADMAP.md, phase 1)
+
+- [x] **Element tuning as data** (`src/data/elements.js`).
+- [x] **Save slots.** Three slots, a working session committed at checkpoints, a backup per slot, recovery from a damaged save, migration of the old save. Title: Continue, New game, Load. *Unit + core tests.*
+- [x] **Health, death, checkpoints.** Fire, blasts, falls and your own wild fireball hurt; healing after 3.5 s; no bar, the screen's edges redden; death goes back to the last checkpoint and forgets what happened since. *Core test.*
+- [x] **World memory.** Persistent scenes keep barricades fallen, props burned, stones revealed, gates open; `showWhen` variants by flag or state. *Core test: a broken barricade stays broken after Continue.*
+- [x] **Consequence ledger and standing.** Harm, care, excess, spared, killed, by kingdom; five standings from saviour to the cause of all this; story conditions read them. *Unit + core tests.*
+- [x] **Travel.** Exits and named arrival points; a checkpoint on arrival. *Core test.*
+- [ ] **Creatures and combat** ← next.
+
 ## Phase 2: elemental sandbox
 
 - [ ] Air: push, pull, gust, redirect a thrown rock

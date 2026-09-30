@@ -355,7 +355,11 @@ export const CATALOG = {
             return Object.assign(inst, {
                 update(dt) { if (k !== want) { k = want > k ? Math.min(want, k + dt / 1.6) : Math.max(want, k - dt / 1.2); set(); } },
                 signal: name => name === 'open' ? k >= 1 : name === 'closed' ? k <= 0 : false,
-                act(name) { if (name === 'open') want = 1; if (name === 'close') want = 0; if (name === 'toggle') want = want ? 0 : 1; },
+                act(name) {
+                    if (name === 'open') want = 1; if (name === 'close') want = 0; if (name === 'toggle') want = want ? 0 : 1;
+                    ctx.world.onGate?.(it.id, want ? 'open' : 'closed');
+                },
+                openNow() { k = want = 1; set(); },
                 anchor: from => g.posts.map(p => _toWorld(it, p)).sort((a, b) => a.distanceTo(from) - b.distanceTo(from))[0],
             });
         },
@@ -409,8 +413,35 @@ export const CATALOG = {
     spawn: {
         model: () => _spawnMarker(),
         spawn(ctx, it) {
-            ctx.world.spawn = { x: it.x, z: it.z, facing: it.rotY || 0 };
+            const s = { x: it.x, y: it.y || 0, z: it.z, facing: it.rotY || 0 };
+            ctx.world.spawns[it.name || 'start'] ||= s;
             return { mesh: null, entries: [] };
+        },
+    },
+
+    exit: {
+        model(it) {
+            const g = _zoneBox(it.width, it.height, it.depth);
+            g.traverse(o => { if (o.material) o.material.color?.set(0xffb347); });
+            return g;
+        },
+        spawn(ctx, it) {
+            const mesh = new THREE.Group();
+            _place(mesh, it);
+            const inv = new THREE.Matrix4();
+            let armed = null, gone = false;   // armed once the hero has been outside it (so arriving on one never bounces you back)
+            return {
+                mesh, entries: [],
+                update(dt, f) {
+                    if (gone) return;
+                    mesh.updateMatrixWorld();
+                    const p = f.hero.clone().applyMatrix4(inv.copy(mesh.matrixWorld).invert());
+                    const inside = Math.abs(p.x) <= it.width / 2 && Math.abs(p.z) <= it.depth / 2 && p.y >= -0.5 && p.y <= it.height;
+                    if (armed === null) armed = !inside;
+                    else if (!inside) armed = true;
+                    else if (armed && it.to) { gone = true; ctx.world.onExit?.(it.to, it.at || 'start', it); }
+                },
+            };
         },
     },
 

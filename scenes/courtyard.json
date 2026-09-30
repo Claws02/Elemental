@@ -9,7 +9,9 @@
   },
   "profile": "sandbox",
   "resetProgress": false,
-  "resetAfter": 60
+  "resetAfter": 60,
+  "region": "verdant",
+  "persistent": false
  },
  "objects": [
   {
@@ -18,7 +20,8 @@
    "x": 0,
    "y": 0,
    "z": 9,
-   "rotY": 3.142
+   "rotY": 3.142,
+   "name": "start"
   },
   {
    "id": "TestRoom_Wall_11",

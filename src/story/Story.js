@@ -35,8 +35,12 @@ const EVENTS = {
 };
 
 export class Story {
-    constructor({ world, script, prog, channel, fire, hud, player, scene }) {
-        Object.assign(this, { world, script, prog, channel, fire, hud, player });
+    /**
+     * `hooks` connect the story to the game around it: { checkpoint(), travel(scene, at), ledger, session }.
+     * `startStep` resumes at a step (coming back from a checkpoint).
+     */
+    constructor({ world, script, prog, channel, fire, hud, player, scene, hooks = {}, startStep = null }) {
+        Object.assign(this, { world, script, prog, channel, fire, hud, player, hooks });
         this.id = script.id || world.data.id;
         this.steps = script.steps || [];
         this.speaker = script.speaker ? world.objects.get(script.speaker)?.npc || null : null;
@@ -59,7 +63,9 @@ export class Story {
             for (const [type, ok] of EVENTS[r.on] || []) this.off.push(EventBus.on(type, e => { if (ok(e)) this._react(r); }));
         }
         EventBus.emit(EV.LESSON, { id: this.id, step: 'start' });
-        if (this.steps.length) this.go(this.steps[0].id);
+        // Resuming: at the checkpoint's step; a story already finished stays finished.
+        const first = startStep === 'done' ? 'done' : startStep && this.steps.some(x => x.id === startStep) ? startStep : this.steps[0]?.id;
+        if (first) this.go(first);
     }
 
     dispose() { this.off.forEach(f => f()); }
@@ -117,6 +123,10 @@ export class Story {
         case 'burned': return (this.world.objects.get(v.obj)?.count?.('burned') || 0) >= (v.min ?? 1);
         case 'burning': return (this.fire.burningCount() > 0) === !!v;
         case 'count': return (this.counters[v.name] || 0) >= (v.min ?? 1);
+        case 'flag': { const f = this.prog.flags[v.name]; return v.is === undefined || v.is === '' ? !!f : String(f) === String(v.is); }
+        case 'state': return String(this.hooks.session?.state(v.id) ?? '') === String(v.is ?? '');
+        case 'ledger': return (this.hooks.ledger?.get(v.tally, v.region) || 0) >= (v.min ?? 1);
+        case 'standing': return (this.hooks.ledger?.standing(v.region) ?? 2) >= (v.atLeast ?? 0);
         case 'all': return v.every(x => this.test(x));
         case 'any': return v.some(x => this.test(x));
         case 'not': return !this.test(v);
@@ -140,8 +150,13 @@ export class Story {
         case 'grant': this.prog.grant(v.el, v.track, v.amount, `${this.id}:${this.step}`); break;
         case 'flag': this.prog.flags[v.name] = (this.prog.flags[v.name] || 0) + v.add; break;
         case 'count': this.counters[v.name] = (this.counters[v.name] || 0) + (v.add ?? 1); break;
-        case 'saveFlag': this.prog.flags[v] = { outcome: this.outcome, ...this.counters }; this.prog._save(); break;
+        case 'saveFlag': this.prog.flags[v] = { outcome: this.outcome, ...this.counters }; this.prog._save(); this.hooks.checkpoint?.(); break;
         case 'card': if (v) this._card(); break;
+        case 'checkpoint': if (v) this.hooks.checkpoint?.(); break;
+        case 'travel': this.hooks.travel?.(v.scene, v.at || 'start'); break;
+        case 'setFlag': this.prog.flags[v.name] = v.value === 'true' ? true : v.value === 'false' ? false : isNaN(+v.value) || v.value === '' ? v.value : +v.value; break;
+        case 'setState': this.hooks.session?.setState(v.id, v.value || null); break;
+        case 'ledger': this.hooks.ledger?.add(v.tally, v.add, v.region); break;
         default: console.warn('[story] unknown action', a);
         }
     }

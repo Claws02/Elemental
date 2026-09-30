@@ -19,7 +19,7 @@
 import { THREE } from './engine/lib.js';
 import * as Renderer from './engine/Renderer.js';
 import * as Physics from './engine/Physics.js';
-import { EventBus } from './core/EventBus.js';
+import { EventBus, EV } from './core/EventBus.js';
 import { buildScene, wireScene } from './scene/Loader.js';
 import { Interactables } from './world/Interactables.js';
 import { PlayerController } from './player/PlayerController.js';
@@ -35,6 +35,10 @@ import { Gestures } from './input/Gestures.js';
 import { Hud } from './ui/Hud.js';
 import { Progression } from './core/Progression.js';
 import { Story } from './story/Story.js';
+import { Session } from './core/SaveGame.js';
+import { Ledger } from './core/Ledger.js';
+import { Vitals } from './player/Vitals.js';
+import { rememberScene } from './scene/Loader.js';
 
 /**
  * @param {object} o
@@ -42,23 +46,31 @@ import { Story } from './story/Story.js';
  * @param {HTMLElement} o.hudEl
  * @param {object} o.data       the scene
  * @param {Function} [o.onLink] catch the end card's buttons (href) instead of following them
- * @param {boolean} [o.persist] save progress to the device (the game: yes; the editor: no)
+ * @param {Session} [o.session]  the save session (none: a throwaway one that never writes)
+ * @param {boolean} [o.fresh]     entering the scene anew (settings.resetProgress applies); false when coming back from a checkpoint
+ * @param {string} [o.at]         arrive at the player start with this name
+ * @param {object} [o.spawnAt]    arrive exactly here ({ x, z, facing }): a checkpoint
+ * @param {string} [o.step]       resume the story at this step: a checkpoint
+ * @param {Function} [o.onDeath]  the hero died: (cause) → the caller goes back to the checkpoint
+ * @param {Function} [o.onTravel] an exit or the story leads to another scene: (sceneId, at)
  */
-export function startGame({ canvas, hudEl, data, onLink = null, persist = true }) {
+export function startGame({ canvas, hudEl, data, onLink = null, session = null, fresh = true, at = 'start', spawnAt = null, step = null, onDeath = null, onTravel = null }) {
     EventBus.reset();
     const { renderer, scene, camera } = Renderer.init(canvas);
     Physics.init();
 
     const st = data.settings || {};
     const profile = st.profile === 'story' ? 'story' : 'sandbox';
-    const prog = new Progression(profile, { persist: persist && profile === 'story' });
-    if (st.resetProgress) prog.reset();
-    const world = buildScene(scene, data);
-    const player = new PlayerController(scene, world.spawn);
+    session ||= new Session(0, null, { persist: false });
+    const prog = new Progression(profile, { session });
+    if (st.resetProgress && fresh) prog.reset();
+    const world = buildScene(scene, data, { flag: n => prog.flags[n], state: id => session.state(id) });
+    const arrive = spawnAt || world.spawns[at] || world.spawn;
+    const player = new PlayerController(scene, arrive);
     const cam = new CameraRig(camera);
     cam.solids = world.solids;
     cam.yaw = player.facing + Math.PI;
-    cam.focus.set(world.spawn.x, 1.6, world.spawn.z);
+    cam.focus.set(arrive.x, 1.6, arrive.z);
 
     const interactables = new Interactables();
     const channel = new Channel({ camera, hero: player, prog });
@@ -69,12 +81,35 @@ export function startGame({ canvas, hudEl, data, onLink = null, persist = true }
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
     wireScene(world, { interactables, fire, water });
+    const forget = rememberScene(world, session);
+    const ledger = new Ledger(session, st.region || 'verdant', id => world.objects.get(id)?.item.owner || 'none');
+    const vitals = new Vitals({ player, fire });
+    let leaving = false;
+    // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
+    const checkpoint = () => {
+        const p = player.body.position;
+        const where = { scene: data.id, spawn: { x: +p.x.toFixed(2), z: +p.z.toFixed(2), facing: +player.facing.toFixed(3) }, step: story?.step || null };
+        session.work.meta.scene = data.id;
+        session.checkpoint(where);
+        EventBus.emit(EV.CHECKPOINT, where);
+        return where;
+    };
+    const travel = (to, where = 'start') => {
+        if (leaving) return;
+        leaving = true;
+        session.work.checkpoint = { scene: to, at: where, spawn: null, step: null };
+        session.work.meta.scene = to;
+        session.checkpoint();
+        onTravel?.(to, where);
+    };
+    world.onExit = (to, where) => travel(to, where);
+    vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene }) : null;
-    if (story) {
-        hud.story();
+    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session } }) : null;
+    if (story) hud.story();
+    if (story && !spawnAt) {
         // The story opens looking at what the script names (Lesson I: Cael).
         const f = data.script.face && world.objects.get(data.script.face);
         if (f) {
@@ -87,6 +122,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, persist = true }
             cam.focus.set(p.x, 1.6, p.z);
         }
     }
+
+    // Arriving is a checkpoint: dying before the next one comes back here.
+    if (!spawnAt) checkpoint();
 
     const input = new Gestures(canvas, {
         press: (x, y) => intent.press(x, y),
@@ -121,6 +159,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, persist = true }
         air.update(dt);
         frameInfo.held = channel.held?.entry || null;
         world.update(dt, frameInfo);
+        vitals.update(dt);
+        hud.vitals?.(vitals.danger);
         story?.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
@@ -140,6 +180,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, persist = true }
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
+        session, ledger, vitals, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
@@ -152,6 +193,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, persist = true }
         running = false;
         cancelAnimationFrame(raf);
         story?.dispose();
+        ledger.dispose();
+        vitals.dispose();
+        forget();
         input.dispose();
         hud.dispose();
         EventBus.reset();

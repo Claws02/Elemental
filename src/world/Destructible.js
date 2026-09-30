@@ -258,6 +258,28 @@ export class Destructible {
         EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from, to: STATE.INTACT, cause: 'rebuilt' });
     }
 
+    /** Loaded already fallen (the world remembers): every piece gone, no events, no debris. */
+    collapseNow(burned = false) {
+        for (const p of this.pieces) {
+            Object.assign(p, { broken: true, burned, hp: 0 });
+            Physics.remove(p.entry);
+        }
+        this.state = burned ? STATE.BURNED : STATE.COLLAPSED;
+        this.regenAfter = 0;
+    }
+
+    /** Loaded already raised (a counterweight gate that was opened before). */
+    raiseNow(dy = 3.4) {
+        for (const p of this.pieces) {
+            if (p.broken) continue;
+            const b = p.entry.body;
+            b.position.y += dy;
+            b.aabbNeedsUpdate = true;
+            p.mesh.position.y = b.position.y;
+        }
+        this.raised = true;
+    }
+
     summary() {
         return { id: this.id, state: this.state, broken: this.pieces.filter(p => p.broken).length, burned: this.pieces.filter(p => p.burned).length, total: this.pieces.length };
     }

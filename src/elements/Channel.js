@@ -23,14 +23,10 @@
 import { THREE } from '../engine/lib.js';
 import { ELEMENT } from '../art/Palette.js';
 import { EventBus, EV } from '../core/EventBus.js';
+import { HOLD } from '../data/elements.js';
 
-export const HOLD = {
-    range: 14,           // how far from the hero a held thing may drift before it is let go
-    reach: 8,            // how far from the hands the hold target may be
-    holdSpeed: 18,       // m/s cap while following the finger
-    throwMin: 15, throwMax: 36,
-    gravity: 22,         // Physics' gravity, cancelled while held
-};
+// Tuning lives in src/data/elements.js (data, not code).
+export { HOLD };
 
 const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();

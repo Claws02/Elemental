@@ -87,3 +87,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 #title a { width: min(320px, 100%); padding: 14px 18px; }
 #title a small { display: block; font-weight: 600; color: var(--ink-dim); letter-spacing: 0; margin-top: 3px; }
 #title a.primary { background: rgba(255,179,71,.22); }
+
+/* ---- health and dying: no bar, the edges redden ---- */
+.hud-vignette { position: absolute; inset: 0; opacity: 0; transition: opacity .25s; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(150, 20, 10, .55) 85%, rgba(90, 8, 4, .85) 100%); }
+.hud-died { position: absolute; inset: 0; display: grid; place-items: center; background: #0b0908; opacity: 0; transition: opacity 1.2s; pointer-events: none; }
+.hud-died.on { opacity: 1; pointer-events: auto; }
+.hud-died span { font-size: 18px; letter-spacing: .12em; color: var(--ink-dim); }
+
+#title-menu { display: flex; flex-direction: column; align-items: center; gap: 12px; width: min(340px, 100%); }
+#title-menu button { width: 100%; padding: 14px 18px; border: 0; border-radius: 999px; background: rgba(244,236,220,.12); color: var(--ink);
+    font: 800 15px/1.2 'Nunito', system-ui, sans-serif; letter-spacing: .06em; cursor: pointer; }
+#title-menu button.primary { background: rgba(255,179,71,.22); }
+#title-menu button small { display: block; font-weight: 600; color: var(--ink-dim); letter-spacing: 0; margin-top: 3px; }
+#title-menu .confirm { color: #ffb4a0; font-size: 13px; text-align: center; }
+.title-dev { margin-top: 18px; font-size: 12px; color: var(--ink-dim); }
+.title-dev a { color: var(--ink-dim); }

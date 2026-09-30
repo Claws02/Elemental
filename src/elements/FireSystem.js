@@ -40,26 +40,10 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { WILD } from '../data/growth.js';
+import { FIRE } from '../data/elements.js';
 
-export const FIRE = {
-    spreadRadius: 1.5,      // metres, centre to centre
-    startIntensity: 0.25,   // a new fire spreads at a quarter strength…
-    buildUp: 5,             // …and reaches full strength over this many seconds
-    spreadRate: 0.6,        // heat/s given to a neighbour at distance 0 (≈5 s to catch the next panel along, ≈3 s above)
-    climb: 1.6,             // multiplier for neighbours above the fire
-    cool: 0.15,             // heat/s lost by an unheated flammable
-    rockHeat: 0.45,         // heat/s a rock gains while held still in Fire
-    rockCool: 0.04,         // heat/s a hot rock loses
-    hotIgnites: 0.5,        // a rock this hot sets wood alight on contact
-    fireballLife: 4,        // seconds after it leaves the hand
-    droppedLife: 1.5,       // seconds after a slow release
-    fireballRadius: 0.34,
-    douseTime: 0.8,         // seconds of steady water a burning plank takes to go out
-    youngAge: 2.5,          // a fire younger than this can be blown out by wind…
-    blowTime: 0.35,         // …after this much of it; an older one is fanned instead
-    fanFor: 3,              // seconds a gust of wind keeps a fire flaring
-    originGrace: 1.5,       // seconds a new fireball ignores the thing it was pulled from
-};
+// Tuning lives in src/data/elements.js (data, not code).
+export { FIRE };
 
 const EMBER = new THREE.Color(0xff5a2a);
 const HOT = new THREE.Color(0xe0300a);
@@ -97,6 +81,17 @@ export class FireSystem {
     addSource(thing, pos) { this.sources.push({ thing, pos }); }
 
     isBurning(thing) { return !!this.flammables.get(thing)?.burning; }
+
+    /** How many burning things are within `r` of point `p` (on the ground plane): the hero standing in fire. */
+    burningNear(p, r) {
+        let n = 0;
+        for (const f of this.flammables.values()) {
+            if (!f.burning) continue;
+            const q = f.thing.pos();
+            if (Math.hypot(q.x - p.x, q.z - p.z) < r && Math.abs(q.y - p.y - 0.8) < 1.6) n++;
+        }
+        return n;
+    }
     isBurned(thing) { return !!this.flammables.get(thing)?.burned; }
     isSource(thing) { return this.sources.some(s => s.thing === thing); }
     burningCount() { let n = 0; for (const f of this.flammables.values()) if (f.burning) n++; return n; }
@@ -412,7 +407,7 @@ export class FireSystem {
                         this._wildBurst(pos.clone(), fb.entry.data.cause || 'player');
                         this.channel.let();
                         this._dissipate(fb);
-                        EventBus.emit(EV.WILD_BURST, { cause: 'player' });
+                        EventBus.emit(EV.WILD_BURST, { cause: 'player', inHand: true });
                     }
                 }
                 continue;
@@ -511,6 +506,14 @@ export class FireSystem {
         if (!m) return;
         m.emissive.copy(EMBER);
         m.emissiveIntensity = Math.max(0, k);
+    }
+
+    /** Already burned when the scene loads (the world remembers). */
+    markBurned(thing) {
+        const f = this.flammables.get(thing);
+        if (!f) return;
+        Object.assign(f, { burning: false, burned: true, heat: 0, fuel: 0 });
+        this._char(thing);
     }
 
     _char(thing) {

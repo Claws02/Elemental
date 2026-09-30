@@ -21,6 +21,8 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 ```
 
 - **settings.ground**: the base floor, `half` metres each way from the centre; `style` is flagstone, grass, dirt, cobble or sand.
+- **settings.region**: the kingdom the scene is in (verdant, emberwall, saltmere, skyreach, glass, capital); the ledger counts what you do there against it.
+- **settings.persistent**: the scene remembers what happens to its objects in the save (a barricade burned, a stone revealed, a gate opened, a hay bale burned) and puts it back when you return.
 - **settings.profile**: `story` (the story's element states, saved on the device) or `sandbox` (everything trained, never saved). `resetProgress` starts the story over; `resetAfter` is the testing aid that puts disturbed props back after that many quiet seconds (0 = off).
 - **objects**: every object has an `id` (unique), a `type`, a position (`x`, `z`; `y` is the height of its base) and a turn (`rotY`, radians; the object's front faces +Z before turning). The rest are the type's properties. `src/scene/schema.js` lists them all, with defaults and ranges.
 
@@ -36,6 +38,10 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Characters | player start (one per scene), character (Cael, villager, elder, guard) |
 | Buildings | wall (stone, timber or plaster; door, window, two windows or arch), floor, roof, stairs, fence, post, and **prefab buildings** (cottage, town house, smithy, watchtower, shed) |
 | Ground | ground patch (grass, dirt, cobble, sand, flagstone; square or round) |
+
+**Every object** also takes `showWhen`: it exists only when those conditions hold as the scene loads. Conditions are separated by commas: `flagName`, `!flagName`, `flag=value`, `state:ObjectId=value`. It's how one scene file holds Veyra burned and rebuilt, or a region before and after its seal opens. Things someone owns take `owner` (civilian or empire): harm to them goes in the ledger.
+
+**Player starts** have a `name`. `start` is where a scene begins; other names are arrival points. An **exit** (group Travel) is a zone that takes you to another scene (`to`) and arrives at a named start (`at`). Arriving saves a checkpoint.
 
 A **prefab** is one object (`{ "type": "prefab", "prefab": "cottage" }`) that the loader expands into building-kit pieces (`src/data/prefabs.js`). Its `style` restyles every wall. Pieces get ids `<prefab id>.<n>`. In the editor, **Break apart** turns it into those pieces so you can change them one by one.
 
@@ -81,9 +87,9 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 - `ends`: the first ending whose condition holds finishes the step: its lines, its actions, then the `next` step (or the one after it; `done` ends the story). An ending can set the `outcome` the card and the save read. (`until` + `then` is shorthand for one ending.)
 - An objective containing `{held}` shows the held-steady timer and a progress bar.
 
-**Conditions** (one key each): `talking` · `time` (seconds in the step) · `held` (an object id, or `*`) · `heldFor` `{obj, secs, lost}` · `signal` `{obj, name}` · `wire` · `broken` / `burned` `{obj, min}` · `burning` · `count` `{name, min}` · `all` / `any` (lists) · `not`.
+**Conditions** (one key each): `talking` · `time` (seconds in the step) · `held` (an object id, or `*`) · `heldFor` `{obj, secs, lost}` · `signal` `{obj, name}` · `wire` · `broken` / `burned` `{obj, min}` · `burning` · `count` `{name, min}` · `flag` `{name, is}` · `state` `{id, is}` (a remembered world state) · `ledger` `{tally, min, region?}` · `standing` `{region, atLeast}` (0 the cause of all this … 4 saviour) · `all` / `any` (lists) · `not`.
 
-**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name) · `card` (show the end card).
+**Actions** (one key each): `say` · `do` `{obj, action}` · `reveal` / `hide` (ids) · `grant` `{el, track, amount}` (Power or Control) · `flag` `{name, add}` (saved flags, e.g. Cael's trust) · `count` `{name, add}` · `saveFlag` (save the outcome and counters under a name, and checkpoint) · `card` (show the end card) · `checkpoint` · `travel` `{scene, at}` · `setFlag` `{name, value}` · `setState` `{id, value}` · `ledger` `{tally, add}`.
 
 **Reactions** answer the player at any point: `playerFire`, `tooHeavy`, `playerBreak`, `playerThrow`. Each can count (`count`), change a flag, say the nth of its `lines` (or cycle through them), wait `throttle` seconds before speaking again, and follow up later (`followUp`: after N seconds, if a condition holds).
 

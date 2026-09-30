@@ -65,4 +65,10 @@ export const EV = {
     LESSON:             'Lesson',
     PLATE:              'Plate',
     TOO_HEAVY:          'TooHeavy',
+    LEDGER:             'Ledger',
+    CREATURE:           'Creature',
+    HURT:               'Hurt',
+    DIED:               'Died',
+    CHECKPOINT:         'Checkpoint',
+    WORLD_STATE:        'WorldState',
 };

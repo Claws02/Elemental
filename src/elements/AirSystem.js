@@ -29,17 +29,10 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
+import { AIR } from '../data/elements.js';
 
-export const AIR = {
-    touchPx: 60,          // minimum radius of the hero as a touch target
-    windLen: 7,           // metres the steady wind reaches
-    windAngle: 0.45,      // half-angle of the cone, radians (~26°)
-    windPush: 8,          // m/s² on light things in the wind (heavier move less)
-    gustLen: 9,
-    gustAngle: 0.6,
-    gustPush: 6,          // m/s given at once by a gust
-    gustWear: 12,         // damage to timber at the gust's heart: only finishes off nearly-broken planks
-};
+// Tuning lives in src/data/elements.js (data, not code).
+export { AIR };
 
 const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();

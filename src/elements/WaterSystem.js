@@ -33,19 +33,10 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
+import { WATER } from '../data/elements.js';
 
-export const WATER = {
-    reach: 8,             // metres from the source the stream can stretch
-    range: 16,            // hero this far from the source: the stream lets go
-    spray: 1.1,           // radius of the stream's spray, metres
-    push: 30,             // m/s² given to light things in the spray (heavier move less)
-    wear: 12,             // damage/s to timber held in the spray (~8 s to break a plank)
-    splash: 2.0,          // radius of an orb's burst
-    splashPush: 6,        // m/s given to things in a burst
-    splashWear: 35,       // damage to timber at the centre of a burst
-    orbRadius: 0.32,
-    orbLife: 4,           // seconds a thrown orb flies before it falls apart
-};
+// Tuning lives in src/data/elements.js (data, not code).
+export { WATER };
 
 const SEG = 24, RAD = 6;
 const _ray = new THREE.Raycaster();

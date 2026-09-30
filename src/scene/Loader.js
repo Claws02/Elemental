@@ -26,6 +26,9 @@ import { groundBase } from '../art/TownModels.js';
 import { CATALOG, withDefaults, expandPrefab } from './Catalog.js';
 import { Wires } from './Wires.js';
 import { PropReset } from './PropReset.js';
+import { whenHolds } from './when.js';
+import { EventBus, EV } from '../core/EventBus.js';
+import { STATE } from '../world/Destructible.js';
 
 /** Every object, prefabs replaced by their pieces. */
 export function flatObjects(data) {
@@ -37,11 +40,16 @@ export function flatObjects(data) {
     return out;
 }
 
-export function buildScene(scene, data) {
+/**
+ * @param {object} [o]
+ * @param {Function} [o.flag]   name → a story flag's value (for showWhen)
+ * @param {Function} [o.state]  id → a remembered world state
+ */
+export function buildScene(scene, data, { flag = () => undefined, state = () => null } = {}) {
     const st = data.settings || {};
     const world = {
         data, scene, solids: [], rocks: [], props: [], braziers: [], basins: [], barricades: [], plates: [], npcs: [],
-        objects: new Map(), spawn: { x: 0, z: 0, facing: Math.PI }, sys: null, rising: [],
+        objects: new Map(), spawns: {}, spawn: null, sys: null, rising: [], onExit: null, session: null,
     };
 
     // ---- ground ----------------------------------------------------------------
@@ -56,6 +64,7 @@ export function buildScene(scene, data) {
     const ctx = { scene, world };
     for (const raw of flatObjects(data)) {
         const it = withDefaults(raw);
+        if (it.showWhen && !whenHolds(it.showWhen, { flag, state })) continue;     // not in this world state
         const c = CATALOG[it.type];
         if (!c) { console.warn(`[scene] unknown type "${it.type}" (${it.id}): skipped`); continue; }
         if (world.objects.has(it.id)) console.warn(`[scene] duplicate id "${it.id}"`);
@@ -65,6 +74,7 @@ export function buildScene(scene, data) {
     }
     for (const inst of world.objects.values()) inst.link?.(world);
     world.barricade = world.barricades[0] || null;
+    world.spawn = world.spawns.start || Object.values(world.spawns)[0] || { x: 0, y: 0, z: 0, facing: Math.PI };
 
     // ---- behaviour -------------------------------------------------------------------
     world.wires = new Wires(world, data.wires || []);
@@ -84,7 +94,7 @@ export function buildScene(scene, data) {
         inst.act?.(name);
     };
     world.hide = id => _hide(world, world.objects.get(id));
-    world.reveal = id => _reveal(world, world.objects.get(id));
+    world.reveal = id => { const inst = world.objects.get(id); if (inst?.hidden) world.onReveal?.(id); _reveal(world, inst); };
     world.update = (dt, frame) => {
         for (const inst of world.objects.values()) if (!inst.hidden) inst.update?.(dt, frame);
         _rise(world, dt);
@@ -100,6 +110,43 @@ export function wireScene(world, sys) {
     world.sys = sys;
     world.propReset.fire = sys.fire;
     for (const inst of world.objects.values()) if (!inst.hidden) _wire(world, inst);
+}
+
+// ---- remembering: persistent scenes keep what happened to their objects ----------------
+//
+// A scene with settings.persistent writes lasting changes to the save session
+// by object id (a barricade Burned, a hay bale burned, a stone revealed, a gate
+// open) and puts them back when the scene loads again.
+
+export function rememberScene(world, session) {
+    world.session = session;
+    if (!world.data.settings?.persistent) return () => {};
+    const set = (id, v) => { if (world.objects.has(id)) { session.setState(id, v); EventBus.emit(EV.WORLD_STATE, { id, state: v }); } };
+    // Put back what the save remembers.
+    for (const [id, inst] of world.objects) {
+        const s = session.state(id);
+        if (!s) continue;
+        if (inst.destructible) {
+            if (s === STATE.BURNED || s === STATE.COLLAPSED) inst.destructible.collapseNow(s === STATE.BURNED);
+            else if (s === 'Raised') inst.destructible.raiseNow();
+        } else if (s === 'burned' && inst.prop?.thing) world.sys.fire.markBurned(inst.prop.thing);
+        else if (s === 'revealed' && inst.hidden) _revealNow(world, inst);
+        else if (s === 'open') inst.openNow?.();
+    }
+    const off = [
+        EventBus.on(EV.STRUCTURE_STATE, e => { if (['Raised', STATE.COLLAPSED, STATE.BURNED].includes(e.to)) set(e.id, e.to); else if (e.cause === 'rebuilt') set(e.id, null); }),
+        EventBus.on(EV.FIRE_OUT, e => { if (e.burnedOut) set(e.id, 'burned'); }),
+    ];
+    world.onReveal = id => set(id, 'revealed');
+    world.onGate = (id, v) => set(id, v);
+    return () => off.forEach(f => f());
+}
+
+function _revealNow(world, inst) {
+    inst.hidden = false;
+    for (const m of [inst.mesh, ...(inst.extra || [])].filter(Boolean)) world.scene.add(m);
+    for (const s of inst.saved || []) Physics.restore(s.e, s.p, s.q, s.tier, s.tier === TIER.INTERACTIVE ? s.mass : 0);
+    _wire(world, inst);
 }
 
 function _wire(world, inst) {

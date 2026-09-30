@@ -1,0 +1,111 @@
+// ============================================================
+// UNIT — the core systems that need no browser: saves, the ledger, the
+// scene conditions. Fast; runs in node.
+//
+// usage: node qa/unit.mjs
+// ============================================================
+
+// A localStorage for node.
+const mem = new Map();
+globalThis.localStorage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+
+const { Session, readSlot, writeSlot, listSlots, blankSave, migrate, SAVE_VERSION } = await import('../src/core/SaveGame.js');
+const { Ledger } = await import('../src/core/Ledger.js');
+const { EventBus, EV } = await import('../src/core/EventBus.js');
+const { whenHolds, parseWhen } = await import('../src/scene/when.js');
+const { Progression } = await import('../src/core/Progression.js');
+
+const pass = [], fail = [];
+const check = (ok, msg) => (ok ? pass : fail).push(msg);
+
+// ---- saves ---------------------------------------------------------------------------
+{
+    const s = new Session(1, null);
+    s.work.progress.flags.met = true;
+    s.setState('Barn', 'burned');
+    s.checkpoint({ scene: 'veyra', spawn: { x: 1, z: 2, facing: 0 }, step: 'fire' });
+    const r = readSlot(1);
+    check(r && r.save.world.Barn === 'burned' && r.save.progress.flags.met === true && r.save.checkpoint.step === 'fire', 'a checkpoint writes flags, world state and where to return to the slot');
+
+    s.setState('Barn', 'rebuilt');
+    s.work.progress.flags.met = false;
+    const cp = s.restore();
+    check(s.state('Barn') === 'burned' && s.work.progress.flags.met === true && cp.scene === 'veyra', 'dying goes back to the checkpoint: what happened since is forgotten');
+
+    // A damaged save falls back to its backup.
+    s.checkpoint();                                     // a second write: the first becomes .bak
+    localStorage.setItem('elemental.save.1', '{not json');
+    const rec = readSlot(1);
+    check(rec?.recovered === true && rec.save.world.Barn === 'burned', 'a corrupted save recovers from its backup');
+    localStorage.setItem('elemental.save.1.bak', '{"version":2}');
+    check(readSlot(1) === null, 'a save and backup both damaged: treated as empty (a new game), not a crash');
+}
+{
+    mem.clear();
+    localStorage.setItem('elemental.progress', JSON.stringify({ version: 1, els: { earth: { state: 'trained', power: 0.3, control: 0.6 } }, flags: { lesson1: { outcome: 'quiet' } } }));
+    const r = readSlot(1);
+    check(r?.migrated && r.save.version === SAVE_VERSION && r.save.progress.flags.lesson1.outcome === 'quiet' && r.save.progress.els.earth.control === 0.6, 'the old single save migrates into slot 1');
+    check(migrate({ version: 99 }) === null && migrate('x') === null, 'an unknown save version is refused, not guessed');
+    const slots = listSlots();
+    check(slots.length === 3 && !slots[0].empty && slots[1].empty, `three slots listed (${slots.map(x => (x.empty ? '-' : x.slot)).join(' ')})`);
+}
+{
+    mem.clear();
+    const s = new Session(2, null, { persist: false });
+    s.checkpoint();
+    check(readSlot(2) === null, 'a non-persistent session (sandbox, QA) never writes');
+}
+
+// ---- progression lives in the session ---------------------------------------------------------
+{
+    mem.clear();
+    EventBus.reset();
+    const s = new Session(1, null);
+    const p = new Progression('story', { session: s });
+    p.grant('earth', 'control', 0.25, 'test');
+    p.flags.caelTrust = 2;
+    s.checkpoint();
+    const s2 = new Session(1, readSlot(1).save);
+    const p2 = new Progression('story', { session: s2 });
+    check(p2.control('earth') === 0.25 && p2.flags.caelTrust === 2 && p2.state('water') === 'locked', 'Power, Control and flags survive a save and load');
+    const sb = new Progression('sandbox', { session: s2 });
+    sb.grant('earth', 'control', -1);
+    const p3 = new Progression('story', { session: s2 });
+    check(sb.state('water') === 'trained' && sb.power('earth') === 1 && p3.control('earth') === 0.25 && p3.state('water') === 'locked', 'the sandbox neither reads nor writes the story save');
+}
+
+// ---- the ledger ---------------------------------------------------------------------------------------
+{
+    EventBus.reset();
+    const s = new Session(0, null, { persist: false });
+    const owners = { Barn: 'civilian', Dummy: 'none' };
+    const L = new Ledger(s, 'verdant', id => owners[id] || 'none');
+    EventBus.emit(EV.FIRE_STARTED, { id: 'Barn', cause: 'player' });
+    EventBus.emit(EV.FIRE_STARTED, { id: 'Dummy', cause: 'player' });
+    EventBus.emit(EV.FIRE_STARTED, { id: 'Barn', cause: 'environment' });
+    check(L.get('harm') === 0.5, `only the player's harm to things someone owns counts (harm ${L.get('harm')})`);
+    EventBus.emit(EV.FIRE_OUT, { id: 'Barn', cause: 'player', doused: true });
+    check(L.get('care') === 0.5, 'putting it out counts as care');
+    for (let i = 0; i < 6; i++) EventBus.emit(EV.PIECE_BROKEN, { id: 'Barn_P0' + i, cause: 'player' });
+    check(L.get('harm') === 6.5 && L.get('excess') === 1, `many pieces smashed at once is excess (harm ${L.get('harm')}, excess ${L.get('excess')})`);
+    check(L.standingWord() === 'the cause of all this' || L.standingWord() === 'dangerous', `a kingdom you've harmed sees you as ${L.standingWord()}`);
+    L.add('care', 20);
+    check(L.standingWord() === 'saviour', `…and care can win it back (${L.standingWord()})`);
+    check(L.get('harm', 'saltmere') === 0 && L.standing('saltmere') === 2, 'each kingdom keeps its own book; a stranger is "unpredictable"');
+    check(L.chaos() > 7, `chaos adds up harm and excess everywhere (${L.chaos()})`);
+    EventBus.emit(EV.CREATURE, { cause: 'player', to: 'fled' });
+    check(L.get('spared') === 1, 'a creature driven off is counted as spared');
+}
+
+// ---- scene conditions -------------------------------------------------------------------------------------
+{
+    const flags = { 'seal.earth': true, act: 2 }, states = { Barn: 'burned' };
+    const ctx = { flag: n => flags[n], state: id => states[id] };
+    check(whenHolds('', ctx) && whenHolds('seal.earth', ctx) && !whenHolds('!seal.earth', ctx), 'showWhen: a flag, and its opposite');
+    check(whenHolds('act=2, state:Barn=burned', ctx) && !whenHolds('act=3', ctx) && !whenHolds('state:Barn=rebuilt', ctx), 'showWhen: values and remembered world states, all must hold');
+    check(parseWhen('good, ba d').some(c => c.bad), 'showWhen: nonsense is reported, not guessed');
+}
+
+console.log(pass.map(p => '  ok   ' + p).join('\n'));
+if (fail.length) { console.log(fail.map(p => '  FAIL ' + p).join('\n')); console.log('UNIT FAIL'); process.exit(1); }
+console.log('UNIT PASS');

@@ -15,11 +15,10 @@
 // ============================================================
 
 import { ELEMENT } from '../art/Palette.js';
+import { EARTH } from '../data/elements.js';
 
-export const EARTH = {
-    range: 14,           // how far the hero can sense and grab
-    // How heavy a stone Earth lifts is Earth's Power (data/growth.js).
-};
+// Tuning lives in src/data/elements.js (data, not code).
+export { EARTH };
 
 export class EarthSystem {
     constructor({ hero, rocks, channel, prog }) {

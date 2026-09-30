@@ -175,7 +175,7 @@ const SHOTS = path.join(__dirname, 'shots');
     const cardText = await page.evaluate(() => document.getElementById('hud-card').innerText);
     check(card && /without breaking/.test(cardText), `the lesson card says how it went (${cardText.replace(/\n+/g, ' | ')})`);
     await shot('L4-card');
-    const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('elemental.progress')).flags.lesson1; } catch (e) { return null; } });
+    const saved = await page.evaluate(() => __EL.session.committed.progress.flags.lesson1 || null);
     check(saved?.outcome === 'quiet', `the outcome is saved (${JSON.stringify(saved)})`);
 
     // 4b. The loud way: break it open. It passes too, and Cael remembers.

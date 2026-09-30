@@ -10,6 +10,7 @@
 
 import { FORMAT, TYPES, CONDITIONS, ACTIONS, REACTION_EVENTS, GROUND_STYLES, signalsOf, actionsOf } from './schema.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
+import { parseWhen } from './when.js';
 
 export function validateScene(data) {
     const out = [];
@@ -49,8 +50,14 @@ export function validateScene(data) {
             if (f.kind === 'select' && !f.options.includes(v)) err(where, `${f.label} "${v}" is not one of ${f.options.join(', ')}`);
         }
     }
+    const spawnNames = all.filter(o => o.type === 'spawn').map(o => o.name || 'start');
     if (spawns === 0) err('scene', 'no player start');
-    if (spawns > 1) err('scene', 'more than one player start');
+    else if (!spawnNames.includes('start')) warn('scene', 'no player start named "start": the first one is used');
+    for (const n of new Set(spawnNames)) if (spawnNames.filter(x => x === n).length > 1) err('scene', `two player starts are named "${n}"`);
+    for (const o of all) {
+        if (o.showWhen) for (const c of parseWhen(o.showWhen)) if (c.bad) err(o.id, `"Only when" can't read "${c.bad}"`);
+        if (o.type === 'exit' && !o.to) warn(o.id, 'an exit that goes nowhere: set "Goes to scene"');
+    }
     for (const o of all) {
         for (const [k, f] of Object.entries(TYPES[o.type]?.props || {})) {
             if (f.kind !== 'ref' || !o[k]) continue;

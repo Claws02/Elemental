@@ -42,6 +42,11 @@ src/
   main.js               picks the scene from the address (?scene=…) and plays it
   Game.js               startGame(): wires the systems, the frame order (no GameManager), stop()
   core/EventBus.js      world events (§40), with a recent-event log
+  core/SaveGame.js      save slots, the session (working copy + checkpoints), backups, migration
+  core/Ledger.js        consequences by kingdom: harm, care, excess, spared, killed; standing
+  core/Progression.js   element states, Power and Control, story flags (in the session)
+  player/Vitals.js      health, what hurts, dying
+  data/elements.js      every element's tuning
   engine/lib.js         the only importer of vendor/: re-exports THREE and CANNON
   engine/Kit.js         the model accumulator (from HBD's CityKit)
   engine/Physics.js     cannon world, tiers, debris budget, out-of-world recovery

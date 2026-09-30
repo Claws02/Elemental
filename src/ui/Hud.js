@@ -32,7 +32,9 @@ export class Hud {
             <div class="hud-say" id="hud-say"><b class="who"></b><span class="line"></span></div>
             <div class="hud-card" id="hud-card"></div>
             <div class="hold-ring" id="hold-ring"></div>
-            <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>`;
+            <div class="stick-base" id="stick-base"><div class="stick-knob" id="stick-knob"></div></div>
+            <div class="hud-vignette" id="hud-vignette"></div>
+            <div class="hud-died" id="hud-died"><span></span></div>`;
         this.el = id => root.querySelector('#' + id);
         this.setElement('earth');
         this.stick({ active: false });
@@ -48,6 +50,7 @@ export class Hud {
         });
 
         EventBus.on(EV.OBJECT_THROWN, () => this.el('hud-hint').classList.add('gone'));
+        EventBus.on(EV.CHECKPOINT, () => { if (this._shown) this.log('Checkpoint'); this._shown = true; });
         EventBus.on(EV.STRUCTURE_STATE, e => {
             if (e.cause === 'rebuilt') { this._onFire.delete(e.id); this.log(`${e.id.includes('Props') ? 'Obstacles' : 'Barricade'} · reset`); return; }
             const who = e.cause === 'player' ? 'by you' : '';
@@ -134,6 +137,22 @@ export class Hud {
             a.href = buttons[i].href;
             a.addEventListener('click', e => { if (this.onLink) { e.preventDefault(); this.onLink(buttons[i].href); } });
         });
+        el.classList.add('on');
+    }
+
+    /** Health, shown only as the screen's edges reddening: 0 well … 1 nearly gone. */
+    vitals(danger) {
+        const v = Math.max(0, Math.min(1, (danger - 0.25) / 0.75));
+        if (Math.abs(v - (this._danger ?? -1)) < 0.01) return;
+        this._danger = v;
+        this.el('hud-vignette').style.opacity = v.toFixed(2);
+    }
+
+    /** The screen goes dark before the checkpoint comes back. */
+    died(cause) {
+        const words = { fire: 'The fire took you.', fall: 'You fell.', fell: 'You fell.', blast: 'The blast took you.', 'wild-fire': 'Your own fire took you.' };
+        const el = this.el('hud-died');
+        el.querySelector('span').textContent = words[cause] || 'You fell.';
         el.classList.add('on');
     }
 

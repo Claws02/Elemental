@@ -10,22 +10,29 @@
 // wild Fire are all events already, and this listens. Lessons grant Control
 // directly (grant()), because restraint is not an event anything else emits.
 //
-// The story profile is saved on the device (versioned); the sandbox is not.
+// State lives in the save session (core/SaveGame.js): Progression reads and
+// writes the session's working copy, and a checkpoint puts it on the device.
+// The sandbox runs on a session that is never written.
 // ============================================================
 
 import { EventBus, EV } from './EventBus.js';
 import { GAINS, PROFILES, GROWTH } from '../data/growth.js';
 
-const SAVE_KEY = 'elemental.progress';
-const VERSION = 1;
-
 export class Progression {
-    constructor(profile = 'story', { persist = profile === 'story' } = {}) {
+    /**
+     * @param {string} profile   'story' or 'sandbox' (data/growth.js PROFILES)
+     * @param {object} [o]
+     * @param {Session} [o.session] the save session to read and write (none: a throwaway one)
+     */
+    constructor(profile = 'story', { session = null } = {}) {
         this.profile = profile;
-        this.persist = persist;
-        this.els = JSON.parse(JSON.stringify(PROFILES[profile]));
-        this.flags = {};
-        if (persist) this._load();
+        this.session = session;
+        const p = session?.work.progress;
+        // The sandbox (everything trained) never touches the story's save.
+        const story = profile === 'story';
+        this.els = story && p?.els ? p.els : JSON.parse(JSON.stringify(PROFILES[profile]));
+        this.flags = story && p ? (p.flags ||= {}) : {};
+        this._save();
         this._listen();
     }
 
@@ -68,25 +75,17 @@ export class Progression {
     }
 
     _save() {
-        if (!this.persist) return;
-        try { localStorage.setItem(SAVE_KEY, JSON.stringify({ version: VERSION, els: this.els, flags: this.flags })); } catch (e) { /* private mode: play on unsaved */ }
+        const p = this.session?.work.progress;
+        if (!p || this.profile !== 'story') return;
+        p.profile = 'story';
+        p.els = this.els;
+        p.flags = this.flags;
     }
 
-    _load() {
-        try {
-            const raw = localStorage.getItem(SAVE_KEY);
-            if (!raw) return;
-            const s = JSON.parse(raw);
-            if (s.version !== VERSION) return;          // migrations go here when VERSION moves
-            for (const k of Object.keys(this.els)) if (s.els?.[k]) Object.assign(this.els[k], s.els[k]);
-            this.flags = s.flags || {};
-        } catch (e) { /* unreadable save: start fresh */ }
-    }
-
-    /** Start the story over (title screen, QA). */
+    /** Start the story over: the profile's starting states, no flags. */
     reset() {
         this.els = JSON.parse(JSON.stringify(PROFILES[this.profile]));
-        this.flags = {};
-        if (this.persist) try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* nothing saved */ }
+        for (const k of Object.keys(this.flags)) delete this.flags[k];
+        this._save();
     }
 }

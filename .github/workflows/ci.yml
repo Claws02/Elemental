@@ -17,6 +17,8 @@ jobs:
         run: bash qa/parsecheck.sh src
       - name: Scenes (every scenes/*.json against the schema)
         run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-scenes.mjs
+      - name: Unit (saves, ledger, scene conditions)
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs
       - name: Web build for Capacitor
         run: node scripts/build-web.js
       - name: Install Playwright Chromium
@@ -27,6 +29,7 @@ jobs:
           npx --yes wait-on -t 30000 http://127.0.0.1:8140/index.html
           node qa/smoke.js
           node qa/lesson.js
+          node qa/core.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

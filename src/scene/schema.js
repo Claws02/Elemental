@@ -36,7 +36,7 @@ const HIDDEN = bool('Starts hidden', false);
 const BSTYLE = select('Style', 'stone', ['stone', 'timber', 'plaster']);
 
 // Library groups, in the order the editor shows them.
-export const GROUPS = ['Ruins', 'Nature', 'Elements', 'Props', 'Puzzle', 'Characters', 'Buildings', 'Ground'];
+export const GROUPS = ['Ruins', 'Nature', 'Elements', 'Props', 'Puzzle', 'Characters', 'Buildings', 'Ground', 'Travel'];
 
 export const TYPES = {
     // ---- ruins --------------------------------------------------------------
@@ -121,7 +121,11 @@ export const TYPES = {
     },
 
     // ---- characters -----------------------------------------------------------------------
-    spawn: { label: 'Player start', group: 'Characters', props: {}, single: true, note: 'Where the player starts. Turn it to set the way they face.' },
+    spawn: {
+        label: 'Player start', group: 'Characters',
+        props: { name: text('Name', 'start') },
+        note: 'Where the player arrives. "start" is where a scene begins; other names are arrival points for exits from other scenes. Turn it to set the way they face.',
+    },
     npc: {
         label: 'Character', group: 'Characters',
         props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard']), hidden: HIDDEN },
@@ -169,6 +173,16 @@ export const TYPES = {
         note: 'A ready-made building. "Break apart" turns it into its walls, floors and roof to change one by one.',
     },
 
+    // ---- travel ----------------------------------------------------------------------
+    exit: {
+        label: 'Exit to another scene', group: 'Travel',
+        props: {
+            to: text('Goes to scene', ''), at: text('Arrives at start point', 'start'), label: text('Shown as', ''),
+            width: num('Width', 4, 0.5, 40, 0.1), depth: num('Depth', 2, 0.5, 40, 0.1), height: num('Height', 3, 0.5, 20, 0.1),
+        },
+        note: 'Walk into it to travel. The game saves a checkpoint on arrival.',
+    },
+
     // ---- ground --------------------------------------------------------------------------
     patch: {
         label: 'Ground patch', group: 'Ground',
@@ -177,9 +191,24 @@ export const TYPES = {
     },
 };
 
+// Every type can be made to exist only in some world states (a rebuilt barn,
+// a forest after the Earth seal opens): `showWhen` is a list of conditions
+// separated by commas, all of which must hold when the scene loads:
+//   flagName          a story flag is set (truthy)
+//   !flagName         it isn't
+//   flagName=value    a flag equals a value
+//   state:ObjectId=v  a remembered world state (burned, Collapsed, revealed…)
+// Things someone owns (`owner`) count against the player when harmed (Ledger).
+const OWNED = ['barricade', 'gate', 'crate', 'barrel', 'hay', 'stall', 'brazier', 'basin', 'b_wall', 'b_floor', 'b_roof', 'b_stairs', 'b_fence', 'b_post', 'prefab', 'tree'];
+for (const [type, t] of Object.entries(TYPES)) {
+    if (OWNED.includes(type)) t.props.owner = select('Belongs to', 'none', ['none', 'civilian', 'empire']);
+    t.props.showWhen = text('Only when', '');
+}
+
 // Ground styles for the scene's base floor.
 export const GROUND_STYLES = ['flagstone', 'grass', 'dirt', 'cobble', 'sand'];
 export const PROFILES = ['story', 'sandbox'];
+export const REGION_NAMES = { verdant: 'Verdant Reach', emberwall: 'Emberwall Marches', saltmere: 'Saltmere Coast', skyreach: 'Skyreach Heights', glass: 'The Glass Expanse', capital: 'Halcyra' };
 
 // ---- the script: steps, conditions and actions ------------------------------------------
 
@@ -195,6 +224,10 @@ export const CONDITIONS = {
     burned:   { label: 'Pieces burned ≥', arg: { obj: 'ref', min: 'int' } },
     burning:  { label: 'Anything is burning', arg: 'bool' },
     count:    { label: 'Counter ≥', arg: { name: 'text', min: 'int' } },
+    flag:     { label: 'Saved flag', arg: { name: 'text', is: 'text' } },
+    state:    { label: 'World state', arg: { id: 'ref', is: 'text' } },
+    ledger:   { label: 'The ledger', arg: { tally: 'tally', min: 'number' } },
+    standing: { label: 'How a kingdom sees you', arg: { region: 'region', atLeast: 'int' } },
     all:      { label: 'All of', arg: 'list' },
     any:      { label: 'Any of', arg: 'list' },
     not:      { label: 'Not', arg: 'cond' },
@@ -211,10 +244,16 @@ export const ACTIONS = {
     count:    { label: 'Add to a counter', arg: { name: 'text', add: 'int' } },
     saveFlag: { label: 'Save the outcome as', arg: 'text' },
     card:     { label: 'Show the end card', arg: 'bool' },
+    checkpoint: { label: 'Checkpoint (save)', arg: 'bool' },
+    travel:   { label: 'Travel to a scene', arg: { scene: 'text', at: 'text' } },
+    setFlag:  { label: 'Set a saved flag', arg: { name: 'text', value: 'text' } },
+    setState: { label: 'Set a world state', arg: { id: 'ref', value: 'text' } },
+    ledger:   { label: 'Add to the ledger', arg: { tally: 'tally', add: 'number' } },
 };
 
 export const ELEMENTS = ['earth', 'fire', 'water', 'air'];
 export const TRACKS = ['power', 'control'];
+export const TALLIES = ['harm', 'care', 'excess', 'spared', 'killed'];
 
 // Reactions: the script's speaker answers things the player does, any time.
 export const REACTION_EVENTS = {
@@ -242,8 +281,8 @@ export function actionsOf(type) { return TYPES[type]?.actions || []; }
 export function emptyScene(id = 'untitled', name = 'Untitled scene') {
     return {
         format: FORMAT, id, name,
-        settings: { ground: { half: 20, style: 'grass' }, profile: 'sandbox', resetProgress: false },
-        objects: [{ id: 'Spawn', type: 'spawn', x: 0, y: 0, z: 6, rotY: Math.PI }],
+        settings: { ground: { half: 20, style: 'grass' }, profile: 'sandbox', resetProgress: false, region: 'verdant', persistent: false },
+        objects: [{ id: 'Spawn', type: 'spawn', x: 0, y: 0, z: 6, rotY: Math.PI, name: 'start' }],
         wires: [],
         script: null,
     };
