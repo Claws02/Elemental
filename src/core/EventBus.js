@@ -72,6 +72,7 @@ export const EV = {
     LAVA_COOLED:        'LavaCooled',
     FIRESTORM:          'Firestorm',
     MUD:                'Mud',
+    GLIDE:              'Glide',
     CHARM:              'Charm',
     LESSON:             'Lesson',
     PLATE:              'Plate',

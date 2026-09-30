@@ -64,6 +64,7 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Lava (Earth + Fire): a stone heated molten bursts into a burning pool; excess in the ledger. *Abilities test.*
   - [x] Firestorm (Fire + Air): a held fireball and a second finger on the hero blow a cone of flame. *Abilities test.*
   - [x] Mud (Earth + Water): streaming, a second finger on open ground makes mud that bogs creatures down. *Abilities test.*
+  - [x] Glide (Air) and thermals (Fire + Air): a fall off anything high becomes a glide; fire below lifts it. *Abilities test.*
 
 ## Phase 2: elemental sandbox
 

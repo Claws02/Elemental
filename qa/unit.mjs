@@ -132,7 +132,7 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     p.flags['learned.raise'] = true;
     check(!before && p.can('raise') && !p.can('lava'), 'in the story an ability needs learning; a combination needs both its elements usable too');
     const sb = new Progression('sandbox');
-    check(['raise', 'freeze', 'lava', 'firestorm', 'mud'].every(a => sb.can(a)), 'the sandbox knows every ability');
+    check(['raise', 'freeze', 'lava', 'firestorm', 'mud', 'glide'].every(a => sb.can(a)), 'the sandbox knows every ability');
 }
 
 console.log(pass.map(p => '  ok   ' + p).join('\n'));

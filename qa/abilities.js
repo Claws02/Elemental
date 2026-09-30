@@ -10,6 +10,7 @@
 //   it bursts into a pool that burns everything in it, then crusts over.
 //   Firestorm (Fire + Air): holding a fireball, a second finger on the hero.
 //   Mud (Earth + Water): streaming, a second finger on open ground.
+//   Glide (Air): a fall off anything high becomes a glide; over fire, it rises.
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/abilities.js
 // ============================================================
@@ -276,6 +277,31 @@ const SHOTS = path.join(__dirname, 'shots');
         return { inMud: +inMud.toFixed(2), dry: +dry.toFixed(2) };
     });
     check(wade.inMud < wade.dry * 0.7, `a creature in mud covers far less ground (${JSON.stringify(wade)})`);
+
+    // ---- Glide, and thermals (Air; Fire + Air) ------------------------------------------------------------
+    await open('arena');
+    await ev(() => { __EL.vitals.invulnerable = true; for (const c of __EL.creatures.all) { c.engaged = false; c.group.engaged = false; c.group.item.aggressive = false; } });
+    const glide = await ev(async () => {
+        const b = __EL.player.body;
+        // Off the top of something high: 3.6 m up, nothing under.
+        b.position.set(-8, 3.6, 2); b.velocity.set(0, 0, 0);
+        const t0 = __EL.fire.time; let worst = 0, glided = false;
+        while (b.position.y > 0.6 && __EL.fire.time - t0 < 8) { if (__EL.glide.gliding) { worst = Math.min(worst, b.velocity.y); glided = true; } await new Promise(r => setTimeout(r, 30)); }
+        return { secs: +(__EL.fire.time - t0).toFixed(2), worst: +worst.toFixed(2), glided };
+    });
+    check(glide.glided && glide.worst > -2.2 && glide.secs > 1.3, `stepping off something high, Air holds the fall: a glide, not a drop (${JSON.stringify(glide)})`);
+    const thermal = await ev(async () => {
+        const b = __EL.player.body, F = __EL.fire;
+        const hay = __EL.interactables.things.find(t => /hay/i.test(t.id));
+        // Gliding in from the side at 4 m, over a haystack just set alight (hay burns only a few seconds).
+        const q = hay.pos();
+        b.position.set(q.x + 1, 4, q.z); b.velocity.set(0, -2, 0);
+        F.ignite(hay, 'player');
+        let top = 4, burning = false;
+        for (let i = 0; i < 40; i++) { top = Math.max(top, b.position.y); burning ||= F.isBurning(hay); await new Promise(r => setTimeout(r, 30)); }
+        return { rose: +(top - 4).toFixed(2), burning };
+    });
+    check(thermal.burning && thermal.rose > 0.5, `gliding over a fire, the heat carries you up (${JSON.stringify(thermal)})`);
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await browser.close();

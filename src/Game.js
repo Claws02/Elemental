@@ -46,6 +46,7 @@ import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
 import { Mud } from './elements/Mud.js';
+import { Glide } from './elements/Glide.js';
 
 /**
  * @param {object} o
@@ -105,6 +106,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const ice = new Ice({ scene, fire, fx, creatures });
     const storm = new Firestorm({ fire, fx, creatures });
     const mud = new Mud({ scene, fire, creatures, player });
+    const glide = new Glide({ player, prog, fire });
     const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     let leaving = false;
@@ -191,7 +193,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         earth.update(dt);
         player.rig.setElement(intent.element);
         player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
+        glide.update(dt);
         Physics.step(dt);
+        glide.after();
         works.update(dt);
         ice.update(dt);
         lava.update(dt);
@@ -226,7 +230,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, wearCharm, checkpoint, travel,
+        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];

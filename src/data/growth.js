@@ -63,6 +63,7 @@ export const ABILITIES = {
     lava:      { name: 'Lava',        needs: ['earth', 'fire'] },
     firestorm: { name: 'Firestorm',   needs: ['fire', 'air'] },
     mud:       { name: 'Mud',         needs: ['earth', 'water'] },
+    glide:     { name: 'Glide',       needs: ['air'] },
 };
 
 // Where a new story starts, and the sandbox.

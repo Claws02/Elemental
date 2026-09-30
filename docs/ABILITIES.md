@@ -20,8 +20,10 @@ Lava is the exception. It is Fire held on Earth's stone for longer.
 | Lava | Earth + Fire | Hold a stone still in the grip: Fire heats it, then past glowing it goes **molten**. Throw it | It bursts where it hits into a 2.2 m pool. For 10 s everything that burns there catches, creatures and you burn, and timber wears through. Then it crusts over and the scorch stays. A stream quenches it five times faster. Every pool is **excess** in the ledger. |
 | Firestorm | Fire + Air | Holding a fireball (one finger on it), **touch the hero with a second finger** | The fireball tears open into a 10 m cone of flame from the hero toward where it was held. Everything that burns in the cone catches, fires in it flare, creatures in it burn and are thrown back, and loose things are pushed. Lighting four or more things at once is excess. |
 | Mud | Earth + Water | While a stream runs, **touch open ground with a second finger** | The ground where the water lands turns to mud (2.4 m across). Creatures, and you, wade at a third of your speed, so a charge bogs down. Low fires in it go out. It dries after 25 s. The stream keeps running. |
+| Glide | Air | No gesture: step off anything high (a raised column, a wall) | Air holds the fall. You sink at most 1.6 m/s and move a third faster than on foot, steering with the stick, until you're near the ground. |
+| Thermals | Fire + Air | Glide over a fire | The heat rises and carries you up (up to 3.5 m/s). Burn a haystack under a wall and ride over it. |
 
-Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`, `FIRESTORM`, `MUD`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`, `Firestorm.js`, `Mud.js`), and the gestures are Intent's states.
+Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`, `FIRESTORM`, `MUD`, `GLIDE`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`, `Firestorm.js`, `Mud.js`, `Glide.js`), and the gestures are Intent's states.
 
 ## Raise stone
 
@@ -54,3 +56,18 @@ Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`, `FIRESTORM
 - **Still to come:** the brief also asks mud to repair structures and make clay. That comes with building repair in the towns phase.
 
 *Test: `qa/abilities.js`.*
+
+## Glide and thermals
+
+- **No button:** falling is the gesture. The raised column is the first way up, so Earth then Air is already a traversal combination: raise, ride it up, step off, glide.
+- **Glide learned, thermals free:** thermals need only glide (Air); the fire can be anyone's.
+- **Long frames:** a glide pays gravity's share of each frame in advance, so it sinks at its set rate even at a low frame rate.
+
+*Test: `qa/abilities.js`.*
+
+## Not in this phase
+
+- **Ice bridges over gaps and water:** they need terrain, so phase 5.
+- **Mud repairing buildings, and clay:** they need building repair, so the towns phase.
+- **Redirecting projectiles with Air:** it needs enemies that throw things (Wielders), so the acts.
+- **Oil and explosions:** oil barrels already burst (Phase 1).

@@ -68,6 +68,18 @@ export const MUD = {
     most: 4,            // patches at once
 };
 
+// Glide: Air under the hero; thermals over fire (elements/Glide.js).
+export const GLIDE = {
+    trigger: 1.5,       // falling faster than this (m/s) off anything high starts a glide
+    minHeight: 0.6,     // …if the hero's feet are this far off the ground
+    fall: 1.6,          // the most a glide sinks, m/s
+    speed: 1.35,        // how much faster than walking/running a glide moves
+    thermalRadius: 2.2, // a fire this close across…
+    thermalHeight: 9,   // …and this far below lifts the glide
+    lift: 9,            // m/s² of rising heat
+    rise: 3.5,          // the fastest a thermal carries you up
+};
+
 export const FIRE = {
     spreadRadius: 1.5,      // metres, centre to centre
     startIntensity: 0.25,   // a new fire spreads at a quarter strength…
