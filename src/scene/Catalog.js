@@ -39,6 +39,8 @@ import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { SPECIES } from '../data/creatures.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
 import { defaults } from './schema.js';
+import { plantModel, boulderModel } from '../art/NatureModels.js';
+import { towerModel, bridgeModel, dockModel, townWallModel, gatehouseModel, tentModel, chimneyModel, lampModel, bannerModel, statueModel, fountainModel } from '../art/ArchModels.js';
 
 // ---- helpers ------------------------------------------------------------------
 
@@ -65,6 +67,7 @@ function _boxes(ctx, it, boxes, { mat = 'stone', solid = null } = {}) {
         body.position.set(p.x, p.y, p.z);
         const bq = q.clone();
         if (b.rx) bq.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), b.rx));
+        if (b.rz) bq.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), b.rz));
         body.quaternion.set(bq.x, bq.y, bq.z, bq.w);
         entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id }));
     }
@@ -198,6 +201,19 @@ const SHAPES = {
     },
     sealed_door: it => ({ group: _sealedDoor(it.width, it.height), boxes: [{ x: 0, y: it.height / 2, z: -0.3, w: it.width, h: it.height, d: 0.8 }] }),
     tree: it => tree(it),
+    plant: it => plantModel(it),
+    boulder: it => boulderModel(it),
+    tower: it => towerModel(it),
+    bridge: it => bridgeModel(it),
+    dock: it => dockModel(it),
+    town_wall: it => townWallModel(it),
+    gatehouse: it => gatehouseModel(it),
+    tent: it => tentModel(it),
+    chimney: it => chimneyModel(it),
+    lamp: it => lampModel(it),
+    banner: it => bannerModel(it),
+    statue: it => statueModel(it),
+    fountain: it => fountainModel(it),
     stall: it => stall(it),
     b_wall: it => buildingWall(it),
     b_floor: it => buildingFloor(it),
@@ -206,7 +222,7 @@ const SHAPES = {
     b_fence: it => buildingFence(it),
     b_post: it => buildingPost(it),
 };
-const WOODEN = new Set(['b_fence', 'stall']);
+const WOODEN = new Set(['b_fence', 'stall', 'dock', 'tent', 'plant']);
 
 // ---- the catalog -----------------------------------------------------------------------
 
@@ -600,7 +616,7 @@ export const CATALOG = {
 for (const [type, shape] of Object.entries(SHAPES)) {
     CATALOG[type] = {
         model: it => shape(it).group,
-        spawn: (ctx, it) => _static(ctx, it, shape(it), { mat: WOODEN.has(type) ? 'wood' : 'stone', solid: type === 'b_floor' ? false : undefined }),
+        spawn: (ctx, it) => _static(ctx, it, shape(it), { mat: WOODEN.has(type) ? 'wood' : 'stone', solid: type === 'b_floor' || type === 'plant' ? false : undefined }),
     };
 }
 

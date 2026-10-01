@@ -117,10 +117,12 @@ const SHOTS = path.join(__dirname, 'shots');
         const b = __EL.player.body, T = __G();
         b.position.set(-40, T.height(-40, -40) + 0.5, -40);
         await new Promise(r => setTimeout(r, 1200));
-        const far = __EL.world.objects.get('Far_Tree').mesh.visible;
+        // The far tree is batched into its cell's scenery mesh: that is what is culled.
+        const cell = () => __EL.world.batches.find(bt => Math.abs(bt.x - 55) <= 20 && Math.abs(bt.z - 55) <= 20);
+        const far = cell().mesh.visible;
         b.position.set(45, T.height(45, 45) + 0.5, 45);
         await new Promise(r => setTimeout(r, 1200));
-        return { farHidden: !far, nearShown: __EL.world.objects.get('Far_Tree').mesh.visible };
+        return { farHidden: !far, nearShown: cell().mesh.visible, batched: __EL.world.objects.get('Far_Tree').batched, batches: __EL.world.batches.length };
     });
     check(cull.farHidden && cull.nearShown, `what's beyond the fog isn't drawn, and comes back as you approach (${JSON.stringify(cull)})`);
     const budget = await ev(() => __EL.renderInfo());

@@ -1,6 +1,8 @@
 // ============================================================
 // SCENE SCHEMA — what a scene file may contain (docs/SCENES.md)
 // ============================================================
+
+import { TREE_KINDS, PLANT_KINDS, BOULDER_KINDS } from '../data/nature.js';
 //
 // Pure data, no three.js: the game's loader, the scene validator (node) and
 // Elemental-Editor's inspector all read this one file, so an object's
@@ -33,7 +35,11 @@ const ref = (label, types) => ({ kind: 'ref', label, default: '', types });
 
 const SEED = int('Variant', 1, 0, 9999);
 const HIDDEN = bool('Starts hidden', false);
-const BSTYLE = select('Style', 'stone', ['stone', 'timber', 'plaster']);
+// Every prefab building (data/prefabs.js), by name: kept in step by qa/unit.mjs.
+const PREFAB_NAMES = ['cottage', 'house', 'smithy', 'tower', 'thornwick_hall', 'cindrel_house', 'cindrel_forge', 'forge_hall', 'lanthe_stilthouse', 'lanthe_council', 'vaelmont_cell', 'vaelmont_temple', 'sarn_house', 'sarn_matriarch', 'halcyra_villa', 'imperial_palace', 'shed'];
+const WALL_STYLES = ['stone', 'timber', 'plaster', 'brick', 'basalt', 'whitestone', 'marble', 'adobe', 'driftwood'];
+const ROOF_STYLES = ['thatch', 'slate', 'shingle', 'tile', 'copper', 'flat', 'dome', 'canvas'];
+const BSTYLE = select('Style', 'stone', WALL_STYLES);
 
 // Library groups, in the order the editor shows them.
 export const GROUPS = ['Ruins', 'Nature', 'Elements', 'Props', 'Puzzle', 'Creatures', 'Characters', 'Buildings', 'Ground', 'Travel'];
@@ -73,7 +79,18 @@ export const TYPES = {
     },
     tree: {
         label: 'Tree', group: 'Nature',
-        props: { height: num('Height', 5, 2, 12, 0.1), kind: select('Kind', 'oak', ['oak', 'pine', 'dead']), seed: SEED, hidden: HIDDEN },
+        props: { height: num('Height', 5, 2, 24, 0.1), kind: select('Kind', 'oak', TREE_KINDS), seed: SEED, hidden: HIDDEN },
+        note: 'Every climate: oak, pine, birch, willow and giant (the Reach); charred (Emberwall); palm and cypress (the coast); fir and juniper (Skyreach); glassbloom (the Expanse); dead.',
+    },
+    plant: {
+        label: 'Plant', group: 'Nature',
+        props: { kind: select('Kind', 'bush', PLANT_KINDS), size: num('Size', 1, 0.3, 4, 0.1), seed: SEED },
+        note: 'Undergrowth you walk through: bushes, ferns, reeds, flowers, grass, mushrooms, heather, dune grass, thornscrub, ember-blooms, driftwood, crystal, salt crust, snow tufts.',
+    },
+    boulder: {
+        label: 'Boulder (scenery)', group: 'Nature',
+        props: { kind: select('Kind', 'crag', BOULDER_KINDS), size: num('Size', 2, 0.5, 10, 0.1), seed: SEED },
+        note: 'Fixed stone: crags, mossy and snowy boulders, basalt columns, obsidian, lava rock, sea stacks, glass spires, salt pillars, glass shards. Too big for Earth to lift (a rock is what Earth lifts).',
     },
     hay: { label: 'Hay bundle', group: 'Nature', props: { seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned'] },
 
@@ -182,7 +199,7 @@ export const TYPES = {
         label: 'Roof', group: 'Buildings',
         props: {
             width: num('Width (along ridge)', 4, 1, 20, 0.5), depth: num('Depth', 4, 1, 20, 0.5),
-            pitch: num('Rise', 1.8, 0.3, 6, 0.1), style: select('Style', 'thatch', ['thatch', 'slate', 'shingle']),
+            pitch: num('Rise', 1.8, 0.3, 6, 0.1), style: select('Style', 'thatch', ROOF_STYLES),
             gables: bool('Gable ends', true), hidden: HIDDEN,
         },
         note: 'Place it at the top of the walls (its Y).',
@@ -199,9 +216,39 @@ export const TYPES = {
         label: 'Post', group: 'Buildings',
         props: { height: num('Height', 3, 0.5, 8, 0.1), style: select('Style', 'timber', ['timber', 'stone']), hidden: HIDDEN },
     },
+    tower: {
+        label: 'Round tower', group: 'Buildings',
+        props: { height: num('Height', 9, 3, 30, 0.5), radius: num('Radius', 2.2, 1, 6, 0.1), style: BSTYLE, top: select('Top', 'cone', ['cone', 'dome', 'crenels']), seed: SEED, hidden: HIDDEN },
+    },
+    bridge: {
+        label: 'Bridge', group: 'Buildings',
+        props: { length: num('Length', 14, 4, 60, 0.5), width: num('Width', 3, 1.2, 10, 0.1), rise: num('Arch rise (rope: sag)', 1.2, 0, 6, 0.1), style: select('Style', 'stone', ['stone', 'whitestone', 'marble', 'plank', 'rope']), seed: SEED, hidden: HIDDEN },
+        note: 'Spans along its length (x) between two banks at its own height; the deck and rails are solid.',
+    },
+    dock: {
+        label: 'Dock', group: 'Buildings',
+        props: { length: num('Length', 10, 2, 40, 0.5), width: num('Width', 3, 1, 8, 0.1), height: num('Deck height', 1.2, 0.3, 4, 0.1), seed: SEED, hidden: HIDDEN },
+    },
+    town_wall: {
+        label: 'Town wall', group: 'Buildings',
+        props: { length: num('Length', 10, 2, 40, 0.5), height: num('Height', 5, 2, 14, 0.5), style: BSTYLE, seed: SEED, hidden: HIDDEN },
+    },
+    gatehouse: {
+        label: 'Gatehouse', group: 'Buildings',
+        props: { width: num('Gate width', 5, 2, 12, 0.5), height: num('Height', 7, 4, 16, 0.5), style: BSTYLE, seed: SEED, hidden: HIDDEN },
+    },
+    tent: {
+        label: 'Tent', group: 'Buildings',
+        props: { size: num('Size', 4, 2, 12, 0.5), colour: select('Colour', 'red', ['red', 'blue', 'ochre', 'green']), seed: SEED, hidden: HIDDEN },
+    },
+    chimney: { label: 'Forge chimney', group: 'Buildings', props: { height: num('Height', 6, 2, 16, 0.5), seed: SEED, hidden: HIDDEN } },
+    lamp: { label: 'Lamp post', group: 'Props', props: { height: num('Height', 3.2, 2, 6, 0.1), hidden: HIDDEN } },
+    banner: { label: 'Banner', group: 'Props', props: { height: num('Height', 5, 2, 12, 0.5), colour: select('Colour', 'green', ['green', 'red', 'blue', 'white', 'gold', 'ochre', 'sky']), seed: SEED, hidden: HIDDEN } },
+    statue: { label: 'Statue (Oruun)', group: 'Ruins', props: { height: num('Height', 4, 2, 14, 0.5), style: BSTYLE, seed: SEED, hidden: HIDDEN } },
+    fountain: { label: 'Fountain', group: 'Props', props: { radius: num('Radius', 2.5, 1, 6, 0.1), style: BSTYLE, seed: SEED, hidden: HIDDEN } },
     prefab: {
         label: 'Building', group: 'Buildings',
-        props: { prefab: select('Building', 'cottage', ['cottage', 'house', 'smithy', 'tower', 'shed']), style: select('Style', 'prefab', ['prefab', 'stone', 'timber', 'plaster']), seed: SEED },
+        props: { prefab: select('Building', 'cottage', PREFAB_NAMES), style: select('Style', 'prefab', ['prefab', ...WALL_STYLES]), seed: SEED },
         note: 'A ready-made building. "Break apart" turns it into its walls, floors and roof to change one by one.',
     },
 

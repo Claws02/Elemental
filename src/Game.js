@@ -189,10 +189,11 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         const c = camera.position;
         for (const inst of world.objects.values()) {
             const m = inst.mesh;
-            if (!m || inst.hidden || inst.type === 'water') continue;
+            if (!m || inst.hidden || inst.batched || inst.type === 'water') continue;
             const it = inst.item;
             m.visible = Math.hypot((it.x || 0) - c.x, (it.z || 0) - c.z) < CULL;
         }
+        for (const b of world.batches) b.mesh.visible = Math.hypot(b.x - c.x, b.z - c.z) < CULL + 28;
     };
 
     const _size = new THREE.Vector2();

@@ -15,6 +15,7 @@
 import { THREE } from '../engine/lib.js';
 import { Kit, at, seeded } from '../engine/Kit.js';
 import { WORLD, ELEMENT } from './Palette.js';
+import { treeModel } from './NatureModels.js';
 
 const pick = (arr, n) => arr[Math.floor(seeded(n) * arr.length) % arr.length];
 
@@ -32,6 +33,16 @@ export const TOWN = {
 };
 
 const T = 0.3;   // wall thickness
+
+// Walls laid in courses: each kingdom's stone. { cols, course height, block length }.
+export const COURSED = {
+    stone:      { cols: WORLD.stone, course: 0.5, len: 0.8, flat: true },                                          // the Reach, ruins
+    brick:      { cols: [0x8a4a32, 0x7e4230, 0x965438, 0x744030], course: 0.3, len: 0.9, flat: true },  // Emberwall's kilns (runs of brick, not each one: triangles)
+    basalt:     { cols: [0x3a373a, 0x433f43, 0x343134, 0x4a4548], course: 0.62, len: 0.95 },          // Emberwall's caldera
+    whitestone: { cols: [0xdcd6c8, 0xd2ccbe, 0xe4dfd2, 0xc8c2b4], course: 0.55, len: 0.9, flat: true },           // Skyreach's monasteries
+    marble:     { cols: [0xeeeae2, 0xe6e2da, 0xf4f0e8, 0xdedad2], course: 0.9, len: 1.6, flat: true },            // Halcyra
+};
+export const WALL_STYLES = ['stone', 'timber', 'plaster', 'brick', 'basalt', 'whitestone', 'marble', 'adobe', 'driftwood'];
 
 // ---- walls -------------------------------------------------------------------
 
@@ -74,21 +85,32 @@ export function buildingWall({ length: L = 4, height: H = 3, style = 'stone', op
     for (const r of rects) {
         const w = r.x1 - r.x0, h = r.y1 - r.y0, cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
         boxes.push({ x: cx, y: cy, z: 0, w, h, d: T });
-        if (style === 'stone') {
+        if (COURSED[style]) {
             // Coursed blocks, a little uneven.
-            const course = 0.5;
+            const C = COURSED[style], course = C.course;
             for (let y = r.y0, row = 0; y < r.y1 - 0.01; y += course, row++) {
                 const ch = Math.min(course, r.y1 - y);
                 let x = r.x0;
                 while (x < r.x1 - 0.01) {
                     n++;
-                    const bw = Math.min(r.x1 - x, (row % 2 && x === r.x0 ? 0.4 : 0.7) + seeded(n * 1.9) * 0.5);
-                    const col = new THREE.Color(pick(WORLD.stone, n * 2.3));
+                    const bw = Math.min(r.x1 - x, (row % 2 && x === r.x0 ? C.len * 0.55 : C.len) + seeded(n * 1.9) * C.len * 0.7);
+                    const col = new THREE.Color(pick(C.cols, n * 2.3));
                     col.offsetHSL(0, 0, (seeded(n * 3.9) - 0.5) * 0.07);
-                    k.box('body', bw - 0.03, ch - 0.03, T, at(x + bw / 2, y + ch / 2, 0), col, { ch: 0.04, skipBottom: y > 0.01 });
+                    k.box('body', bw - 0.03, ch - 0.03, T, at(x + bw / 2, y + ch / 2, 0), col, { ch: C.flat ? 0 : 0.04, skipBottom: y > 0.01 });
                     x += bw;
                 }
             }
+            if (style === 'marble' && r.y1 >= H - 0.01) k.box('body', w + 0.1, 0.16, T + 0.12, at(cx, H - 0.02, 0), 0xc8a85a, { ch: 0.03 });   // a gilded cornice
+        } else if (style === 'adobe') {
+            // Sun-baked earth, smoothed by hand: soft edges, a rounded parapet, timber ends sticking out.
+            k.box('body', w, h, T + 0.04, at(cx, cy, 0), pick([0xc8a070, 0xbf9868, 0xd0a878], seed), { ch: 0.08 });
+            if (r.y1 >= H - 0.01) for (let x = r.x0 + 0.5; x < r.x1 - 0.2; x += 1.1) k.box('body', 0.1, 0.1, T + 0.5, at(x, H - 0.4, 0), WORLD.timber[1]);
+        } else if (style === 'driftwood') {
+            // Grey sea-worn planks, standing; a timber sill and head.
+            const n2 = Math.max(1, Math.round(w / 0.28));
+            for (let i = 0; i < n2; i++) k.box('body', w / n2 - 0.02, h, T, at(r.x0 + (i + 0.5) * w / n2, cy, (seeded(seed + i) - 0.5) * 0.04), pick([0x9a9284, 0x8a8478, 0xa69e90, 0x7e786c], seed + i * 3), { ch: 0.01 });
+            k.box('body', w, 0.12, T + 0.06, at(cx, r.y0 + 0.06, 0), 0x5a5048);
+            if (r.y1 >= H - 0.01) k.box('body', w, 0.12, T + 0.06, at(cx, H - 0.06, 0), 0x5a5048);
         } else {
             // Plaster over a stone plinth; timber frames it (half-timbered) or tops it.
             const plinth = Math.min(0.45, h);
@@ -148,7 +170,7 @@ export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks' } =
         const n = Math.max(1, Math.round(W / 0.3));
         for (let i = 0; i < n; i++) {
             const pw = W / n;
-            k.box('body', pw - 0.02, 0.03, D - 0.02, at(-W / 2 + pw * (i + 0.5), th / 2 - 0.015, 0), pick(WORLD.timber, i * 3.3), { ch: 0.005 });
+            k.box('body', pw - 0.02, 0.03, D - 0.02, at(-W / 2 + pw * (i + 0.5), th / 2 - 0.015, 0), pick(WORLD.timber, i * 3.3));
         }
     } else if (style === 'stone') {
         k.box('body', W, th - 0.03, D, at(0, -0.015, 0), 0x4c4841, { skipBottom: false });
@@ -156,7 +178,7 @@ export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks' } =
         for (let x = -W / 2; x < W / 2 - 0.01; x += 1) for (let z = -D / 2; z < D / 2 - 0.01; z += 1) {
             n++;
             const w = Math.min(1, W / 2 - x), d = Math.min(1, D / 2 - z);
-            k.box('body', w - 0.05, 0.04, d - 0.05, at(x + w / 2, th / 2 - 0.02, z + d / 2), pick(WORLD.flag, n * 2.7), { ch: 0.01 });
+            k.box('body', w - 0.05, 0.04, d - 0.05, at(x + w / 2, th / 2 - 0.02, z + d / 2), pick(WORLD.flag, n * 2.7));
         }
     } else {
         k.box('body', W, th, D, at(0, 0, 0), TOWN.dirt, { skipBottom: false });
@@ -167,8 +189,9 @@ export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks' } =
 export function buildingRoof({ width: W = 4, depth: D = 4, pitch: P = 1.8, style = 'thatch', gables = true } = {}) {
     const k = new Kit();
     const half = D / 2, S = Math.hypot(half, P), a = Math.atan2(P, half);
+    if (style === 'flat' || style === 'dome' || style === 'canvas') return _otherRoof({ W, D, P, style });
     const th = style === 'thatch' ? 0.32 : 0.14;
-    const cols = { thatch: TOWN.thatch, slate: TOWN.slate, shingle: TOWN.shingle }[style] || TOWN.thatch;
+    const cols = { thatch: TOWN.thatch, slate: TOWN.slate, shingle: TOWN.shingle, tile: [0xb05a38, 0xa4522f, 0xbc6440], copper: [0x5a9a88, 0x4e8a7a, 0x66a894] }[style] || TOWN.thatch;
     const boxes = [];
     for (const s of [1, -1]) {
         // Tilt about X: the slope rises from the eave at z = ±D/2 to the ridge.
@@ -193,6 +216,32 @@ export function buildingRoof({ width: W = 4, depth: D = 4, pitch: P = 1.8, style
         }
     }
     return { group: k.build(), boxes };
+}
+
+export const ROOF_STYLES = ['thatch', 'slate', 'shingle', 'tile', 'copper', 'flat', 'dome', 'canvas'];
+
+// Roofs that aren't two slopes: a flat roof behind a parapet (Emberwall, Sarn), a dome (Sarn, Halcyra), a canvas tent roof.
+function _otherRoof({ W, D, P, style }) {
+    const k = new Kit();
+    if (style === 'flat') {
+        k.box('body', W, 0.2, D, at(0, 0.1, 0), 0x5a5048, { skipBottom: false });
+        for (const [x, z, w, d] of [[0, D / 2, W, 0.25], [0, -D / 2, W, 0.25], [W / 2, 0, 0.25, D], [-W / 2, 0, 0.25, D]]) k.box('body', w, 0.45, d, at(x, 0.42, z), 0x4a4442, { ch: 0.03 });
+        return { group: k.build(), boxes: [{ x: 0, y: 0.1, z: 0, w: W, h: 0.2, d: D }] };
+    }
+    if (style === 'dome') {
+        const R = Math.min(W, D) / 2;
+        k.box('body', W, 0.25, D, at(0, 0.12, 0), 0xd8c8a8, { skipBottom: false });
+        k.geo('body', new THREE.SphereGeometry(R * 0.95, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), at(0, 0.24, 0, 0, 0, 0, 1, Math.max(0.5, P / R), 1), 0xe6dcc6, { flat: true });
+        k.cyl('body', 0.05, 0.12, 0.6, 6, at(0, 0.24 + P + 0.3, 0), 0xc8a85a, { flat: true });
+        return { group: k.build(), boxes: [{ x: 0, y: P / 2, z: 0, w: R * 1.6, h: P, d: R * 1.6 }] };
+    }
+    // canvas: a ridged tent roof, striped
+    const half = D / 2, a = Math.atan2(P, half), S = Math.hypot(half, P);
+    for (const s of [1, -1]) {
+        const n = Math.max(3, Math.round(W / 0.8));
+        for (let i = 0; i < n; i++) k.box('body', W / n, 0.04, S, new THREE.Matrix4().makeTranslation(-W / 2 + (i + 0.5) * W / n, P / 2, s * half / 2).multiply(new THREE.Matrix4().makeRotationX(s * a)), i % 2 ? 0xd8c8a0 : 0xa04a32);
+    }
+    return { group: k.build(), boxes: [{ x: 0, y: P / 2, z: 0, w: W, h: 0.1, d: D * 0.6 }] };
 }
 
 export function buildingStairs({ width: W = 1.2, rise: R = 3, style = 'stone' } = {}) {
@@ -230,6 +279,7 @@ export function buildingPost({ height: H = 3, style = 'timber' } = {}) {
 // ---- nature and props -----------------------------------------------------------
 
 export function tree({ height: H = 5, kind = 'oak', seed = 1 } = {}) {
+    if (!['oak', 'pine', 'dead'].includes(kind)) return treeModel({ kind, height: H, seed });     // every other climate's trees
     const k = new Kit();
     const trunkH = kind === 'pine' ? H * 0.35 : H * 0.5;
     const r = 0.16 + H * 0.02;

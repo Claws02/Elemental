@@ -135,6 +135,17 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     check(['raise', 'freeze', 'lava', 'firestorm', 'mud', 'glide'].every(a => sb.can(a)), 'the sandbox knows every ability');
 }
 
+// ---- the building list in the schema matches the prefabs -----------------------------------------------
+{
+    const { PREFABS } = await import('../src/data/prefabs.js');
+    const { TYPES } = await import('../src/scene/schema.js');
+    const listed = TYPES.prefab.props.prefab.options || TYPES.prefab.props.prefab.values || [];
+    const names = Object.keys(PREFABS);
+    check(names.every(n => listed.includes(n)) && listed.every(n => names.includes(n)), `every prefab building is in the schema's list, and only those (${names.length})`);
+    const bad = names.flatMap(n => PREFABS[n].pieces.filter(p => !TYPES[p.type]).map(p => `${n}:${p.type}`));
+    check(bad.length === 0, `every prefab piece is a known type${bad.length ? ': ' + bad.join(', ') : ''}`);
+}
+
 console.log(pass.map(p => '  ok   ' + p).join('\n'));
 if (fail.length) { console.log(fail.map(p => '  FAIL ' + p).join('\n')); console.log('UNIT FAIL'); process.exit(1); }
 console.log('UNIT PASS');

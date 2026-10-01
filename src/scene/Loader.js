@@ -25,7 +25,8 @@ import { flagstoneFloor } from '../art/PropModels.js';
 import { groundBase } from '../art/TownModels.js';
 import { Terrain, decodeTerrain } from '../world/Terrain.js';
 import { Ground } from '../world/Ground.js';
-import { WaterBodies, waterSheet } from '../world/WaterBodies.js';
+import { WaterBodies } from '../world/WaterBodies.js';
+import { batchScenery } from '../world/Batcher.js';
 import { CATALOG, withDefaults, expandPrefab } from './Catalog.js';
 import { Wires } from './Wires.js';
 import { PropReset } from './PropReset.js';
@@ -71,10 +72,12 @@ export function buildScene(scene, data, { flag = () => undefined, state = () => 
 
     // ---- objects -----------------------------------------------------------------
     const ctx = { scene, world };
-    for (const raw of flatObjects(data)) {
-        let it = withDefaults(raw);
-        // On terrain, an object's y is above the ground where it stands (water keeps its absolute level).
-        if (world.terrain && !CATALOG[it.type]?.absolute) it = { ...it, y: (it.y || 0) + Ground.height(it.x || 0, it.z || 0) };
+    // On terrain, an object's y is above the ground where it stands (water keeps its absolute level). A prefab
+    // is seated once, at its own centre, before it becomes pieces: its walls must not follow the slope apart.
+    const seated = !world.terrain ? data : { ...data, objects: (data.objects || []).map(o =>
+        CATALOG[o.type]?.absolute ? o : { ...o, y: (o.y || 0) + Ground.height(o.x || 0, o.z || 0) }) };
+    for (const raw of flatObjects(seated)) {
+        const it = withDefaults(raw);
         if (it.showWhen && !whenHolds(it.showWhen, { flag, state })) continue;     // not in this world state
         const c = CATALOG[it.type];
         if (!c) { console.warn(`[scene] unknown type "${it.type}" (${it.id}): skipped`); continue; }
@@ -84,6 +87,9 @@ export function buildScene(scene, data, { flag = () => undefined, state = () => 
         world.objects.set(it.id, inst);
     }
     for (const inst of world.objects.values()) inst.link?.(world);
+    // A big scene's scenery: merged into a few meshes (world/Batcher.js).
+    world.batches = [];
+    if (world.terrain) batchScenery(scene, world);
     world.barricade = world.barricades[0] || null;
     world.spawn = world.spawns.start || Object.values(world.spawns)[0] || { x: 0, y: 0, z: 0, facing: Math.PI };
 
