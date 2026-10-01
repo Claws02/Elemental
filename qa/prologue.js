@@ -96,7 +96,7 @@ const SHOTS = path.join(__dirname, 'shots');
             const t0 = performance.now();
             let bird = null;
             while (!bird && performance.now() - t0 < 8000) {
-                bird = __EL.creatures.all.find(c => c.state !== 'dead' && !c.gone && __screen(new __EL.THREE.Vector3(c.pos.x, c.pos.y, c.pos.z)).on && Math.hypot(c.pos.x - __EL.player.position.x, c.pos.z - __EL.player.position.z) < 10);
+                bird = __EL.creatures.all.find(c => { if (c.state === 'dead' || c.gone) return false; const q = __screen(new __EL.THREE.Vector3(c.pos.x, c.pos.y, c.pos.z)); return q.on && !__EL.input.inMoveZone(q.x, q.y) && Math.hypot(c.pos.x - __EL.player.position.x, c.pos.z - __EL.player.position.z) < 10; });     // not under the move stick (bottom-left)
                 if (!bird) await new Promise(r => setTimeout(r, 100));
             }
             if (!bird) return { err: 'no bird on screen' };

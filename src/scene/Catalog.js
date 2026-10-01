@@ -552,7 +552,7 @@ export const CATALOG = {
             ctx.world.creatureGroups.push(g);
             const inst = {
                 mesh, entries: [], group: g,
-                signal: name => name === 'engaged' ? g.engaged : name === 'gone' ? g.spawned && g.members.every(c => c.gone || c.state === 'dead' || c.state === 'flee') : false,
+                signal: name => name === 'engaged' ? g.engaged : name === 'gone' ? g.spawned && g.members.every(c => c.gone || c.state === 'dead' || c.state === 'flee' || c.state === 'off') : name === 'alarm' ? !!g.alarm : name === 'buried' ? !!g.buried : false,
                 act(name) { if (name === 'release') ctx.world.reveal(it.id); },
             };
             g.inst = inst;

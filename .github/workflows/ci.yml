@@ -34,6 +34,7 @@ jobs:
           node qa/prologue.js
           node qa/abilities.js
           node qa/terrain.js
+          node qa/bestiary.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

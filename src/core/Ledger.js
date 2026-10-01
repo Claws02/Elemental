@@ -61,7 +61,7 @@ export class Ledger {
             EventBus.on(EV.CREATURE, e => {
                 if (e.cause !== 'player') return;
                 if (e.to === 'dead') this.add('killed', 1);
-                if (e.to === 'fled') this.add('spared', 1);
+                if (e.to === 'fled' || e.to === 'disabled') this.add('spared', 1);
             }),
         ];
     }

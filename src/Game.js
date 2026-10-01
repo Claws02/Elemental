@@ -106,6 +106,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
     const ice = new Ice({ scene, fire, fx, creatures });
+    Object.assign(creatures, { ice, water });          // the frostmaw's walls, the brinecoil's charged streams
     const storm = new Firestorm({ fire, fx, creatures });
     const mud = new Mud({ scene, fire, creatures, player });
     const glide = new Glide({ player, prog, fire });

@@ -75,6 +75,7 @@ export const EV = {
     GLIDE:              'Glide',
     FLAME_SPILL:        'FlameSpill',
     DOOR:               'Door',
+    ALARM:              'Alarm',
     CHARM:              'Charm',
     LESSON:             'Lesson',
     PLATE:              'Plate',

@@ -47,7 +47,84 @@ export const SPECIES = {
         fears: ['fire'], fleeAlone: true, fleeAt: 0.35,
         look: { body: 0x4a5040, thorn: 0x2e3326, eye: 0xd8e05a },
     },
+
+    // ---- the rest of the bestiary (phase 5): each answers to what it physically is ----------------------
+    shellback: {
+        name: 'Shellback', behaviour: 'tank',
+        hp: 70, radius: 0.85, mass: 220, speed: 1.6, sense: 14, reach: 1.9,
+        attack: { damage: 18, every: 2.5, knock: 6 },
+        weak: { impact: 0.1, fire: 0.25, water: 0.1, wind: 0, flipped: 5 },     // the shell takes it all, until it is on its back
+        flipTime: 7, fears: [], fleeAt: 0.2,
+        look: { shell: 0x5a6a4a, plate: 0x4a5a3c, skin: 0x8a8a6a, eye: 0xd8e05a },
+    },
+    cindermite: {
+        name: 'Cindermite', behaviour: 'swarm',
+        hp: 5, radius: 0.22, mass: 1.5, speed: 5.5, sense: 18, reach: 0.7,
+        attack: { damage: 4, every: 0.8 },
+        weak: { impact: 2, fire: 0, water: 4, wind: 1.5 },                     // heat is what it eats; water kills it
+        seeks: 'heat', fears: [], fleeAt: 0,
+        look: { body: 0x2a2220, glow: 0xff7a2a },
+    },
+    mudling: {
+        name: 'Mudling', behaviour: 'lumber',
+        hp: 40, radius: 0.6, mass: 90, speed: 2.2, sense: 15, reach: 1.5,
+        attack: { damage: 14, every: 2.2, knock: 4 },
+        weak: { impact: 0, fire: 0.6, water: 0, wind: 0.2, baked: 4 },           // stones sink into it; baked, a stone shatters it
+        bakeAt: 10, bakeTime: 8, splits: true, fears: [], fleeAt: 0,
+        look: { body: 0x5a4632, dark: 0x3e3022, baked: 0xa88a62, eye: 0xd8c07a },
+    },
+    brinecoil: {
+        name: 'Brinecoil', behaviour: 'swim',
+        hp: 45, radius: 0.5, mass: 40, speed: 4, sense: 16, reach: 1.6,
+        attack: { damage: 16, every: 2.5, shock: 6 },                           // shocks the water: metres around it
+        weak: { impact: 1, fire: 0.6, water: 0, wind: 0.3 },
+        fears: [], fleeAt: 0.3, frozenFor: 9,                                   // ice pins it far longer than most
+        look: { body: 0x2a5a6a, belly: 0x8ab8b8, glow: 0x9ae8ff },
+    },
+    galekite: {
+        name: 'Gale-kite', behaviour: 'kite', flies: true,
+        hp: 26, radius: 0.55, mass: 6, speed: 7.5, sense: 26, reach: 1.6,
+        cruise: [8, 12], attack: { damage: 12, every: 4 },
+        weak: { impact: 3, fire: 1, water: 1, wind: 1, grounded: 2 },            // weight or wind brings it down
+        groundTime: 5, fears: [], fleeAt: 0.35,
+        look: { body: 0x6a8aa8, wing: 0x8aa8c4, under: 0xd8e4ec, eye: 0xffffff },
+    },
+    frostmaw: {
+        name: 'Frostmaw', behaviour: 'freezer',
+        hp: 60, radius: 0.65, mass: 110, speed: 3.4, sense: 18, reach: 1.7,
+        attack: { damage: 14, every: 2.4, chill: 3 },
+        weak: { impact: 1, fire: 1.4, water: 0, wind: 0.4, thawed: 2 },          // fire thaws it: slow and clumsy
+        wallEvery: 7, thawTime: 6, fears: [], fleeAt: 0.25,
+        look: { body: 0xa8c8d8, scale: 0x7aa0b8, frost: 0xe8f6ff, eye: 0x6ad8ff },
+    },
+    glasswight: {
+        name: 'Glass-wight', behaviour: 'guard',
+        hp: 50, radius: 0.55, mass: 140, speed: 2.8, sense: 10, reach: 1.8,
+        attack: { damage: 16, every: 2 },
+        weak: { impact: 2.5, fire: 0, water: 0, wind: 0 },                       // only a heavy blow; fire bounces back at you
+        shatterAt: 12, reflects: 0.6, guardRange: 9, fears: [], fleeAt: 0,
+        look: { body: 0xa8d8d0, edge: 0x7fc8c0, glow: 0x7ff0e0 },
+    },
+    sentinel: {
+        name: 'Lantern Sentinel', behaviour: 'sentinel',
+        hp: 999, radius: 0.75, mass: 400, speed: 1.2, sense: 16, reach: 2,
+        attack: { damage: 5, bind: 14 },                                        // binding light: holds you, wears you down
+        weak: { impact: 0, fire: 0, water: 0, wind: 0 },
+        lamps: 3, lampWater: 1.2, alarmAt: 15, fears: [], fleeAt: 0,
+        look: { body: 0x5a5e66, trim: 0xc8a85a, lamp: 0xffd68a, dark: 0x2a2c30 },
+    },
+    wellspawn: {
+        name: 'Wellspawn', behaviour: 'shifter',
+        hp: 55, radius: 0.6, mass: 60, speed: 3.6, sense: 18, reach: 1.6,
+        attack: { damage: 12, every: 2.2 },
+        weak: { impact: 0, fire: 0, water: 0, wind: 0 },                         // only the opposite of what it is now
+        shiftEvery: 4, fears: [], fleeAt: 0,
+        look: { core: 0xffffff },
+    },
 };
+
+// The element a wellspawn is now, and what answers it.
+export const OPPOSITE = { fire: 'water', water: 'impact', earth: 'wind', air: 'fire' };
 
 // The elite: a bigger, angrier version of a species (the scene sets `elite`).
 export const ELITE = { hp: 2.2, damage: 1.5, scale: 1.3, speed: 1.1 };

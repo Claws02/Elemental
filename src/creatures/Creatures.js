@@ -30,6 +30,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 import { SPECIES, ELITE } from '../data/creatures.js';
 import { ICE, MUD } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
+import { BEHAVIOURS } from './Behaviours.js';
 import { Ground } from '../world/Ground.js';
 
 const G = 22;                 // the world's gravity (Physics.init)
@@ -42,6 +43,8 @@ export class Creatures {
         this.all = [];
         this.time = 0;
         this.off = [
+            // Stone raised under a creature: some kinds care (a shellback flips).
+            EventBus.on(EV.EARTH_RAISED, e => { for (const c of this.all) c.B?.onRaised?.(c, e.x, e.z); }),
             EventBus.on(EV.EXPLOSION, e => {
                 if (!e.pos) return;
                 for (const c of this.all) {
@@ -72,8 +75,47 @@ export class Creatures {
     update(dt) {
         this.time += dt;
         for (const g of this.world.creatureGroups) if (!g.spawned && !g.inst.hidden) this._spawnGroup(g);
+        for (const g of this.world.creatureGroups) if (g.spawned && g.item.vent) this._vent(g, dt);
         for (const c of this.all) c.update(dt);
         for (const c of this.all.filter(c => c.gone)) this._remove(c);
+    }
+
+    /** A struck mudling splits: two halves where it stood, at half its strength (they don't split again). */
+    splitMudling(c) {
+        const g = c.group;
+        (g.splitGen ||= new Map());
+        for (const s of [-1, 1]) {
+            const id = `${c.id}_${s > 0 ? 'b' : 'a'}`;
+            g.splitGen.set(id, 1);
+            const pos = new THREE.Vector3(c.pos.x + s * 0.7, c.pos.y + 0.3, c.pos.z);
+            const m = new Creature(this, c.sp, g, id, pos, false);
+            m.maxHp = m.hp = c.hp / 2;
+            m.engaged = true;
+            m.model.root.scale.setScalar(0.72);
+            g.members.push(m);
+            this.all.push(m);
+        }
+        c.gone = true;
+        EventBus.emit(EV.CREATURE, { id: c.id, species: c.group.item.species, to: 'split' });
+    }
+
+    // A vent keeps pouring out more (up to the group's count alive) until something blocks its mouth.
+    _vent(g, dt) {
+        const it = g.item;
+        const blocked = [...Physics.all()].some(e => {
+            if (e.data?.creature || e.data?.ground || e.tier === TIER.PLAYER) return false;
+            const p = e.body.position;
+            return Math.hypot(p.x - it.x, p.z - it.z) < 1.3 && p.y < Ground.height(it.x, it.z) + 3 && (e.body.mass > 3 || e.data?.column);
+        });
+        if (blocked && !g.buried) { g.buried = true; EventBus.emit(EV.CREATURE, { id: it.id, species: it.species, to: 'buried' }); }
+        if (g.buried) return;
+        g.ventT = (g.ventT ?? 2) - dt;
+        if (g.ventT > 0 || this.alive(g).length >= (it.count || 1)) return;
+        g.ventT = 2.5;
+        const sp = SPECIES[it.species];
+        const c = new Creature(this, sp, g, `${it.id}_v${++g.ventN || (g.ventN = 1)}`, new THREE.Vector3(it.x, (it.y || 0) + sp.radius + 0.2, it.z), false);
+        g.members.push(c);
+        this.all.push(c);
     }
 
     _remove(c) {
@@ -83,7 +125,7 @@ export class Creatures {
     }
 
     /** The members still standing and not running, in group `g`. */
-    alive(g) { return g.members.filter(c => !c.gone && c.state !== 'dead' && c.state !== 'flee'); }
+    alive(g) { return g.members.filter(c => !c.gone && c.state !== 'dead' && c.state !== 'flee' && c.state !== 'off'); }
 }
 
 class Creature {
@@ -124,6 +166,9 @@ class Creature {
         this.entry = Physics.add({ body, tier: TIER.INTERACTIVE, id, data: { creature: this, radius: r } });
         this.entry.spawn = null;
         body.addEventListener('collide', e => this._onCollide(e));
+        // The rest of the bestiary (creatures/Behaviours.js): its own mind, its own answer to the elements.
+        this.B = BEHAVIOURS[sp.behaviour] || null;
+        this.B?.init?.(this);
     }
 
     get pos() { return this.body.position; }
@@ -142,10 +187,11 @@ class Creature {
     /** An element acts on it. `amount` is in damage before its weaknesses. */
     react(kind, amount, cause = 'environment') {
         if (this.state === 'dead' || this.gone) return;
+        if (this.B?.react) { amount = this.B.react(this, kind, amount, cause); if (amount === null) return; }
         if (this.sp.fears.includes(kind) && amount > 0.02) this.scared = Math.max(this.scared, 3);
         if (kind === 'water' && this.sp.soakedFalls && amount > 0.01) this.soaked = 3;
         if (kind === 'wind' && this.sp.behaviour === 'flyer' && amount > 0.5) this.tumble = 1;
-        const w = (this.sp.weak[kind] ?? 1) * (this.state === 'stunned' ? this.sp.weak.stunned || 1 : 1) * (this.frozen > 0 && kind === 'impact' ? ICE.shatter : 1);
+        const w = (this.B?.weakness ? this.B.weakness(this, kind) : (this.sp.weak[kind] ?? 1)) * (this.state === 'stunned' ? this.sp.weak.stunned || 1 : 1) * (this.frozen > 0 && kind === 'impact' ? ICE.shatter : 1);
         // A fragile flock (a first fight): any real hit, of any kind, kills.
         const dmg = this.group.item.fragile && amount > 0.02 ? this.hp + 1 : amount * w;
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
@@ -157,7 +203,8 @@ class Creature {
 
     /** Locked in ice for `secs`: no moving, no attacking; a flyer drops; a hard hit does more (ICE.shatter). */
     freeze(secs, cause = 'environment') {
-        if (this.state === 'dead' || this.gone) return;
+        if (this.state === 'dead' || this.gone || this.sp.behaviour === 'freezer') return;     // a frostmaw is made of it
+        secs = this.sp.frozenFor || secs;
         this.frozen = Math.max(this.frozen, secs);
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
         if (!this.ice) {
@@ -203,7 +250,7 @@ class Creature {
             return;
         }
 
-        const flyer = sp.behaviour === 'flyer';
+        const flyer = sp.behaviour === 'flyer' || !!sp.flies;
         if (this.frozen > 0) {
             this.frozen -= dt;
             b.velocity.x = 0; b.velocity.z = 0;           // gravity still has it: a frozen bird falls
@@ -212,7 +259,9 @@ class Creature {
             return;
         }
         // Flyers hold themselves up, unless wet or tumbling.
-        if (flyer && !this.soaked && !this.tumble) b.velocity.y += G * dt;
+        if (flyer && !this.soaked && !this.tumble && !this.grounded) b.velocity.y += G * dt;
+        // A state its own kind holds it in (a shellback on its back, a sentinel gone dark).
+        if (this.B?.hold?.(this, dt)) { this._pose(dt); return; }
 
         // Standing in fire.
         if (this.sys.fire.burningNear(b.position, 1.1)) this.react('fire', 14 * dt, 'environment');
@@ -253,7 +302,9 @@ class Creature {
             break;
         }
         default:
-            if (!this.engaged) this._wander(dt, move, speed);
+            if (this.B?.own) this.B.update(this, dt, move, speed, dist);
+            else if (!this.engaged) this._wander(dt, move, speed);
+            else if (this.B) this.B.update(this, dt, move, speed, dist);
             else if (sp.behaviour === 'charge') this._charge(dt, move, speed, dist);
             else if (sp.behaviour === 'pack') this._pack(dt, move, speed, dist);
             else if (flyer) this._fly(dt, move, speed, dist);
@@ -408,6 +459,7 @@ class Creature {
             p.wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * Math.sin(T * 14 * beat + i) * 0.7 * beat; });
             if (this.state === 'dive') r.rotation.x = 0.5;
         }
+        this.B?.pose?.(this, dt, T);
         if (this.state === 'windup') r.rotation.x = -0.12 + Math.sin(T * 30) * 0.03;      // pawing the ground: a readable tell
         if (this.state === 'stunned') r.rotation.z = Math.sin(T * 6) * 0.15;
         const m = this.model.ownMaterials?.body;

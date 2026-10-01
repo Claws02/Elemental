@@ -148,10 +148,10 @@ export const TYPES = {
     creature: {
         label: 'Creatures', group: 'Creatures',
         props: {
-            species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound']),
+            species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound', 'shellback', 'cindermite', 'mudling', 'brinecoil', 'galekite', 'frostmaw', 'glasswight', 'sentinel', 'wellspawn']),
             count: int('How many', 3, 1, 12), spread: num('Spread (m)', 3, 0, 30, 0.5),
             aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), embers: bool('Emberwings drop embers', true),
-            fragile: bool('Fragile: any hit kills (a first fight)', false), damage: num('Damage they do (×)', 1, 0, 3, 0.05), hidden: HIDDEN,
+            fragile: bool('Fragile: any hit kills (a first fight)', false), vent: bool('Pours from a vent until it is blocked (Cindermites)', false), damage: num('Damage they do (×)', 1, 0, 3, 0.05), hidden: HIDDEN,
         },
         signals: ['gone', 'engaged', 'visible'],
         actions: ['release'],
