@@ -36,6 +36,7 @@ export const ICE = {
     breakSpeed: 6,      // a thing hitting it this fast…
     breakMass: 8,       // …and this heavy breaks a segment (a thrown rock, a charging boar)
     most: 3,            // arches standing at once
+    floe: 1.7,          // radius of the floe a stream frozen on open water leaves
 };
 
 // Lava: Earth + Fire (elements/Lava.js).

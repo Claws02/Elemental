@@ -34,6 +34,7 @@ import { Building, buildingModel } from '../world/Building.js';
 import { Npc, npcModel } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
 import { EventBus, EV } from '../core/EventBus.js';
+import { waterSheet } from '../world/WaterBodies.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { SPECIES } from '../data/creatures.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
@@ -569,6 +570,23 @@ export const CATALOG = {
         spawn() { throw new Error('prefabs are expanded by the loader'); },
     },
 
+    water: {
+        absolute: true,             // its level is a height, not a height above the ground
+        model: it => waterSheet(it),
+        spawn(ctx, it) {
+            const m = waterSheet(it);
+            m.position.set(it.x, it.level, it.z);
+            m.rotation.y = it.rotY || 0;
+            ctx.scene.add(m);
+            const body = ctx.world.waters.add(it, m);
+            const inst = { mesh: m, entries: [], water: body };
+            inst.wire = sys => {
+                const thing = sys.interactables.add({ id: it.id, mesh: m, material: 'water' });
+                sys.water.addSource(thing, ctx.world.waters.nearest(body, new THREE.Vector3(it.x, it.level, it.z)), p => ctx.world.waters.nearest(body, p));
+            };
+            return inst;
+        },
+    },
     patch: {
         model: it => groundPatch(it, it.x * 7 + it.z * 3).group,
         spawn(ctx, it) {

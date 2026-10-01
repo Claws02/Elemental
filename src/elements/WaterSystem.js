@@ -34,6 +34,7 @@ import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
 import { WATER } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { WATER };
@@ -41,7 +42,6 @@ export { WATER };
 const SEG = 24, RAD = 6;
 const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();
-const _ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export class WaterSystem {
     constructor({ scene, camera, interactables, channel, hero, fire, fx, solids }) {
@@ -63,14 +63,16 @@ export class WaterSystem {
         scene.add(this.drops.points);
     }
 
-    addSource(thing, surface) { this.sources.push({ thing, surface }); }
+    /** A source: its surface point, or for a lake a function giving the point nearest the hero (fixed when a stream starts). */
+    addSource(thing, surface, surfaceFor = null) { this.sources.push({ thing, surface, surfaceFor }); }
     isSource(thing) { return this.sources.some(s => s.thing === thing); }
 
     // ---- the stream --------------------------------------------------------
 
     beginStream(thing) {
-        const source = this.sources.find(s => s.thing === thing);
+        let source = this.sources.find(s => s.thing === thing);
         if (!source) return false;
+        if (source.surfaceFor) source = { ...source, surface: source.surfaceFor(this.hero.position) };
         const start = source.surface.clone();
         this.stream = { source, want: start.clone().setY(start.y + 1.5), target: start.clone().setY(start.y + 1.5), cur: start.clone(), dir: new THREE.Vector3(0, 1, 0) };
         this.tube.visible = true;
@@ -91,18 +93,19 @@ export class WaterSystem {
         const meshes = this.solids.filter(m => m !== own)
             .concat(this.interactables.things.filter(t => t.material !== 'waterOrb' && t.mesh !== own).map(t => t.mesh));
         const hit = _ray.intersectObjects(meshes, true)[0];
-        const g = _ray.ray.intersectPlane(_ground, new THREE.Vector3());
+        const g = Ground.raycast(_ray.ray);
         let p = hit ? hit.point.clone() : g;
         if (hit && g && _ray.ray.origin.distanceTo(g) < hit.distance) p = g;
         if (!p) p = _ray.ray.at(60, new THREE.Vector3());       // the sky: as far as it gets
-        p.y = Math.max(p.y, 0.15);
+        p.y = Math.max(p.y, Ground.height(p.x, p.z) + 0.15);
         s.want.copy(p);
         const from = s.source.surface;
         const off = p.clone().sub(from);
         if (off.length() > WATER.reach) {
             // Too far: it gives out at its reach and falls, landing short.
             s.target.copy(from).addScaledVector(off.normalize(), WATER.reach);
-            s.target.y = Math.max(0.15, s.target.y * 0.35);
+            const gy = Ground.height(s.target.x, s.target.z);
+            s.target.y = Math.max(gy + 0.15, gy + (s.target.y - gy) * 0.35);
         } else {
             s.target.copy(p);
         }

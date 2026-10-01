@@ -40,6 +40,7 @@ export function init(canvas) {
     scene.add(hemi);
     mood = null;
     setMood.current = 'day';
+    view.k = 1;
     sun = new THREE.DirectionalLight(0xffe2b8, 1.9 * Math.PI);
     sun.castShadow = true;
     sun.shadow.mapSize.set(quality.shadowSize, quality.shadowSize);
@@ -96,8 +97,8 @@ function _applyMood(a, b, k) {
     hemi.groundColor.copy(mix(a.hemiGround, b.hemiGround));
     hemi.intensity = (a.hemiI + (b.hemiI - a.hemiI) * k) * Math.PI;
     scene.fog.color.copy(mix(a.skyLow, b.skyLow));
-    scene.fog.near = a.fogNear + (b.fogNear - a.fogNear) * k;
-    scene.fog.far = a.fogFar + (b.fogFar - a.fogFar) * k;
+    scene.fog.near = (a.fogNear + (b.fogNear - a.fogNear) * k) * view.k;
+    scene.fog.far = (a.fogFar + (b.fogFar - a.fogFar) * k) * view.k;
     renderer.toneMappingExposure = a.exposure + (b.exposure - a.exposure) * k;
     // The sky texture is rebuilt at the ends and every quarter of the way, not every frame.
     const q = Math.round(k * 4);
@@ -108,6 +109,18 @@ function _applyMood(a, b, k) {
         scene.background?.dispose?.();
         scene.background = _skyTexture(hi, lo);
     }
+}
+
+// How far the scene can be seen: the moods' fog is for a courtyard; a region on terrain sees further.
+const view = { k: 1 };
+/** Set how far the world is visible (metres to the far fog at day; 95 is the courtyard). */
+export function setView(far = 95) {
+    view.k = Math.max(0.5, far / MOODS.day.fogFar);
+    camera.far = Math.max(200, far * 1.6);
+    camera.updateProjectionMatrix();
+    _applyMood.q = -1;
+    const m = MOODS[setMood.current] || MOODS.day;
+    _applyMood(m, m, 1);
 }
 
 /** Change the light to `name` over `dur` seconds (0: at once). */

@@ -30,13 +30,13 @@ import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
 import { AIR } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { AIR };
 
 const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();
-const _ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export class AirSystem {
     constructor({ scene, camera, interactables, channel, hero, fire, solids }) {
@@ -80,7 +80,7 @@ export class AirSystem {
         _ray.setFromCamera(_v2, this.camera);
         const meshes = this.solids.concat(this.interactables.things.map(t => t.mesh));
         const hit = _ray.intersectObjects(meshes, true)[0];
-        const g = _ray.ray.intersectPlane(_ground, new THREE.Vector3());
+        const g = Ground.raycast(_ray.ray);
         let p = hit ? hit.point : g;
         if (hit && g && _ray.ray.origin.distanceTo(g) < hit.distance) p = g;
         const o = this.origin();

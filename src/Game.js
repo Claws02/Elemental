@@ -74,6 +74,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const prog = new Progression(profile, { session });
     if (st.resetProgress && fresh) prog.reset();
     Renderer.setMood(st.mood || 'day');
+    Renderer.setView(st.view?.far || (st.terrain ? 170 : 95));
     const world = buildScene(scene, data, { flag: n => prog.flags[n], state: id => session.state(id) });
     const arrive = spawnAt || world.spawns[at] || world.spawn;
     const player = new PlayerController(scene, arrive, session.work.custom?.look || null);
@@ -179,6 +180,21 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         stick: s => hud.stick(s),
     });
 
+    // A big scene: what is far off is not drawn (the fog has it by then). Checked a few times a second.
+    const CULL = (st.view?.far || 170) * 0.95;
+    let cullT = 0;
+    const cull = dt => {
+        if (!world.terrain || (cullT -= dt) > 0) return;
+        cullT = 0.3;
+        const c = camera.position;
+        for (const inst of world.objects.values()) {
+            const m = inst.mesh;
+            if (!m || inst.hidden || inst.type === 'water') continue;
+            const it = inst.item;
+            m.visible = Math.hypot((it.x || 0) - c.x, (it.z || 0) - c.z) < CULL;
+        }
+    };
+
     const _size = new THREE.Vector2();
     const frameInfo = { held: null, hero: player.position };
     let last = performance.now(), raf = 0, running = true;
@@ -212,6 +228,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         world.update(dt, frameInfo);
         vitals.update(dt);
         surges.update(dt);
+        world.waters.update(player);
+        cull(dt);
         if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }
         hud.vitals?.(vitals.danger);
         hud.health?.(vitals.health / 100);
@@ -237,6 +255,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
         session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info() }),
+        setView: far => Renderer.setView(far),
+        setMood: (n, s) => Renderer.setMood(n, s),
         throwRockAt(i, target, speed = 30) {
             const e = world.rocks[i];
             const dir = new THREE.Vector3(target.x, target.y, target.z).sub(e.mesh.position).normalize();

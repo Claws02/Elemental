@@ -13,6 +13,7 @@
 // ============================================================
 
 import { THREE } from '../engine/lib.js';
+import { Ground } from '../world/Ground.js';
 
 const MIN_DIST = 3.2, MAX_DIST = 13;
 const PITCH_MIN = -0.15, PITCH_MAX = 1.2;
@@ -61,7 +62,8 @@ export class CameraRig {
         // In fast, out slow.
         this.curDist += (d - this.curDist) * (d < this.curDist ? 1 - Math.exp(-25 * dt) : 1 - Math.exp(-3 * dt));
         this.cam.position.copy(this.focus).addScaledVector(dir, this.curDist);
-        if (this.cam.position.y < 0.3) this.cam.position.y = 0.3;
+        const gy = Ground.height(this.cam.position.x, this.cam.position.z) + 0.3;
+        if (this.cam.position.y < gy) this.cam.position.y = gy;
         this.cam.lookAt(this.focus);
     }
 }

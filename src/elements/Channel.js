@@ -24,6 +24,7 @@ import { THREE } from '../engine/lib.js';
 import { ELEMENT } from '../art/Palette.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { HOLD } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { HOLD };
@@ -146,7 +147,8 @@ export class Channel {
                 const off = target.clone().sub(hand);
                 if (off.length() > HOLD.reach) target.copy(hand).addScaledVector(off.normalize(), HOLD.reach);
                 const r = entry.data.radius || 0.5;
-                if (target.y < r + 0.15) target.y = r + 0.15;
+                const gy = Ground.height(target.x, target.z);
+                if (target.y < gy + r + 0.15) target.y = gy + r + 0.15;
                 // Low Earth Control: the held stone drifts about the finger.
                 const aim = target.clone();
                 if (this.held.element === 'earth') {

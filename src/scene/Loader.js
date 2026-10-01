@@ -23,6 +23,9 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { flagstoneFloor } from '../art/PropModels.js';
 import { groundBase } from '../art/TownModels.js';
+import { Terrain, decodeTerrain } from '../world/Terrain.js';
+import { Ground } from '../world/Ground.js';
+import { WaterBodies, waterSheet } from '../world/WaterBodies.js';
 import { CATALOG, withDefaults, expandPrefab } from './Catalog.js';
 import { Wires } from './Wires.js';
 import { PropReset } from './PropReset.js';
@@ -52,18 +55,26 @@ export function buildScene(scene, data, { flag = () => undefined, state = () => 
         objects: new Map(), creatureGroups: [], creatures: null, spawns: {}, spawn: null, sys: null, rising: [], onExit: null, session: null,
     };
 
-    // ---- ground ----------------------------------------------------------------
-    const g = st.ground || { half: 14, style: 'flagstone' };
-    scene.add(g.style === 'flagstone' ? flagstoneFloor(g.half) : groundBase(g.half, g.style));
-    const ground = new CANNON.Body({ mass: 0, material: Physics.material('ground') });
-    ground.addShape(new CANNON.Plane());
-    ground.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    Physics.add({ body: ground, tier: TIER.STATIC, id: 'Ground' });
+    // ---- ground: a height field (terrain scenes), or a flat floor ----------------------
+    Ground.reset();
+    world.waters = Ground.waters = new WaterBodies();
+    if (st.terrain) {
+        world.terrain = Ground.terrain = new Terrain(decodeTerrain(st.terrain)).build(scene);
+    } else {
+        const g = st.ground || { half: 14, style: 'flagstone' };
+        scene.add(g.style === 'flagstone' ? flagstoneFloor(g.half) : groundBase(g.half, g.style));
+        const ground = new CANNON.Body({ mass: 0, material: Physics.material('ground') });
+        ground.addShape(new CANNON.Plane());
+        ground.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+        Physics.add({ body: ground, tier: TIER.STATIC, id: 'Ground', data: { ground: true } });
+    }
 
     // ---- objects -----------------------------------------------------------------
     const ctx = { scene, world };
     for (const raw of flatObjects(data)) {
-        const it = withDefaults(raw);
+        let it = withDefaults(raw);
+        // On terrain, an object's y is above the ground where it stands (water keeps its absolute level).
+        if (world.terrain && !CATALOG[it.type]?.absolute) it = { ...it, y: (it.y || 0) + Ground.height(it.x || 0, it.z || 0) };
         if (it.showWhen && !whenHolds(it.showWhen, { flag, state })) continue;     // not in this world state
         const c = CATALOG[it.type];
         if (!c) { console.warn(`[scene] unknown type "${it.type}" (${it.id}): skipped`); continue; }

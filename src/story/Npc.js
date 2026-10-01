@@ -26,6 +26,7 @@ import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { buildHero, HeroAnimator } from '../art/HeroModel.js';
+import { Ground } from '../world/Ground.js';
 
 export const LOOKS = {
     cael: {
@@ -117,6 +118,7 @@ export class Npc {
         if (d < 0.6) { this.speed = 0; return true; }
         const step = Math.min(d, v * dt);
         r.x += dx / d * step; r.z += dz / d * step;
+        r.y = Ground.height(r.x, r.z);
         this.entry.body.position.set(r.x, r.y + 0.45, r.z);
         this.entry.body.aabbNeedsUpdate = true;
         this.speed = v;

@@ -19,6 +19,7 @@
 // ============================================================
 
 import { EventBus, EV } from '../core/EventBus.js';
+import { Ground } from '../world/Ground.js';
 
 export const VITALS = {
     max: 100,
@@ -78,7 +79,7 @@ export class Vitals {
         if (this.dead) return;
         const b = this.player.body, p = this.player.position;
         // Out of the world.
-        if (b.position.y < VITALS.killY) { this.health = 0; this._die('fell'); return; }
+        if (b.position.y < Ground.height(b.position.x, b.position.z) + VITALS.killY) { this.health = 0; this._die('fell'); return; }
         // Landing: the downward speed just before it stopped.
         const vy = b.velocity.y;
         if (this._vy < -VITALS.fallSafe && vy > this._vy + 8) this.hurt((-this._vy - VITALS.fallSafe) * VITALS.fallPer, 'fall');

@@ -26,9 +26,10 @@ import { Kit, at, seeded } from '../engine/Kit.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { EARTH } from '../data/elements.js';
 import { WORLD } from '../art/Palette.js';
+import { Ground } from '../world/Ground.js';
 
 const R = () => EARTH.raise;
-const _ray = new THREE.Raycaster(), _v2 = new THREE.Vector2(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3();
+const _ray = new THREE.Raycaster(), _v2 = new THREE.Vector2(), _hit = new THREE.Vector3();
 
 /** The column's model: stacked, jittered blocks, earth still on top. Full height, top at y = 0. */
 export function columnModel(seed, size, height) {
@@ -56,7 +57,9 @@ export class Earthworks {
     groundAt(x, y) {
         _v2.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
         _ray.setFromCamera(_v2, this.camera);
-        if (!_ray.ray.intersectPlane(_plane, _hit)) return null;
+        const g = Ground.raycast(_ray.ray);
+        if (!g) return null;
+        _hit.copy(g);
         const h = this.hero.position;
         if (Math.hypot(_hit.x - h.x, _hit.z - h.z) > R().reach) return null;
         return this.clear(_hit) ? _hit.clone() : null;
@@ -71,7 +74,7 @@ export class Earthworks {
             if (b.shapes[0] instanceof CANNON.Plane) continue;
             b.updateAABB();
             const a = b.aabb;
-            if (a.upperBound.y < 0.05) continue;                 // flat things on the ground: patches, plates
+            if (a.upperBound.y < Ground.height(p.x, p.z) + 0.05) continue;     // flat things on the ground: patches, plates
             if (p.x + s > a.lowerBound.x && p.x - s < a.upperBound.x && p.z + s > a.lowerBound.z && p.z - s < a.upperBound.z) return false;
         }
         return true;
@@ -86,10 +89,11 @@ export class Earthworks {
         const mesh = columnModel(seed, r.size, H);
         const body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC });
         body.addShape(new CANNON.Box(new CANNON.Vec3(r.size / 2, H / 2, r.size / 2)));
-        body.position.set(p.x, -H / 2, p.z);
+        const base = Ground.height(p.x, p.z);
+        body.position.set(p.x, base - H / 2, p.z);
         const entry = Physics.add({ body, mesh, tier: TIER.STATIC, id: `Column_${seed}`, data: { column: true } });
         this.scene.add(mesh);
-        const c = { id: entry.id, entry, body, mesh, H, top: 0, want: r.minHeight, state: 'rising', age: 0, cause };
+        const c = { id: entry.id, entry, body, mesh, H, base, top: 0, want: r.minHeight, state: 'rising', age: 0, cause };
         this.columns.push(c);
         EventBus.emit(EV.EARTH_RAISED, { id: c.id, x: p.x, z: p.z, cause });
         return c;
@@ -115,9 +119,9 @@ export class Earthworks {
             const v = Math.abs(d) < 0.01 ? 0 : Math.sign(d) * Math.min(Math.abs(d) / Math.max(dt, 1e-3), c.state === 'sinking' ? r.sinkSpeed : r.speed);
             c.body.velocity.set(0, v, 0);
             c.top += v * dt;
-            c.body.position.y = c.top - c.H / 2;             // kept exact; the velocity is what carries riders
+            c.body.position.y = c.base + c.top - c.H / 2;             // kept exact; the velocity is what carries riders
             c.body.aabbNeedsUpdate = true;
-            c.mesh.position.set(c.body.position.x, c.top, c.body.position.z);
+            c.mesh.position.set(c.body.position.x, c.base + c.top, c.body.position.z);
             if (v === 0 && c.state === 'rising') c.state = 'standing';
             if (c.state === 'sinking' && c.top <= 0.001) {
                 Physics.remove(c.entry);

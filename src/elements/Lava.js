@@ -23,6 +23,7 @@
 import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { LAVA } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
 
 export class Lava {
     constructor({ scene, fire, fx, water, creatures, vitals, player }) {
@@ -42,11 +43,12 @@ export class Lava {
         const pos = geo.attributes.position;
         for (let i = 1; i < pos.count; i++) { const k = 0.8 + Math.random() * 0.3; pos.setXY(i, pos.getX(i) * k, pos.getY(i) * k); }
         geo.rotateX(-Math.PI / 2);
+        drape(geo, p.x, p.z, 0.04);
         const mesh = new THREE.Mesh(geo, this.hot.clone());
-        mesh.position.set(p.x, 0.03, p.z);
+        mesh.position.set(p.x, 0, p.z);
         mesh.receiveShadow = true;
         this.scene.add(mesh);
-        const pool = { id: `Lava_${++this.n}`, p: new THREE.Vector3(p.x, 0, p.z), r, age: 0, mesh, cause };
+        const pool = { id: `Lava_${++this.n}`, p: new THREE.Vector3(p.x, Ground.height(p.x, p.z), p.z), r, age: 0, mesh, cause };
         this.pools.push(pool);
         this.fx?.burst({ x: p.x, y: 0.4, z: p.z }, 60, 0.6, 6);
         if (stone) {
@@ -75,7 +77,7 @@ export class Lava {
             this._burn(pool, dt);
             if (Math.random() < dt * 14) {
                 const a = Math.random() * Math.PI * 2, d = Math.random() * pool.r * 0.8;
-                this.fx?.burn({ x: pool.p.x + Math.cos(a) * d, y: 0.05, z: pool.p.z + Math.sin(a) * d }, dt * 4, { rate: 10, w: 0.3, h: 0.1, size: 0.35, smoke: 0.3 });
+                this.fx?.burn({ x: pool.p.x + Math.cos(a) * d, y: pool.p.y + 0.05, z: pool.p.z + Math.sin(a) * d }, dt * 4, { rate: 10, w: 0.3, h: 0.1, size: 0.35, smoke: 0.3 });
             }
         }
     }
@@ -84,20 +86,19 @@ export class Lava {
         const near = q => Math.hypot(q.x - pool.p.x, q.z - pool.p.z) < pool.r;
         for (const f of this.fire.flammables.values()) {
             const q = f.thing.pos();
-            if (!near(q) || q.y > 2.5) continue;
+            if (!near(q) || Ground.above(q) > 2.5) continue;
             if (!f.burning && !f.burned) this.fire.ignite(f.thing, pool.cause);
             const piece = f.thing.entry?.data.piece, owner = f.thing.entry?.data.owner;
             if (piece && owner?.wear && !piece.broken) owner.wear(piece, LAVA.wear * dt, pool.cause);
         }
-        for (const c of this.creatures?.all || []) if (near(c.pos) && c.pos.y < 1.5) c.react('fire', LAVA.burn * dt, pool.cause);
+        for (const c of this.creatures?.all || []) if (near(c.pos) && Ground.above(c.pos) < 1.5) c.react('fire', LAVA.burn * dt, pool.cause);
         const h = this.player.position;
-        if (near(h) && h.y < 1) this.vitals?.hurt(LAVA.playerBurn * dt, 'lava');
+        if (near(h) && Ground.above(h) < 1) this.vitals?.hurt(LAVA.playerBurn * dt, 'lava');
     }
 
     _crust(pool) {
         pool.mesh.material.dispose();
         pool.mesh.material = this.crust;
-        pool.mesh.position.y = 0.02;
         this.pools.splice(this.pools.indexOf(pool), 1);
         this.scorches.push(pool.mesh);
         while (this.scorches.length > LAVA.scorches) this.scene.remove(this.scorches.shift());
@@ -109,4 +110,12 @@ export class Lava {
         for (const m of this.scorches) this.scene.remove(m);
         this.hot.dispose(); this.crust.dispose();
     }
+}
+
+/** Lay a flat disc (already turned to lie flat, centred on 0) over the ground at (x, z), `lift` above it. */
+export function drape(geo, x, z, lift = 0.03) {
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, Ground.height(x + pos.getX(i), z + pos.getZ(i)) + lift);
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
 }

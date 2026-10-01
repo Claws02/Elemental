@@ -216,6 +216,11 @@ export const TYPES = {
     },
 
     // ---- ground --------------------------------------------------------------------------
+    water: {
+        label: 'Water (lake, river, sea)', group: 'Ground',
+        props: { width: num('Width', 30, 2, 400, 1), depth: num('Depth', 20, 2, 400, 1), round: bool('Round (an ellipse)', false), level: num('Water level (m)', 0, -40, 80, 0.1) },
+        note: 'A sheet of water at an absolute level: where the ground is lower, there is water. A stream draws from it; shallow water slows you, deep water stops you; a frozen stream leaves ice you can stand on.',
+    },
     patch: {
         label: 'Ground patch', group: 'Ground',
         props: { width: num('Width', 6, 0.5, 80, 0.5), depth: num('Depth', 6, 0.5, 80, 0.5), style: select('Style', 'grass', ['grass', 'dirt', 'cobble', 'sand', 'flagstone']), round: bool('Round', false) },

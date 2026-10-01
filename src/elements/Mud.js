@@ -17,6 +17,8 @@
 import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { MUD } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
+import { drape } from './Lava.js';
 
 export class Mud {
     constructor({ scene, fire, creatures, player }) {
@@ -32,14 +34,15 @@ export class Mud {
         const pos = geo.attributes.position;
         for (let i = 1; i < pos.count; i++) { const k = 0.8 + Math.random() * 0.3; pos.setXY(i, pos.getX(i) * k, pos.getY(i) * k); }
         geo.rotateX(-Math.PI / 2);
+        drape(geo, p.x, p.z, 0.025);
         const mesh = new THREE.Mesh(geo, this.mat);
-        mesh.position.set(p.x, 0.025, p.z);
+        mesh.position.set(p.x, 0, p.z);
         mesh.receiveShadow = true;
         this.scene.add(mesh);
         const patch = { id: `Mud_${++this.n}`, p: new THREE.Vector3(p.x, 0, p.z), r: MUD.radius, age: 0, mesh, cause };
         this.patches.push(patch);
         while (this.patches.length > MUD.most) this._dry(this.patches[0]);
-        for (const f of this.fire.flammables.values()) if (f.burning && this._in(patch, f.thing.pos()) && f.thing.pos().y < 1.2) this.fire.douse(f.thing, cause);
+        for (const f of this.fire.flammables.values()) if (f.burning && this._in(patch, f.thing.pos()) && Ground.above(f.thing.pos()) < 1.2) this.fire.douse(f.thing, cause);
         EventBus.emit(EV.MUD, { id: patch.id, x: p.x, z: p.z, cause });
         return patch;
     }
@@ -47,7 +50,7 @@ export class Mud {
     _in(patch, q) { return Math.hypot(q.x - patch.p.x, q.z - patch.p.z) < patch.r; }
 
     /** Is this point in mud (and low enough to be wading)? */
-    at(q) { return q.y < 1.4 && this.patches.some(pt => this._in(pt, q)); }
+    at(q) { return Ground.above(q) < 1.4 && this.patches.some(pt => this._in(pt, q)); }
 
     update(dt) {
         for (const pt of this.patches.slice()) {

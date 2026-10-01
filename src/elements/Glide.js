@@ -15,6 +15,7 @@
 import { EventBus, EV } from '../core/EventBus.js';
 import { GLIDE } from '../data/elements.js';
 import * as Physics from '../engine/Physics.js';
+import { Ground } from '../world/Ground.js';
 
 export class Glide {
     constructor({ player, prog, fire }) {
@@ -26,7 +27,7 @@ export class Glide {
     /** Before the physics step: hold the fall, find the heat. */
     update(dt) {
         const b = this.player.body, p = b.position;
-        const high = p.y > this.player.radius + GLIDE.minHeight;
+        const high = Ground.above(p) > this.player.radius + GLIDE.minHeight;
         const was = this.gliding;
         this.gliding = this.prog.can('glide') && high && (b.velocity.y < -GLIDE.trigger || was);      // once gliding, until the ground
         this.player.gliding = this.gliding;

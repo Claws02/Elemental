@@ -30,6 +30,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 import { SPECIES, ELITE } from '../data/creatures.js';
 import { ICE, MUD } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
+import { Ground } from '../world/Ground.js';
 
 const G = 22;                 // the world's gravity (Physics.init)
 const FLEE_GONE = 32;         // metres from the hero at which a fleeing creature is gone
@@ -226,11 +227,11 @@ class Creature {
             if (this.hp < this.maxHp * sp.fleeAt) this._flee('hurt');
             else if (this.scared > 2.5 && sp.behaviour !== 'pack') this._flee('afraid');
             else if (sp.fleeAlone && this.engaged && this.sys.alive(this.group).length === 1 && this.group.members.length > 1) this._flee('alone');
-            else if (flyer && this.soaked > 0 && b.position.y < sp.radius + 0.3) this._flee('soaked');
+            else if (flyer && this.soaked > 0 && Ground.above(b.position) < sp.radius + 0.3) this._flee('soaked');
         }
 
         const speed = sp.speed * this.speedK;
-        const mud = this.mired > 0 && !(flyer && b.position.y > 1.4) ? MUD.slow : 1;
+        const mud = this.mired > 0 && !(flyer && Ground.above(b.position) > 1.4) ? MUD.slow : 1;
         this.mired = Math.max(0, this.mired - dt);
         const move = (dir, v, turn = 6) => {       // steer the body along the ground at speed v
             v *= mud;
@@ -244,7 +245,7 @@ class Creature {
         case 'flee': {
             _v.set(b.position.x - hero.x, 0, b.position.z - hero.z).normalize();
             if (!flyer || this.soaked) move(_v, speed * 1.2);
-            else { move(_v, speed * 1.2); b.velocity.y += (8 - b.position.y) * dt; }
+            else { move(_v, speed * 1.2); b.velocity.y += (8 - Ground.above(b.position)) * dt; }
             if (dist > FLEE_GONE || this.t > 12) {
                 this.gone = true;
                 EventBus.emit(EV.CREATURE, { id: this.id, species: this.group.item.species, to: 'fled', cause: this.hitBy || (this.engaged ? 'player' : 'environment'), why: this.fleeWhy });
@@ -257,7 +258,7 @@ class Creature {
             else if (sp.behaviour === 'pack') this._pack(dt, move, speed, dist);
             else if (flyer) this._fly(dt, move, speed, dist);
         }
-        if (b.position.y < -20) this.gone = true;
+        if (Ground.above(b.position) < -20) this.gone = true;
         this._pose(dt);
     }
 
@@ -355,7 +356,7 @@ class Creature {
         const tangent = new THREE.Vector3(-_v.z, 0, _v.x).normalize().multiplyScalar(this.orbitDir);
         const toward = _v.normalize().multiplyScalar(flat > 6 ? 1 : 0);
         move(tangent.add(toward).normalize(), speed * 0.8, 4);
-        b.velocity.y += (cruise - b.position.y) * 2.5 * dt - b.velocity.y * 1.5 * dt;
+        b.velocity.y += (cruise - Ground.above(b.position)) * 2.5 * dt - b.velocity.y * 1.5 * dt;
         this.nextAttack -= dt;
         if (this.nextAttack <= 0 && flat < 9) { this.nextAttack = sp.attack.every * (0.7 + seeded(this.sys.time + this.home.z) * 0.6); this._to('dive'); }
         else if (this.state !== 'climb' || this.t > 1.5) this.state = 'cruise';

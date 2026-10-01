@@ -23,6 +23,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { ICE } from '../data/elements.js';
+import { Ground } from '../world/Ground.js';
 
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _z = new THREE.Vector3(0, 0, 1);
 
@@ -71,6 +72,21 @@ export class Ice {
             seg.entry = Physics.add({ body, tier: TIER.STATIC, id: `${id}_${i}`, data: { ice: seg } });
             body.addEventListener('collide', e => this._hit(seg, e));
             arch.segs.push(seg);
+        }
+        // Landing on open water: a floe at the surface, flat enough to stand on (an ice bridge, a floe at a time).
+        const pool = Ground.water(E.x, E.z);
+        if (pool) {
+            const R = ICE.floe, top = pool.level + 0.06;
+            const g = new THREE.CylinderGeometry(R, R * 0.92, 0.32, 9).toNonIndexed();
+            g.translate(E.x, top - 0.16, E.z);
+            geos.push(g);
+            const body = new CANNON.Body({ mass: 0 });
+            body.addShape(new CANNON.Cylinder(R, R * 0.92, 0.32, 9));
+            body.position.set(E.x, top - 0.16, E.z);
+            const seg = { arch, entry: null, alive: true, mid: new THREE.Vector3(E.x, top, E.z), floe: true };
+            seg.entry = Physics.add({ body, tier: TIER.STATIC, id: `${id}_floe`, data: { ice: seg } });
+            arch.segs.push(seg);
+            arch.floe = seg;
         }
         arch.mesh = new THREE.Mesh(merge(geos), this.mat);
         arch.mesh.castShadow = true;
