@@ -15,6 +15,7 @@
 //   brigade   carries water from the nearest well or basin to the nearest
 //             fire in someone's house and throws it (the Veyra fire)
 //   cower     keeps away from creatures
+//   patrol    walks its route (scene prop `route`: "x,z; x,z; …"), pausing at each point
 //
 // Anyone caught in one of the player's surges flinches away (startle()).
 //
@@ -27,6 +28,8 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { buildHero, HeroAnimator } from '../art/HeroModel.js';
 import { Ground } from '../world/Ground.js';
+import { Kit, at } from '../engine/Kit.js';
+import { CHARACTER_LOOKS } from '../data/characters.js';
 
 export const LOOKS = {
     cael: {
@@ -73,13 +76,56 @@ export const LOOKS = {
     },
 };
 
+Object.assign(LOOKS, CHARACTER_LOOKS);
+
 /** The model alone (the editor shows this). */
 export function npcModel(look = 'cael') {
     const L = LOOKS[look] || LOOKS.cael;
     const rig = buildHero(L);
     rig.root.scale.setScalar(L.scale);
     rig.setElement('earth');
+    addExtras(rig, L);
     return rig;
+}
+
+// What a person wears and carries, on the rig's joints: neck (head height ~0.19), spine (chest), elbow (hand).
+function addExtras(rig, L) {
+    const ex = L.extras || [];
+    if (!ex.length) return;
+    const head = new Kit(), body = new Kit(), hand = new Kit();
+    const gold = 0xc8a85a, iron = 0x5a5e66;
+    for (const e of ex) {
+        switch (e) {
+        case 'circlet': head.box('body', 0.27, 0.035, 0.29, at(0, 0.29, 0), gold); break;
+        case 'crown':
+            head.box('body', 0.27, 0.05, 0.29, at(0, 0.3, 0), gold);
+            for (let i = 0; i < 5; i++) head.box('body', 0.03, 0.07, 0.03, at(-0.1 + i * 0.05, 0.36, 0.13), gold);
+            head.box('glow', 0.03, 0.03, 0.02, at(0, 0.32, 0.15), 0x7ad0ff);
+            break;
+        case 'ironcrown':
+            head.box('body', 0.28, 0.06, 0.3, at(0, 0.3, 0), iron);
+            for (let i = 0; i < 4; i++) head.geo('body', new THREE.ConeGeometry(0.025, 0.1, 4), at(-0.09 + i * 0.06, 0.38, 0.12), iron, { flat: true });
+            break;
+        case 'shellcirclet': head.box('body', 0.27, 0.03, 0.29, at(0, 0.29, 0), 0xe8dcc8); head.geo('body', new THREE.ConeGeometry(0.04, 0.07, 6), at(0, 0.33, 0.14, Math.PI / 2, 0, 0), 0xf0c8b0, { flat: true }); break;
+        case 'hood': head.box('body', 0.3, 0.3, 0.32, at(0, 0.22, -0.03), L.cloak, { ch: 0.06 }); break;
+        case 'headwrap': head.box('body', 0.29, 0.13, 0.31, at(0, 0.31, -0.01), L.trim, { ch: 0.05 }); head.box('body', 0.08, 0.2, 0.05, at(0.05, 0.18, -0.15), L.trim); break;
+        case 'helm': head.box('body', 0.28, 0.14, 0.3, at(0, 0.3, 0), iron, { ch: 0.05 }); head.box('body', 0.04, 0.1, 0.04, at(0, 0.2, 0.15), iron); break;
+        case 'plumedhelm': head.box('body', 0.28, 0.14, 0.3, at(0, 0.3, 0), gold, { ch: 0.05 }); head.box('body', 0.05, 0.12, 0.26, at(0, 0.43, -0.02), 0xb8302a); break;
+        case 'goggles': head.box('body', 0.26, 0.05, 0.03, at(0, 0.22, 0.135), 0x4a3a2a); for (const s of [-1, 1]) head.box('sheen', 0.07, 0.05, 0.02, at(s * 0.055, 0.22, 0.15), 0x9ad0e8); break;
+        case 'beard': head.box('body', 0.18, 0.1, 0.05, at(0, 0.08, 0.11), L.hair, { ch: 0.02 }); break;
+        case 'tail': head.box('body', 0.06, 0.22, 0.05, at(0, 0.08, -0.16, 0.25), L.hair); break;
+        case 'robe': body.box('body', 0.44, 0.75, 0.3, at(0, -0.42, 0), L.tunic, { ch: 0.04 }); body.box('body', 0.45, 0.04, 0.31, at(0, -0.79, 0), L.trim); break;
+        case 'apron': body.box('body', 0.3, 0.55, 0.03, at(0, -0.05, 0.14), 0x6a4a30); break;
+        case 'badge': body.box('glow', 0.06, 0.08, 0.02, at(-0.12, 0.33, 0.135), 0xffd68a); body.box('body', 0.09, 0.11, 0.015, at(-0.12, 0.33, 0.128), gold); break;
+        case 'pauldrons': for (const s of [-1, 1]) body.box('body', 0.18, 0.09, 0.22, at(s * 0.26, 0.45, 0, 0, 0, -s * 0.35), iron, { ch: 0.03 }); break;
+        case 'scarf': body.box('body', 0.3, 0.07, 0.28, at(0, 0.47, 0), L.trim, { ch: 0.02 }); body.box('body', 0.06, 0.3, 0.03, at(0.08, 0.3, 0.15, 0.1), L.trim); break;
+        case 'staff': hand.cyl('body', 0.022, 0.026, 1.7, 6, at(0, -0.1, 0.03), 0x6a4a2a, { flat: true }); hand.geo('glow', new THREE.OctahedronGeometry(0.06, 0), at(0, 0.78, 0.03), L.trim, { flat: true }); break;
+        case 'spear': hand.cyl('body', 0.018, 0.02, 2.0, 6, at(0, 0.05, 0.03), 0x5a4030, { flat: true }); hand.geo('body', new THREE.ConeGeometry(0.04, 0.2, 4), at(0, 1.15, 0.03), iron, { flat: true }); break;
+        }
+    }
+    if (head.tris) rig.neck.add(head.build());
+    if (body.tris) rig.spine.add(body.build());
+    if (hand.tris) { const h = hand.build(); h.position.set(0, -0.3, 0); rig.elbow[0].add(h); }
 }
 
 export class Npc {
@@ -208,6 +254,12 @@ export class Npc {
         } else if (this.role === 'brigade') this._brigade(dt);
         else if (this.role === 'cower') this._cower(dt);
         else if (this.role === 'walk' && this.target) { if (this._walk(this.target, dt)) this.role = 'idle'; }
+        else if (this.role === 'patrol' && this.route?.length) {
+            // Walk the route, point to point, pausing a moment at each.
+            this.leg ??= 0;
+            this.pause = Math.max(0, (this.pause || 0) - dt);
+            if (!this.pause && this._walk(this.route[this.leg % this.route.length], dt, 1.6)) { this.leg++; this.pause = 1.5; }
+        }
         const p = this.position, t = this.point || hero;
         if (!this.speed) this._turn(Math.atan2(t.x - p.x, t.z - p.z), dt, 3);
         let channel = null;

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { TREE_KINDS, PLANT_KINDS, BOULDER_KINDS } from '../data/nature.js';
+import { CHARACTER_NAMES } from '../data/characters.js';
 //
 // Pure data, no three.js: the game's loader, the scene validator (node) and
 // Elemental-Editor's inspector all read this one file, so an object's
@@ -166,7 +167,7 @@ export const TYPES = {
     },
     npc: {
         label: 'Character', group: 'Characters',
-        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth']), role: select('Does', 'idle', ['idle', 'brigade', 'cower']), hidden: HIDDEN },
+        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth', ...CHARACTER_NAMES]), role: select('Does', 'idle', ['idle', 'brigade', 'cower', 'patrol']), route: text('Patrol route (x,z; x,z; …)', ''), hidden: HIDDEN },
         note: 'The script\'s lines are spoken by the character named as its speaker.',
     },
 

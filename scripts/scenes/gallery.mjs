@@ -26,9 +26,12 @@ prefabs.forEach((prefab, i) => add(`Building_${prefab}`, 'prefab', -50 + (i % 6)
 // The bestiary in a row (calm: they don't attack in the gallery).
 ['emberwing', 'bristleback', 'thornhound', 'shellback', 'cindermite', 'mudling', 'brinecoil', 'galekite', 'frostmaw', 'glasswight', 'sentinel', 'wellspawn']
     .forEach((species, i) => add(`Creature_${species}`, 'creature', -44 + i * 8, 56, 0, { species, count: 1, spread: 0, aggressive: false, elite: false }));
+// The people: rulers, companions, each kingdom's folk and guards, facing the camera's row.
+const PEOPLE = ['maren', 'vorn', 'oriel', 'senn', 'yessa', 'ilvane', 'corvane', 'bram', 'isolde', 'kestrel', 'verdant_folk', 'verdant_guard', 'ember_folk', 'ember_guard', 'salt_folk', 'salt_guard', 'sky_folk', 'sky_guard', 'glass_folk', 'glass_guard', 'halcyra_folk', 'imperial_guard', 'lantern'];
+PEOPLE.forEach((look, i) => add(`Person_${look}`, 'npc', -33 + i * 3, -76, 0, { name: look, look, role: 'idle' }));
 const scene = {
     format: 1, id: 'gallery', name: 'Model gallery (phase 5)',
-    settings: { ground: { half: 70, style: 'grass' }, profile: 'sandbox', resetProgress: false, resetAfter: 0, region: 'verdant', persistent: false, mood: 'day', view: { far: 170 } },
+    settings: { ground: { half: 90, style: 'grass' }, profile: 'sandbox', resetProgress: false, resetAfter: 0, region: 'verdant', persistent: false, mood: 'day', view: { far: 170 } },
     objects: o, wires: [],
 };
 fs.writeFileSync('scenes/gallery.json', JSON.stringify(scene, null, 1) + '\n');

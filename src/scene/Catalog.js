@@ -83,6 +83,11 @@ function _static(ctx, it, { group, boxes }, opts = {}) {
     return { mesh: group, entries };
 }
 
+/** A patrol route as written in the scene: "x,z; x,z; …" → [{ x, z }, …]. */
+export function parseRoute(s) {
+    return String(s || '').split(';').map(p => p.split(',').map(Number)).filter(p => p.length === 2 && p.every(isFinite)).map(([x, z]) => ({ x, z }));
+}
+
 function _toWorld(it, local) {
     return local.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), it.rotY || 0).add(new THREE.Vector3(it.x || 0, it.y || 0, it.z || 0));
 }
@@ -565,6 +570,7 @@ export const CATALOG = {
         spawn(ctx, it) {
             const n = new Npc(ctx.scene, { id: it.id, name: it.name, look: it.look, pos: new THREE.Vector3(it.x, it.y || 0, it.z), facing: it.rotY || 0 });
             ctx.world.npcs.push(n);
+            n.route = parseRoute(it.route);
             if (it.role && it.role !== 'idle') n.setRole(it.role);
             return {
                 mesh: n.rig.root, entries: [n.entry], npc: n, update: (dt, f) => n.update(dt, f.hero), top: () => (it.y || 0) + 2,
