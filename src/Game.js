@@ -106,7 +106,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     };
     const ledger = new Ledger(session, st.region || 'verdant', ownerOf);
     const vitals = new Vitals({ player, fire });
-    const creatures = new Creatures({ scene, world, player, vitals, fire, channel });
+    const creatures = new Creatures({ scene, world, player, vitals, fire, channel, prog });
     const ice = new Ice({ scene, fire, fx, creatures });
     Object.assign(creatures, { ice, water });          // the frostmaw's walls, the brinecoil's charged streams
     const storm = new Firestorm({ fire, fx, creatures });
@@ -182,7 +182,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         orbit: (dx, dy) => cam.orbit(dx, dy),
         zoom: f => cam.zoom(f),
         stick: s => hud.stick(s),
+        jump: () => player.jump(),
     });
+    hud.jump?.(() => player.jump());
 
     // A big scene: what is far off is not drawn (the fog has it by then). Checked a few times a second.
     const CULL = (st.view?.far || 170) * 0.95;

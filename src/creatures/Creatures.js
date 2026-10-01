@@ -27,7 +27,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { seeded } from '../engine/Kit.js';
 import { EventBus, EV } from '../core/EventBus.js';
-import { SPECIES, ELITE } from '../data/creatures.js';
+import { SPECIES, ELITE, YOUNG, tierFor } from '../data/creatures.js';
 import { ICE, MUD } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { BEHAVIOURS } from './Behaviours.js';
@@ -38,8 +38,9 @@ const FLEE_GONE = 32;         // metres from the hero at which a fleeing creatur
 const _v = new THREE.Vector3(), _d = new THREE.Vector3();
 
 export class Creatures {
-    constructor({ scene, world, player, vitals, fire, channel }) {
-        Object.assign(this, { scene, world, player, vitals, fire, channel });
+    constructor({ scene, world, player, vitals, fire, channel, prog = null }) {
+        Object.assign(this, { scene, world, player, vitals, fire, channel, prog });
+        this.tier = prog ? tierFor(prog.might()) : 4;          // what the hero is ready for, as the scene loads
         this.all = [];
         this.time = 0;
         this.off = [
@@ -63,10 +64,17 @@ export class Creatures {
         g.spawned = true;
         const it = g.item, sp = SPECIES[it.species];
         if (!sp) return;
-        for (let i = 0; i < (it.count || 1); i++) {
+        // Tiers: a group the hero isn't ready for comes as its young (one tier short), or not yet at all.
+        const need = it.tier === 'always' ? 0 : Number(it.tier) || sp.tier || 1;
+        const young = need > this.tier;
+        g.young = young;
+        if (young && (need > this.tier + 1 || !sp.young)) { g.waiting = true; return; }
+        const n = young ? Math.max(1, Math.ceil((it.count || 1) * YOUNG.count)) : (it.count || 1);
+        const eliteOk = !young && (need + 1 <= this.tier || it.tier === 'always');
+        for (let i = 0; i < n; i++) {
             const a = seeded(i * 7.1 + it.x) * Math.PI * 2, r = (it.spread || 2) * Math.sqrt(seeded(i * 3.3 + it.z));
             const pos = new THREE.Vector3(it.x + Math.cos(a) * r, (it.y || 0) + sp.radius + (sp.behaviour === 'flyer' ? sp.cruise[0] : 0), it.z + Math.sin(a) * r);
-            const c = new Creature(this, sp, g, `${it.id}_${i + 1}`, pos, !!it.elite && i === 0);
+            const c = new Creature(this, sp, g, `${it.id}_${i + 1}`, pos, young ? 'young' : !!it.elite && eliteOk && i === 0);
             g.members.push(c);
             this.all.push(c);
         }
@@ -131,7 +139,9 @@ export class Creatures {
 class Creature {
     constructor(sys, sp, group, id, pos, elite) {
         Object.assign(this, { sys, sp, group, id, elite });
-        const k = elite ? ELITE : { hp: 1, damage: 1, scale: 1, speed: 1 };
+        const k = elite === 'young' ? YOUNG : elite ? ELITE : { hp: 1, damage: 1, scale: 1, speed: 1 };
+        this.young = elite === 'young';
+        this.elite = elite === true;
         this.maxHp = this.hp = sp.hp * k.hp;
         this.dmgK = k.damage * (group.item.damage ?? 1);
         this.speedK = k.speed;

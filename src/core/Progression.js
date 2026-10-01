@@ -61,6 +61,16 @@ export class Progression {
         return f(byControl ? this.control('earth') : this.power('earth'));
     }
 
+    /**
+     * How strong the hero is, all told (0 … 5): each element known (not locked; the charm doesn't count against
+     * it) brings half its Power and Control, a trained one a quarter more. Creature tiers read it (data/creatures.js).
+     */
+    might() {
+        let m = 0;
+        for (const e of Object.values(this.els)) if (e.state !== 'locked') m += (e.power + e.control) / 2 + (e.state === 'trained' ? 0.25 : 0);
+        return m;
+    }
+
     setState(el, state) { this.els[el].state = state; this._save(); }
 
     /** Add to a track. Emits Growth when a whole level (a tenth) is crossed. */

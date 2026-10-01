@@ -37,6 +37,7 @@ export class Hud {
             <div class="hud-choices" id="hud-choices"></div>
             <div class="hud-tip" id="hud-tip"></div>
             <button class="hud-charm" id="hud-charm" type="button" aria-label="Cael's charm"></button>
+            <button class="hud-jump" id="hud-jump" type="button" aria-label="Jump"><svg viewBox="0 0 24 24"><path d="M12 5l-6 7h4v6h4v-6h4z"/></svg></button>
             <div class="hud-vignette" id="hud-vignette"></div>
             <div class="hud-died" id="hud-died"><span></span></div>`;
         this.el = id => root.querySelector('#' + id);
@@ -169,6 +170,13 @@ export class Hud {
     }
 
     /** Cael's charm, in your pocket: a small button while it can still be put on. `null` hides it. */
+    /** The jump button (bottom-right): pressing it jumps. Fires on the touch going down, not up, so it feels immediate. */
+    jump(onJump) {
+        const el = this.el('hud-jump');
+        el.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); el.classList.add('down'); onJump(); };
+        el.onpointerup = el.onpointercancel = el.onpointerleave = () => el.classList.remove('down');
+    }
+
     charm(onWear) {
         const el = this.el('hud-charm');
         el.classList.toggle('on', !!onWear);

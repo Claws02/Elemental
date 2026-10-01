@@ -127,6 +127,12 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
   width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(200,210,220,.6); display: none; cursor: pointer; pointer-events: auto;
   background: radial-gradient(circle at 40% 35%, #e8ecf0, #8a949c 60%, #3a4046); box-shadow: 0 2px 8px rgba(0,0,0,.45); }
 .hud-charm.on { display: block; }
+/* Jump: a thumb-sized button in the bottom-right corner, under the charm. */
+.hud-jump { position: absolute; right: calc(env(safe-area-inset-right) + 18px); bottom: calc(env(safe-area-inset-bottom) + 22px);
+  width: 62px; height: 62px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.45); background: rgba(14,12,10,.42); pointer-events: auto;
+  display: grid; place-items: center; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.hud-jump svg { width: 28px; height: 28px; fill: rgba(255,255,255,.85); }
+.hud-jump.down { background: rgba(255,255,255,.28); transform: scale(.94); }
 /* Health: a slim bar under the element badge. */
 .hud-health { position: absolute; left: calc(env(safe-area-inset-left) + 16px); top: calc(env(safe-area-inset-top) + 58px);
   width: 140px; height: 8px; border-radius: 4px; background: rgba(14,12,10,.55); border: 1px solid rgba(255,255,255,.25); overflow: hidden; pointer-events: none; }

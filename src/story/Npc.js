@@ -142,7 +142,7 @@ export class Npc {
         const body = new CANNON.Body({ mass: 0 });
         body.addShape(new CANNON.Sphere(0.45));
         body.position.set(pos.x, pos.y + 0.45, pos.z);
-        this.entry = Physics.add({ body, tier: TIER.STATIC, id });
+        this.entry = Physics.add({ body, tier: TIER.STATIC, id, data: { npc: this } });
         this.role = 'idle';
         this.sys = null;           // { fire, world }, set when wired
         this.task = null;          // brigade: 'fetch' | 'carry' | 'throw'

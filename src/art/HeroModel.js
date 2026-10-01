@@ -185,10 +185,15 @@ export class HeroAnimator {
         this.speed = 0;          // current horizontal speed, units/s
         this.channel = null;     // { pitch, yaw } toward a held object, local to the hero, or null
         this.throwT = -1;        // seconds since a throw began, -1 when not throwing
+        this.jumpT = -1;         // seconds since a jump began
+        this.climbT = -1;        // seconds into a climb (of climbDur)
+        this.climbDur = 1;
         this.p = {};             // current joint angles
     }
 
     throw() { this.throwT = 0; }
+    jump() { this.jumpT = 0; }
+    climb(dur) { this.climbT = 0; this.climbDur = dur; }
 
     update(dt, { speed = 0, channel = null } = {}) {
         this.clock += dt;
@@ -231,6 +236,33 @@ export class HeroAnimator {
             T.spineY += channel.yaw * 0.35;
             T.spineX -= 0.08;
             T.neckX = -channel.pitch * 0.5;
+        }
+
+        // Jumping: knees tuck, arms lift and spread, for the hang of the hop.
+        if (this.jumpT >= 0) {
+            this.jumpT += dt;
+            const t = this.jumpT, k = t < 0.12 ? t / 0.12 : Math.max(0, 1 - (t - 0.12) / 0.4);
+            T.thighX = T.thighX.map((v, i) => _lerp(v, i ? -0.5 : -0.9, k));
+            T.kneeX = T.kneeX.map((v, i) => _lerp(v, i ? 0.9 : 1.3, k));
+            T.shX = T.shX.map(v => _lerp(v, -0.9, k)); T.shZ = [_lerp(T.shZ[0], -0.6, k), _lerp(T.shZ[1], 0.6, k)];
+            if (t > 0.55) this.jumpT = -1;
+        }
+        // Climbing: both hands up onto the edge, haul, a knee over, stand.
+        if (this.climbT >= 0) {
+            this.climbT += dt;
+            const u = Math.min(1, this.climbT / this.climbDur);
+            if (u < 0.55) {
+                const k = Math.min(1, u / 0.2);
+                T.shX = [_lerp(T.shX[0], -2.9, k), _lerp(T.shX[1], -2.9, k)]; T.shZ = [-0.15, 0.15]; T.elX = [-0.25, -0.25];
+                T.spineX = 0.15; T.neckX = -0.35; T.hipsY = 0.9;
+                T.thighX = [-0.3 - u * 0.6, 0.2]; T.kneeX = [0.6 + u, 0.3];
+            } else {
+                const k = (u - 0.55) / 0.45;
+                T.shX = [_lerp(-2.9, -0.4, k), _lerp(-2.9, -0.4, k)]; T.elX = [_lerp(-0.25, -1.3, k), _lerp(-0.25, -1.3, k)];
+                T.spineX = _lerp(0.5, 0.05, k); T.hipsY = _lerp(0.8, 0.95, k);
+                T.thighX = [_lerp(-1.5, 0, k), _lerp(0.3, 0, k)]; T.kneeX = [_lerp(1.9, 0.05, k), _lerp(0.4, 0.05, k)];
+            }
+            if (u >= 1) this.climbT = -1;
         }
 
         // Throwing: wind back, then whip the lead arm through and follow on.

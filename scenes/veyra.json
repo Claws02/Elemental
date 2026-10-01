@@ -673,6 +673,7 @@
    "embers": false,
    "fragile": true,
    "damage": 0.3,
+   "tier": "always",
    "hidden": true
   },
   {

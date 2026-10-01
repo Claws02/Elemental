@@ -27,7 +27,9 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 
 | On a phone | At a desk | Does |
 |---|---|---|
-| Thumb in the bottom-left quarter | WASD / arrows (Shift: run) | Move |
+| Thumb in the bottom-left corner | WASD / arrows (Shift: run) | Move |
+| The bottom-right button, or a flick up on the stick | Space | Jump |
+| Walk into a ledge within reach | (same) | Climb onto it |
 | Touch a rock | Click a rock | Grab it (Earth) |
 | Keep holding a rock still (1.5 s) | Hold the mouse still | Heat it (Fire); a hot rock ignites wood |
 | Hold still on a brazier (0.25 s) | Hold on a brazier | Pull a fireball (Fire) |
@@ -57,7 +59,8 @@ npm run prologue   # the Veyra fire, played carefully and recklessly
 npm run abilities  # raise stone, ice, lava, firestorm, mud, glide, the flame jet
 npm run terrain    # standing, climbing, wading and culling on terrain
 npm run bestiary   # the twelve creatures and their weaknesses
-npm run world      # every region loads, and every road between them leads both ways
+npm run world      # every region loads, every road leads both ways, bridges walk, creature tiers
+npm run movement   # jump, the stick's corner, climbing, full speed on stone and past people
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
 ```
 

@@ -70,6 +70,27 @@ export function init() {
 }
 
 export function getWorld() { return world; }
+
+/** Is `body` resting on something (a contact from the last step pushing it up)? */
+export function supported(body) {
+    for (const c of world.contacts) {
+        if (c.bi === body && c.ni.y < -0.5) return true;          // ni points from bi to bj: the other body is below
+        if (c.bj === body && c.ni.y > 0.5) return true;
+    }
+    return false;
+}
+
+/** The first solid between two points ({x,y,z} each), or null: { point, normal, body, entry }. Skips `skip(entry)`. */
+export function rayFirst(from, to, skip = null) {
+    const hits = [];
+    world.raycastAll(new CANNON.Vec3(from.x, from.y, from.z), new CANNON.Vec3(to.x, to.y, to.z), { skipBackfaces: true }, r => {
+        if (!r.body || r.body.collisionResponse === false) return;
+        if (skip?.(r.body.userData)) return;
+        hits.push({ d: r.distance, point: r.hitPointWorld.clone(), normal: r.hitNormalWorld.clone(), body: r.body, entry: r.body.userData });
+    });
+    hits.sort((a, b) => a.d - b.d);
+    return hits[0] || null;
+}
 export function material(name) { return mats[name]; }
 
 /**
@@ -77,6 +98,9 @@ export function material(name) { return mats[name]; }
  * Returns the entry; keep it to change tier or remove later.
  */
 export function add({ body, mesh = null, tier, id = null, data = {} }) {
+    // A body with no material (raised stone, a person, a creature) is stone to the rest of the world: the hero
+    // slides along it and walks across it at full speed, as with every wall (no 0.4 default friction).
+    if (!body.material && tier !== TIER.PLAYER) body.material = mats.stone;
     const e = { body, mesh, tier, id, data, spawn: null };
     body.userData = e;               // cannon bodies are plain objects; this is how collisions find their entry
     world.addBody(body);

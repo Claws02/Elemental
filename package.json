@@ -16,6 +16,7 @@
     "terrain": "node qa/terrain.js",
     "bestiary": "node qa/bestiary.js",
     "world": "node qa/world.js",
+    "movement": "node qa/movement.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",
     "scenes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/validate-scenes.mjs",
     "scene:veyra": "node scripts/scenes/veyra.mjs",

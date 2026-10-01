@@ -146,6 +146,21 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     check(bad.length === 0, `every prefab piece is a known type${bad.length ? ': ' + bad.join(', ') : ''}`);
 }
 
+// ---- creature tiers: the world fills in as the hero grows -------------------------------------------
+{
+    const { SPECIES, TIERS, tierFor } = await import('../src/data/creatures.js');
+    const story = new Progression('story', { session: null });
+    const sandbox = new Progression('sandbox', { session: null });
+    const fresh = story.might(), full = sandbox.might();
+    story.els.earth.power = 0.6; story.els.earth.control = 0.5; story.els.water.state = 'trained'; story.els.water.power = 0.4;
+    const grown = story.might();
+    story.flags.charm = 'worn';
+    const charmed = story.might();
+    const allTiered = Object.entries(SPECIES).every(([, s]) => s.tier >= 1 && s.tier <= 4 && typeof s.young === 'boolean');
+    check(tierFor(fresh) === 1 && tierFor(grown) === 2 && tierFor(full) === 4 && charmed === grown && allTiered && TIERS[1] === 0,
+        `creature tiers: a new hero faces tier 1, a grown one more, the sandbox everything; the charm doesn't lower it (${JSON.stringify({ fresh: +fresh.toFixed(2), grown: +grown.toFixed(2), full, tiers: [tierFor(fresh), tierFor(grown), tierFor(full)] })})`);
+}
+
 console.log(pass.map(p => '  ok   ' + p).join('\n'));
 if (fail.length) { console.log(fail.map(p => '  FAIL ' + p).join('\n')); console.log('UNIT FAIL'); process.exit(1); }
 console.log('UNIT PASS');

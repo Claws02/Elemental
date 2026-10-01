@@ -34,7 +34,8 @@ export class Gestures {
         this.world = new Map();   // pointerId -> { mode: world|orbit|pinch, samples: [{x,y,t}] }
         this.keys = new Set();
         this.pinchD = 0;
-        this.moveZone = { x: 0.5, y: 0.5 };   // stick lives left of x and below y (fractions of the screen)
+        this.moveZone = { x: 0.33, y: 0.6 };  // stick lives left of x and below y (fractions of the screen): the bottom-left corner
+        this.flick = { px: 40, ms: 260 };    // a quick swipe up on the stick and off is a jump
         this.stickRadius = 60;
 
         this._off = [];
@@ -45,7 +46,7 @@ export class Gestures {
         on(el, 'pointercancel', e => this._up(e, true));
         on(el, 'contextmenu', e => e.preventDefault());
         on(el, 'wheel', e => { e.preventDefault(); this.h.zoom?.(e.deltaY > 0 ? 1.1 : 0.9); }, { passive: false });
-        on(window, 'keydown', e => this.keys.add(e.code));
+        on(window, 'keydown', e => { if (e.code === 'Space' && !e.repeat) { e.preventDefault?.(); this.h.jump?.(); } this.keys.add(e.code); });
         on(window, 'keyup', e => this.keys.delete(e.code));
         on(window, 'blur', () => this.keys.clear());
     }
@@ -75,7 +76,7 @@ export class Gestures {
         // The move zone, unless the touch is on something that claims it (the
         // hero stands at the zone's edge in portrait; touching the hero is Air).
         if (this.inMoveZone(e.clientX, e.clientY) && e.pointerType !== 'mouse' && this.stick.id === null && !this.h.claims?.(e.clientX, e.clientY)) {
-            Object.assign(this.stick, { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
+            Object.assign(this.stick, { id: e.pointerId, ox: e.clientX, oy: e.clientY, x: 0, y: 0, t0: e.timeStamp, ly: e.clientY });
             this.h.stick?.({ active: true, ox: e.clientX, oy: e.clientY, x: 0, y: 0 });
             return;
         }
@@ -96,6 +97,7 @@ export class Gestures {
 
     _move(e) {
         if (e.pointerId === this.stick.id) {
+            this.stick.ly = e.clientY;
             const dx = e.clientX - this.stick.ox, dy = e.clientY - this.stick.oy;
             const len = Math.hypot(dx, dy), R = this.stickRadius;
             const k = len > R ? R / len : 1;
@@ -126,6 +128,8 @@ export class Gestures {
 
     _up(e, cancelled = false) {
         if (e.pointerId === this.stick.id) {
+            // A flick: the thumb went up fast and came off. Jump.
+            if (!cancelled && e.timeStamp - this.stick.t0 < this.flick.ms && this.stick.oy - Math.min(this.stick.ly, e.clientY) > this.flick.px) this.h.jump?.();
             Object.assign(this.stick, { id: null, x: 0, y: 0 });
             this.h.stick?.({ active: false });
             return;

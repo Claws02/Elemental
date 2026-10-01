@@ -7,7 +7,7 @@
 //   node scripts/scenes/halcyra.mjs
 // ============================================================
 import fs from 'fs';
-import { Land, Dresser, fbm, smooth, exits, grow, people, scene } from './lib/region.mjs';
+import { Land, Dresser, fbm, smooth, exits, grow, people, scene, span } from './lib/region.mjs';
 
 const SEED = 77;
 const L = new Land(240, 2, SEED);
@@ -29,9 +29,7 @@ for (const [x, z, f] of [[-3, 6, 0], [3, 6, 0], [-11, -12, Math.PI], [11, -12, M
 // Four marble bridges from the island to the shore, lamps along each.
 const DIRS = [['South', 0, 1], ['North', 0, -1], ['East', 1, 0], ['West', -1, 0]];
 for (const [name, dx, dz] of DIRS) {
-    const r = (ISLE + SHORE) / 2, len = SHORE - ISLE + 6, mx = dx * r, mz = dz * r;
     L.flatten(dx * (SHORE + 4), dz * (SHORE + 4), 7, TOP, 0.8);
-    S.add(`Bridge_${name}`, 'bridge', mx, mz, dx ? 0 : Math.PI / 2, { length: len, width: 5, rise: 1.6, style: 'marble', seed: name.length, y: TOP - L.at(mx, mz) + 0.1 });
     for (const t of [-1, 1]) {
         const side = [dz * 3, -dx * 3];
         S.add(`Bridge_${name}_Lamp_${t > 0 ? 'Shore' : 'Isle'}`, 'lamp', dx * (t > 0 ? SHORE + 3 : ISLE - 2) + side[0], dz * (t > 0 ? SHORE + 3 : ISLE - 2) + side[1], 0, { height: 3.6 }, 1);
@@ -79,6 +77,8 @@ for (const e of ends) {
 // The shore ring road.
 const ring = Array.from({ length: 33 }, (_, i) => { const a = (i / 32) * Math.PI * 2; return [Math.cos(a) * (SHORE + 6), Math.sin(a) * (SHORE + 6)]; });
 L.road(ring, 4, 'cobble');
+// The bridges last, so each end sits on the ground the roads left: island rim to the shore.
+for (const [name, dx, dz] of DIRS) span(L, S, `Bridge_${name}`, [dx * (ISLE - 1), dz * (ISLE - 1)], [dx * (SHORE + 2), dz * (SHORE + 2)], { width: 5, rise: 1.6, style: 'marble', seed: name.length });
 // Growth: cypress and gardens round the lake, the open country beyond.
 grow(S, 'Garden', 'lake', { x0: -115, z0: -115, x1: 115, z1: 115 }, { trees: 50, plants: 70, boulders: 8, ok: (x, z, h, s) => Math.hypot(x, z) > SHORE + 2 && s < 0.6 && !L.busy(x, z, 2) && !villas.some(v => Math.hypot(v.x - x, v.z - z) < 8) && Math.hypot(OFFICE.x - x, OFFICE.z - z) > 13 });
 grow(S, 'Isle', 'lake', { x: 0, z: 0, r: ISLE - 1 }, { trees: 6, plants: 10, boulders: 0, ok: (x, z) => Math.abs(x) > 12 || z > 14 });

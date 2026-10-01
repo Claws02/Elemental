@@ -64,7 +64,7 @@ add('Tam', 'npc', 15, -6, -H, { name: 'Tam', look: 'villager', role: 'idle' });
 add('Cael', 'npc', 0, 22, PI, { name: 'Cael', look: 'cael', role: 'idle', hidden: true });
 // ---- the flock (arrives at dusk) ----
 // They come for you, not the thatch: the fire is yours (embers off). A first fight: any hit kills one, and they hit softly.
-add('Flock', 'creature', 15, 15, 0, { species: 'emberwing', count: 4, spread: 5, aggressive: true, elite: false, embers: false, fragile: true, damage: 0.3, hidden: true });
+add('Flock', 'creature', 15, 15, 0, { species: 'emberwing', count: 4, spread: 5, aggressive: true, elite: false, embers: false, fragile: true, damage: 0.3, tier: 'always', hidden: true });
 // ---- where the morning goes ----
 add('Zone_Forge', 'trigger', -11, 11, 0, { width: 6, depth: 6, height: 3 });
 add('Zone_Square', 'trigger', 0, 1, 0, { width: 9, depth: 8, height: 3 });

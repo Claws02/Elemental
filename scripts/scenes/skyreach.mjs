@@ -6,7 +6,7 @@
 //   node scripts/scenes/skyreach.mjs
 // ============================================================
 import fs from 'fs';
-import { Land, Dresser, fbm, ridge, smooth, pathDist, exits, town, grow, people, scene } from './lib/region.mjs';
+import { Land, Dresser, fbm, ridge, smooth, pathDist, exits, town, grow, people, scene, span } from './lib/region.mjs';
 
 const SEED = 55;
 const L = new Land(240, 2, SEED);
@@ -43,9 +43,8 @@ S.add('Start', 'spawn', PEAK.x, PEAK.z + 30, Math.PI, { name: 'start' }, 2);
 const ends = exits('skyreach', L, S, { banner: 'sky', surface: 'cobble', style: 'whitestone' });
 const crossing = { x: -10, z: 20 };
 const nA = [crossing.x, crossing.z - 16], nB = [crossing.x, crossing.z + 16];
-const deckH = Math.max(L.at(...nA), L.at(...nB));
-S.add('Wind_Bridge', 'bridge', crossing.x, crossing.z, Math.PI / 2, { length: 34, width: 2.4, rise: 1.2, style: 'rope', seed: 6, y: deckH - L.at(crossing.x, crossing.z) + 0.3 });
 for (const e of ends) L.road(e.to === 'emberwall' ? [[e.x, e.z], [-50, -20], [PEAK.x - 20, PEAK.z + 10], [PEAK.x, PEAK.z + 24]] : [[e.x, e.z], [nB[0], nB[1] + 6], [nA[0], nA[1] - 6], [PEAK.x - 10, PEAK.z + 20], [PEAK.x, PEAK.z + 24]], 4, 'dirt');
+span(L, S, 'Wind_Bridge', nA, nB, { width: 2.4, rise: 1.2, style: 'rope', seed: 6 });        // after the roads: its ends on the chasm's lips
 // The Windless Stair: whitestone flights up a cliff on the west flank, ending at a sealed door.
 const STAIR = { x: -70, z: -60 };
 L.flatten(STAIR.x, STAIR.z, 9, null, 0.7);

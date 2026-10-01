@@ -9,8 +9,9 @@
 // What it is for:
 //   cover     a creature's charge or bite stops against it
 //   barrier   a wall across a lane (raise several)
-//   platform  stand on the spot as it rises and it lifts you (there is no
-//             jump: stone is how the Conduit climbs)
+//   platform  stand on the spot as it rises and it lifts you; or raise it
+//             beside you and walk into it to climb on (PlayerController
+//             CLIMB), jumping first for a tall one
 //
 // It is temporary: after `last` seconds it sinks back. At most `most` stand at
 // once; raising another sinks the oldest.

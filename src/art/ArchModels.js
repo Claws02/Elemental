@@ -53,12 +53,13 @@ export function towerModel({ height: H = 9, radius: R = 2.2, style = 'stone', to
 }
 
 /** A bridge between two banks at the same height: stone arches, a plank span, or a rope bridge. Its deck is walkable. */
-export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, style = 'stone', seed = 1 } = {}) {
+export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, drop = 0, style = 'stone', seed = 1 } = {}) {
     const k = new Kit();
     const boxes = [];
     const n = Math.max(4, Math.round(L / 1.5));
     // The deck: n segments along x following a gentle arc (rope: a sag), each a walkable box.
-    const yAt = x => style === 'rope' ? -rise * 0.6 * (1 - (2 * x / L) ** 2) : rise * (1 - (2 * x / L) ** 2);
+    // `drop`: how much higher the +x end stands than the -x end, so each end meets its own bank.
+    const yAt = x => (style === 'rope' ? -rise * 0.6 * (1 - (2 * x / L) ** 2) : rise * (1 - (2 * x / L) ** 2)) + drop * x / L;
     for (let i = 0; i < n; i++) {
         const x0 = -L / 2 + i * L / n, x1 = x0 + L / n, y0 = yAt(x0), y1 = yAt(x1), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
         const len = Math.hypot(x1 - x0, y1 - y0) + 0.04, tilt = Math.atan2(y1 - y0, x1 - x0);
@@ -77,7 +78,7 @@ export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, style = 
     }
     // Piers and arches under a stone bridge; posts under a plank one.
     if (style === 'stone' || style === 'marble' || style === 'whitestone') {
-        for (const x of [-L / 2, L / 2]) k.box('body', 1.2, 3, W + 0.4, at(x, -1.4, 0), pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + 30), { ch: 0.05 });
+        for (const x of [-L / 2, L / 2]) k.box('body', 1.2, 3, W + 0.4, at(x, yAt(x) - 1.4, 0), pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + 30), { ch: 0.05 });
     } else if (style === 'plank') {
         for (let x = -L / 2 + 1.5; x < L / 2 - 1; x += 3) for (const s of [-1, 1]) k.box('body', 0.18, 4, 0.18, at(x, yAt(x) - 1.8, s * (W / 2 - 0.2)), WORLD.timber[0]);
     }

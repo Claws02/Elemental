@@ -36,6 +36,7 @@ jobs:
           node qa/terrain.js
           node qa/bestiary.js
           node qa/world.js
+          node qa/movement.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

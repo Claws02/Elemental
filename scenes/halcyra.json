@@ -123,19 +123,6 @@
    "role": "idle"
   },
   {
-   "id": "Bridge_South",
-   "type": "bridge",
-   "x": 0,
-   "y": 8.1,
-   "z": 40,
-   "rotY": 1.571,
-   "length": 46,
-   "width": 5,
-   "rise": 1.6,
-   "style": "marble",
-   "seed": 5
-  },
-  {
    "id": "Bridge_South_Lamp_Isle",
    "type": "lamp",
    "x": 3,
@@ -164,19 +151,6 @@
    "count": 1,
    "spread": 1,
    "aggressive": false
-  },
-  {
-   "id": "Bridge_North",
-   "type": "bridge",
-   "x": 0,
-   "y": 8.1,
-   "z": -40,
-   "rotY": 1.571,
-   "length": 46,
-   "width": 5,
-   "rise": 1.6,
-   "style": "marble",
-   "seed": 5
   },
   {
    "id": "Bridge_North_Lamp_Isle",
@@ -209,19 +183,6 @@
    "aggressive": false
   },
   {
-   "id": "Bridge_East",
-   "type": "bridge",
-   "x": 40,
-   "y": 8.1,
-   "z": 0,
-   "rotY": 0,
-   "length": 46,
-   "width": 5,
-   "rise": 1.6,
-   "style": "marble",
-   "seed": 4
-  },
-  {
    "id": "Bridge_East_Lamp_Isle",
    "type": "lamp",
    "x": 18,
@@ -250,19 +211,6 @@
    "count": 1,
    "spread": 1,
    "aggressive": false
-  },
-  {
-   "id": "Bridge_West",
-   "type": "bridge",
-   "x": -40,
-   "y": 8.1,
-   "z": 0,
-   "rotY": 0,
-   "length": 46,
-   "width": 5,
-   "rise": 1.6,
-   "style": "marble",
-   "seed": 4
   },
   {
    "id": "Bridge_West_Lamp_Isle",
@@ -998,6 +946,62 @@
    "rotY": 0,
    "height": 5,
    "colour": "gold"
+  },
+  {
+   "id": "Bridge_South",
+   "type": "bridge",
+   "x": 0,
+   "y": 7.76,
+   "z": 40.5,
+   "rotY": -1.571,
+   "length": 43,
+   "width": 5,
+   "rise": 1.6,
+   "drop": -0.08,
+   "style": "marble",
+   "seed": 5
+  },
+  {
+   "id": "Bridge_North",
+   "type": "bridge",
+   "x": 0,
+   "y": 7.73,
+   "z": -40.5,
+   "rotY": 1.571,
+   "length": 43,
+   "width": 5,
+   "rise": 1.6,
+   "drop": -0.14,
+   "style": "marble",
+   "seed": 5
+  },
+  {
+   "id": "Bridge_East",
+   "type": "bridge",
+   "x": 40.5,
+   "y": 7.76,
+   "z": 0,
+   "rotY": 0,
+   "length": 43,
+   "width": 5,
+   "rise": 1.6,
+   "drop": -0.08,
+   "style": "marble",
+   "seed": 4
+  },
+  {
+   "id": "Bridge_West",
+   "type": "bridge",
+   "x": -40.5,
+   "y": 7.77,
+   "z": 0,
+   "rotY": -3.142,
+   "length": 43,
+   "width": 5,
+   "rise": 1.6,
+   "drop": -0.07,
+   "style": "marble",
+   "seed": 4
   },
   {
    "id": "Garden_Tree_001",

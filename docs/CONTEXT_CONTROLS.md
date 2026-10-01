@@ -46,7 +46,10 @@ Tune these in `src/data/materials.js`, nowhere else.
 | Hold a fireball against timber | It catches, and the fireball is spent. |
 | Touch a brazier and hold | A fireball in the hand. The brazier stays lit. |
 | Touch empty world | Camera drag, as before. |
-| Touch in the bottom-left quarter | Always the move stick. A rock lying there has to be approached from another angle. |
+| Touch in the bottom-left corner (a third across, two fifths up) | Always the move stick. A rock lying there has to be approached from another angle. Narrowed from the bottom-left quarter after a phone test, to leave more of the screen for the elements. |
+| A quick flick up on the stick, thumb off | Jump. Pushing the stick up and holding it is running, never a jump. |
+| The round button in the bottom-right corner | Jump (from the ground, or a moment after leaving it). |
+| Walking into a ledge within reach (raised stone, a wall, a crate, a rock, a steep bank) | Climb: hands up, haul, a knee over, stand on top. About 2.3 m from the ground; jump first and the hands reach higher. People and creatures are never ledges. |
 
 ## The flame jet, and doors
 
@@ -93,7 +96,7 @@ What moving air does:
 - **Fans fire, both ways:** a young flame (under 2.5 s old) blows out after about 0.35 s of wind; an established fire flares for 3 s, burns faster, and spreads further and faster **downwind**. Blowing on a fire too late drives it across the wall.
 - **Hurts, a little:** a gust does at most 12 damage at its heart (was 70; three gusts used to bring the barricade down). It finishes off a plank that's nearly broken and barely marks sound timber. Steady wind breaks nothing.
 - **Touch priority:** a touch squarely on a thing (a rock at the hero's feet) goes to that thing; otherwise a touch on the hero is Air; otherwise the fat-finger assist picks the nearest thing.
-- **Touching the hero wins over the move stick:** in portrait the hero stands at the move zone's edge, so a touch on the hero is Air even inside the bottom-left quarter. The hero's touch area is at least 60 px.
+- **Touching the hero wins over the move stick:** in portrait the hero stands at the move zone's edge, so a touch on the hero is Air even inside the move-stick corner. The hero's touch area is at least 60 px.
 
 ## Where the Phase 3 element wheel fits
 

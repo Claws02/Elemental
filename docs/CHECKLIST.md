@@ -73,6 +73,12 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Characters: the rulers, Kestrel, folk and guards per kingdom; patrol routes.
   - [x] Every region blocked out at 240 m: Veyra's valley, the Verdant Reach, Emberwall, Saltmere, Skyreach, the Glass Expanse, Halcyra; joined by exits both ways; Lesson I leads into the Reach. A story told to its end stays told. *World test: 7 regions, 21 roads walked, 166–291 draw calls at each start; prologue test: +1.*
   - [x] Editor: a Land tab (raise, lower, smooth, flatten, paint; size, strength; one undo per stroke), Select several (tap, box, move together, turn, delete), patrol routes as draggable points, every light. Water yields to panning. *Editor test: +12 checks.*
+- [x] **Moving through the world (your notes after the first walk)**
+  - [x] Bridges meet both banks (a slope where they differ), placed after the roads; Thornwick's walked end to end. *World test: every bridge's ends, two walked across.*
+  - [x] Jump: a button in the bottom-right corner, a flick up on the stick, Space at a desk. The stick lives in the bottom-left corner only (⅓ × ⅖). *Movement test.*
+  - [x] Climbing: walk into a ledge within reach and the hero climbs onto it; jump to reach higher. *Movement test: a 1.5 m column walked up, a 3 m one jumped and climbed.*
+  - [x] Full speed on raised stone and past people (no friction from them; the hero steps round a person). *Movement test.*
+  - [x] Creature tiers: each kind has a tier; a hero one tier short meets its young (fewer, half the health, 40% of the damage), further short meets none. Might is the elements known, their Power and Control, and training. *Unit + world tests.*
   - [ ] **Played on a device** ← next: walk the world, then edit in the editor.
 
 ## Phase 2: elemental sandbox

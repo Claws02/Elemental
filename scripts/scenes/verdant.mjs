@@ -6,7 +6,7 @@
 //   node scripts/scenes/verdant.mjs
 // ============================================================
 import fs from 'fs';
-import { Land, Dresser, fbm, smooth, pathDist, exits, town, grow, people, scene, dock, river, HALF } from './lib/region.mjs';
+import { Land, Dresser, fbm, smooth, pathDist, exits, town, grow, people, scene, dock, river, bridgeAcross, HALF } from './lib/region.mjs';
 
 const SEED = 21;
 const L = new Land(240, 2, SEED);
@@ -34,17 +34,17 @@ for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; S.add(`Thornwick_
 S.add('Thornwick_Well', 'basin', TW.x, TW.z, 0, { seed: 4, owner: 'civilian' }, 2);
 // A dock on the river below the town, and a bridge west over it.
 const bridgeX = -26, bridgeZ = 4;
-const bankH = Math.max(L.at(bridgeX - 12, bridgeZ), L.at(bridgeX + 12, bridgeZ));
 river(S, 'River', RIVER, LEVEL, 22);
-S.add('Thornwick_Bridge', 'bridge', bridgeX, bridgeZ, 0, { length: 26, width: 4, rise: 1.4, style: 'stone', seed: 2, y: bankH - L.at(bridgeX, bridgeZ) + 0.2 });
 dock(L, S, 'Thornwick_Dock', 0, 22, -1, 0, LEVEL);
 S.add('Start', 'spawn', TW.x + 4, TW.z + 14, Math.PI, { name: 'start' }, 2);
 // Roads: exits to the town, through the bridge.
 const ends = exits('verdant', L, S, { banner: 'green', surface: 'dirt' });
 for (const e of ends) {
-    const pts = e.to === 'veyra' ? [[e.x, e.z], [bridgeX - 16, bridgeZ], [bridgeX + 16, bridgeZ], [TW.x - 12, TW.z]] : [[e.x, e.z], [(e.x + TW.x) / 2, (e.z + TW.z) / 2 + 6], [TW.x, TW.z]];
-    L.road(pts, 4.5, 'dirt');
+    // The west road stops at each bank: the bridge carries it over the river (placed after, on the roads' ground).
+    if (e.to === 'veyra') { L.road([[e.x, e.z], [bridgeX - 17, bridgeZ]], 4.5, 'dirt'); L.road([[bridgeX + 9, bridgeZ], [TW.x - 12, TW.z]], 4.5, 'dirt'); }
+    else L.road([[e.x, e.z], [(e.x + TW.x) / 2, (e.z + TW.z) / 2 + 6], [TW.x, TW.z]], 4.5, 'dirt');
 }
+bridgeAcross(L, S, 'Thornwick_Bridge', bridgeX, bridgeZ, 1, 0, LEVEL, { width: 4, rise: 1.4, style: 'stone', seed: 2 });
 L.paintCircle(TW.x, TW.z, 12, 'cobble');            // the plaza over the roads' ends
 // The Lord-Warden in his hall, folk in the market, guards at the bridge.
 const hall = T.spots[0];

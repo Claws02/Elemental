@@ -152,7 +152,8 @@ export const TYPES = {
             species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound', 'shellback', 'cindermite', 'mudling', 'brinecoil', 'galekite', 'frostmaw', 'glasswight', 'sentinel', 'wellspawn']),
             count: int('How many', 3, 1, 12), spread: num('Spread (m)', 3, 0, 30, 0.5),
             aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), embers: bool('Emberwings drop embers', true),
-            fragile: bool('Fragile: any hit kills (a first fight)', false), vent: bool('Pours from a vent until it is blocked (Cindermites)', false), damage: num('Damage they do (×)', 1, 0, 3, 0.05), hidden: HIDDEN,
+            fragile: bool('Fragile: any hit kills (a first fight)', false), vent: bool('Pours from a vent until it is blocked (Cindermites)', false), damage: num('Damage they do (×)', 1, 0, 3, 0.05),
+            tier: select('Appears from tier (kind: its species’; always: the story needs them)', 'kind', ['kind', 'always', '1', '2', '3', '4']), hidden: HIDDEN,
         },
         signals: ['gone', 'engaged', 'visible'],
         actions: ['release'],
@@ -223,8 +224,8 @@ export const TYPES = {
     },
     bridge: {
         label: 'Bridge', group: 'Buildings',
-        props: { length: num('Length', 14, 4, 60, 0.5), width: num('Width', 3, 1.2, 10, 0.1), rise: num('Arch rise (rope: sag)', 1.2, 0, 6, 0.1), style: select('Style', 'stone', ['stone', 'whitestone', 'marble', 'plank', 'rope']), seed: SEED, hidden: HIDDEN },
-        note: 'Spans along its length (x) between two banks at its own height; the deck and rails are solid.',
+        props: { length: num('Length', 14, 4, 60, 0.5), width: num('Width', 3, 1.2, 10, 0.1), rise: num('Arch rise (rope: sag)', 1.2, 0, 6, 0.1), drop: num('Far end higher by (m)', 0, -15, 15, 0.1), style: select('Style', 'stone', ['stone', 'whitestone', 'marble', 'plank', 'rope']), seed: SEED, hidden: HIDDEN },
+        note: 'Spans along its length (x) between two banks; each end sits at the bank (the far end `drop` higher). The deck and rails are solid.',
     },
     dock: {
         label: 'Dock', group: 'Buildings',
