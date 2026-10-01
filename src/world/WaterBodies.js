@@ -19,6 +19,7 @@ import { THREE } from '../engine/lib.js';
 import { Ground } from './Ground.js';
 
 export const WADE = { slow: 0.6, deep: 1.25 };
+export const LAVA_FLOW = { burn: 35 };
 
 export class WaterBodies {
     constructor() {
@@ -28,7 +29,7 @@ export class WaterBodies {
 
     /** A body from a scene item: { id, x, z, rotY, width, depth, round, level }. */
     add(it, mesh) {
-        const b = { id: it.id, x: it.x, z: it.z, rot: it.rotY || 0, w: it.width / 2, d: it.depth / 2, round: !!it.round, level: it.level, mesh };
+        const b = { id: it.id, x: it.x, z: it.z, rot: it.rotY || 0, w: it.width / 2, d: it.depth / 2, round: !!it.round, level: it.level, mesh, lava: it.kind === 'lava' };
         this.bodies.push(b);
         return b;
     }
@@ -45,8 +46,25 @@ export class WaterBodies {
 
     /** The body with water over (x, z), or null. */
     at(x, z) {
-        for (const b of this.bodies) if (this._in(b, x, z) && b.level > Ground.height(x, z)) return b;
+        for (const b of this.bodies) if (!b.lava && this._in(b, x, z) && b.level > Ground.height(x, z)) return b;
         return null;
+    }
+
+    /** A lava flow over (x, z) (Emberwall's channels), or null. */
+    lavaAt(x, z) {
+        for (const b of this.bodies) if (b.lava && this._in(b, x, z) && b.level > Ground.height(x, z) - 0.05) return b;
+        return null;
+    }
+
+    /** Lava burns what it touches: the hero, creatures, and anything that burns (once a second or so). */
+    burn(dt, { vitals, creatures, fire }) {
+        if (!this.bodies.some(b => b.lava)) return;
+        const p = vitals.player.body.position, L = this.lavaAt(p.x, p.z);
+        if (L && p.y - 0.45 < L.level + 0.3) vitals.hurt(LAVA_FLOW.burn * dt, 'lava');
+        for (const c of creatures?.all || []) { const q = c.pos, l = this.lavaAt(q.x, q.z); if (l && q.y < l.level + 1) c.react('fire', LAVA_FLOW.burn * dt, 'environment'); }
+        if ((this._lt = (this._lt || 0) - dt) > 0) return;
+        this._lt = 1;
+        for (const f of fire.flammables.values()) { if (f.burning || f.burned) continue; const q = f.thing.pos(), l = this.lavaAt(q.x, q.z); if (l && q.y < l.level + 1.5) fire.ignite(f.thing, 'environment'); }
     }
 
     /** How deep the water is at (x, z) (0 if none). */
@@ -83,7 +101,9 @@ export function waterSheet(it) {
     const geo = it.round ? new THREE.CircleGeometry(1, 40) : new THREE.PlaneGeometry(2, 2, 1, 1);
     geo.rotateX(-Math.PI / 2);
     geo.scale(it.width / 2, 1, it.depth / 2);
-    const mat = new THREE.MeshStandardMaterial({ color: it.colour ?? 0x2f7fa8, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.78, emissive: 0x0a2e44, emissiveIntensity: 0.35 });
+    const mat = it.kind === 'lava'
+        ? new THREE.MeshStandardMaterial({ color: 0x3a1206, roughness: 0.6, emissive: 0xff5a14, emissiveIntensity: 1.5 })
+        : new THREE.MeshStandardMaterial({ color: it.colour ?? 0x2f7fa8, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.78, emissive: 0x0a2e44, emissiveIntensity: 0.35 });
     const m = new THREE.Mesh(geo, mat);
     m.receiveShadow = true;
     m.renderOrder = 1;

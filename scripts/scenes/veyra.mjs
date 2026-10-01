@@ -5,16 +5,29 @@
 // it was laid out, kept so a layout change is a code review, not a hand edit.
 // ============================================================
 import fs from 'fs';
+import { Land, Dresser, fbm, ridge, smooth, exits, grow } from './lib/region.mjs';
 const PI = Math.PI, H = PI / 2;
-const o = [];
-const add = (id, type, x, z, rotY = 0, p = {}) => o.push({ id, type, x, y: 0, z, rotY, ...p });
+// ---- the land: a village on a flat shelf in a ring of mountains, the valley opening east to the Reach ----
+const SEED = 11, FLOOR = 0;          // the village at ground level 0, as it always was
+const L = new Land(240, 2, SEED);
+L.shape((x, z) => {
+    const d = Math.hypot(x, z), east = smooth(10, 60, x) * (1 - smooth(14, 40, Math.abs(z)));   // the way out
+    const hills = FLOOR + fbm(x, z, 40, SEED) * 2;
+    const peaks = smooth(45, 110, d) * (28 + ridge(x, z, 60, SEED + 2) * 18) * (1 - east * 0.85);
+    return hills + peaks;
+});
+L.flatten(0, 0, 44, FLOOR, 0.75);
+const S = new Dresser(L, SEED);
+const o = S.objects;
+const add = (id, type, x, z, rotY = 0, p = {}) => { S.add(id, type, x, z, rotY, p, type === 'tree' ? 3 : 6); };
+const rect = (x, z, w, d, surface) => L.paint((px, pz) => Math.abs(px - x) <= w / 2 && Math.abs(pz - z) <= d / 2 ? surface : null);
 // ---- ground and square ----
 add('Spawn', 'spawn', 4, 13, -H, { name: 'start' });
-add('Square', 'patch', 0, 0, 0, { width: 14, depth: 12, style: 'cobble', round: false });
-add('Lane_East', 'patch', 12, 5, 0, { width: 12, depth: 3, style: 'dirt', round: false });
-add('Lane_North', 'patch', 0, -12, 0, { width: 3, depth: 12, style: 'dirt', round: false });
-add('Road_South', 'patch', 0, 18, 0, { width: 4, depth: 14, style: 'dirt', round: false });
-add('Field', 'patch', 19, -9, 0, { width: 12, depth: 12, style: 'dirt', round: false });
+rect(0, 0, 14, 12, 'cobble');
+rect(12, 5, 12, 3, 'dirt');
+rect(0, -12, 3, 12, 'dirt');
+rect(0, 18, 4, 14, 'dirt');
+rect(19, -9, 12, 12, 'dirt');
 add('StandingStone', 'standing_stone', 0, -2, 0, { height: 3.2, cracked: false, seed: 4 });
 add('Well', 'basin', 4.5, 2.5, 0, { seed: 3, owner: 'civilian' });
 add('Trough', 'basin', -6, -12, 0, { seed: 5, owner: 'civilian' });
@@ -149,13 +162,24 @@ const script = {
   ],
   card: null,
 };
+// ---- the road east out of the valley (open once the prologue is told) ----
+const ends = exits('veyra', L, S, { banner: 'green', surface: 'dirt' });
+for (const e of ends) L.road([[e.x, e.z], [60, 2], [30, 5], [18, 5]], 4, 'dirt');
+for (const it of o) if (/^(Exit|Waystone|Banner)_/.test(it.id)) it.showWhen = 'prologue=done';
+grow(S, 'Valley', 'meadow', { x0: -115, z0: -115, x1: 115, z1: 115 }, { trees: 70, plants: 90, boulders: 25, ok: (x, z, h, sl) => Math.hypot(x, z) > 34 && sl < 0.7 && !L.busy(x, z, 2) });
+L.paint((x, z, h, sl, cur) => cur !== 0 ? null : sl > 0.65 ? 'rock' : h > 26 ? 'snow' : h > 16 && fbm(x, z, 12, 5) > 0 ? 'rock' : null);
 const veyra = {
   format: 1, id: 'veyra', name: 'Prologue · The Veyra Fire',
-  settings: { ground: { half: 30, style: 'grass' }, profile: 'story', resetProgress: true, resetAfter: 0, region: 'verdant', persistent: true, mood: 'day' },
+  settings: { profile: 'story', resetProgress: true, resetAfter: 0, region: 'verdant', persistent: true, mood: 'day', terrain: L.terrain(), view: { far: 150 } },
   objects: o, wires: [], script,
 };
 fs.writeFileSync('scenes/veyra.json', JSON.stringify(veyra, null, 1) + '\n');
 // Lesson I follows the prologue now: it no longer starts the story over.
-const L = JSON.parse(fs.readFileSync('scenes/lesson1.json', 'utf8'));
-L.settings.resetProgress = false;
-fs.writeFileSync('scenes/lesson1.json', JSON.stringify(L, null, 1) + '\n');
+const L1 = JSON.parse(fs.readFileSync('scenes/lesson1.json', 'utf8'));
+L1.settings.resetProgress = false;
+// …and leads on into the world: the end card's first button, and (once it's done) a way out by the spawn.
+const into = { label: 'Into the Verdant Reach', travel: { scene: 'verdant', at: 'from_veyra' } };
+L1.script.card.buttons = [into, ...L1.script.card.buttons.filter(b => !b.travel)];
+L1.objects = L1.objects.filter(it => it.id !== 'Exit_verdant');
+L1.objects.push({ id: 'Exit_verdant', type: 'exit', x: 0, y: 0, z: 26, rotY: 0, to: 'verdant', at: 'from_veyra', label: 'Verdant Reach', width: 6, depth: 2, height: 4, showWhen: 'lesson1' });
+fs.writeFileSync('scenes/lesson1.json', JSON.stringify(L1, null, 1) + '\n');

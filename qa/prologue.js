@@ -27,7 +27,7 @@ const SHOTS = path.join(__dirname, 'shots');
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     const pass = [], fail = [];
-    const check = (ok, msg) => (ok ? pass : fail).push(msg);
+    const check = (ok, msg) => { (ok ? pass : fail).push(msg); if (process.env.QA_LOUD) console.log((ok ? "  ok   " : "  FAIL ") + msg); };
     const wait = ms => page.waitForTimeout(ms);
     const ev = (fn, a) => page.evaluate(fn, a);
     const until = (fn, ms, a) => page.waitForFunction(fn, a, { timeout: ms }).then(() => true).catch(() => false);
@@ -137,12 +137,13 @@ const SHOTS = path.join(__dirname, 'shots');
             await new Promise(r => setTimeout(r, 400));
         }
     });
-    const caelCame = await until(() => ['cael', 'damage', 'barn', 'blame', 'choice'].includes(__EL.story.step), 60000);
+    const caelCame = await until(() => ['cael', 'damage', 'barn', 'blame', 'charm', 'choice'].includes(__EL.story.step), 60000);      // he may already be offering the charm
     await shot('P2-cael');
     const offered = await until(() => __EL.story.step === 'charm' && !!__EL.story.choosing, 30000);
     await ev(() => __EL.story.choose(0));                              // put it on
     const chose = offered && await until(() => __EL.story.step === 'choice' && !!__EL.story.choosing, 30000);
     const after = await ev(() => ({ fire: __EL.prog.flags['veyra.fire'], barn: __EL.prog.flags['bram.barn'], blame: __EL.prog.flags['veyra.blame'], care: __EL.ledger.get('care'), harm: __EL.ledger.get('harm'), mood: __EL.EventBus.recent().length >= 0 }));
+    if (!(caelCame && chose) && process.env.QA_LOUD) console.log('  debug', JSON.stringify({ caelCame, offered, chose }), JSON.stringify(await ev(() => ({ fps: __EL.renderInfo?.().fps, step: __EL.story.step, t: __EL.story.t, choosing: !!__EL.story.choosing, burning: [...__EL.fire.flammables.values()].filter(f => f.burning).map(f => f.thing.id).slice(0, 6), birds: __EL.creatures.all.filter(c => !c.dead).length, talking: __EL.story.talking }))));
     check(caelCame && chose, 'Cael arrives when the fire is out and the birds are gone');
     check(after.fire !== 'ruin' && after.barn === 'saved' && after.blame !== 'you' && after.care > after.harm,
         `the careful night: little burned, Bram's barn saved, nobody blames you (${JSON.stringify(after)})`);
@@ -190,8 +191,11 @@ const SHOTS = path.join(__dirname, 'shots');
     await ev(() => __EL.travel('veyra', 'start'));
     await until(() => __EL.mode === 'veyra', 30000);
     await wait(800);
-    const back = await ev(() => ({ burned: [...__EL.world.objects.keys()].filter(id => /^Veyra_(House|Barn)/.test(id) && __EL.world.signal(id, 'burned')).length, cracked: __EL.world.signal('StandingStone', 'cracked') }));
+    const back = await ev(() => ({ burned: [...__EL.world.objects.keys()].filter(id => /^Veyra_(House|Barn)/.test(id) && __EL.world.signal(id, 'burned')).length, cracked: __EL.world.signal('StandingStone', 'cracked'),
+        step: __EL.story?.step, charm: __EL.prog.flags.charm, prologue: __EL.prog.flags.prologue, earth: __EL.prog.state('earth'), road: __EL.world.objects.has('Exit_verdant') }));
     check(back.burned === after2.burned && back.cracked, `back in Veyra, the burned houses are still burned and the stone still cracked (${JSON.stringify(back)})`);
+    check(back.step === 'done' && back.charm === 'worn' && back.prologue === 'done' && back.earth === 'trained' && back.road,
+        `and the night isn't told again: nothing is reset, and the road east to the Reach is open (${JSON.stringify(back)})`);
     await shot('P5-remembered');
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));

@@ -345,7 +345,8 @@ export class Story {
         this.hud.card({
             title: this.fill(c.title || ''),
             lines: (c.lines || []).map(l => this.fill(l)).filter(Boolean),
-            buttons: c.buttons || [],
+            // { label, travel: { scene, at } }: the story goes on in another scene.
+            buttons: (c.buttons || []).map(b => b.travel ? { ...b, href: '#', go: () => this.hooks.travel?.(b.travel.scene, b.travel.at || 'start') } : b),
         });
     }
 }

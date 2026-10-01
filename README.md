@@ -10,6 +10,8 @@ Every place is a scene file in `scenes/` (`docs/SCENES.md`), made in [Elemental-
 
 **New game** on the title screen asks for a name and a look, then plays the **prologue**: harvest eve in Veyra, the Emberwing flock, the stone that cracks, your own roof on fire, and a village you save or don't; then Cael's charm, worn or refused. **Lesson I**, Cael's first lesson, follows: Earth trained, Fire still wild, and powers grow in Power and Control (`docs/PROGRESSION.md`). Three save slots; **Continue** picks up at the last checkpoint. `?scene=courtyard` is the sandbox, every element fully trained.
 
+**The world** (phase 5): Lesson I's end card leads into the Verdant Reach, and from there every kingdom is a 240 m region joined to its neighbours by roads that end at waystones: Emberwall, Saltmere, Skyreach, the Glass Expanse and Halcyra, the capital. Each opens directly at `?scene=verdant`, `emberwall`, `saltmere`, `skyreach`, `glass` or `halcyra`.
+
 ![The courtyard](docs/assets/courtyard.png)
 
 ## Run it
@@ -52,6 +54,10 @@ npm run lesson     # Lesson I, both outcomes           (these need a server on :
 npm run core       # save slots, health, death, checkpoints, travel, ledger
 npm run creatures  # the three creatures and the elite
 npm run prologue   # the Veyra fire, played carefully and recklessly
+npm run abilities  # raise stone, ice, lava, firestorm, mud, glide, the flame jet
+npm run terrain    # standing, climbing, wading and culling on terrain
+npm run bestiary   # the twelve creatures and their weaknesses
+npm run world      # every region loads, and every road between them leads both ways
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
 ```
 

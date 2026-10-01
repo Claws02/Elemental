@@ -31,12 +31,12 @@ export const SURFACES = [
     { key: 'rock',   name: 'Rock',       col: [0x7b7468, 0x857d70, 0x6f685d] },
     { key: 'sand',   name: 'Sand',       col: [0xcdb88a, 0xc4ae80, 0xd6c296] },
     { key: 'snow',   name: 'Snow',       col: [0xe8eef2, 0xdfe6ec, 0xf2f6f8] },
-    { key: 'ash',    name: 'Ash',        col: [0x3e3a38, 0x47423f, 0x353230] },
+    { key: 'ash',    name: 'Ash',        col: [0x6a625c, 0x746b64, 0x605852] },
     { key: 'glass',  name: 'Glass',      col: [0x9fc8c4, 0xb4d8d2, 0x8ab8b6] },
     { key: 'cobble', name: 'Cobbles',    col: [0x8a8478, 0x7e786c, 0x948e82] },
     { key: 'salt',   name: 'Salt flat',  col: [0xe6e0d4, 0xdcd6ca, 0xeee8dc] },
     { key: 'moss',   name: 'Deep moss',  col: [0x3f5a2c, 0x486434, 0x384f28] },
-    { key: 'basalt', name: 'Basalt',     col: [0x2e2c2e, 0x353236, 0x28262a] },
+    { key: 'basalt', name: 'Basalt',     col: [0x4a4648, 0x524e50, 0x434042] },
     { key: 'mud',    name: 'Mud',        col: [0x4a3826, 0x52402c, 0x433220] },
 ];
 export const SURFACE_INDEX = Object.fromEntries(SURFACES.map((s, i) => [s.key, i]));
@@ -141,6 +141,10 @@ export class Terrain {
     // starting at the edge's own heights and rolling off, so the world has no cliff where the scene ends.
     _apron() {
         const R = this.size * 0.9, steps = 64, out = 6, pos = [], col = [];
+        // One colour for the land beyond: the commonest surface along the edge (a river reaching the edge mustn't paint the horizon sand).
+        const tally = new Map();
+        for (let s = 0; s < steps; s++) { const a = (s / steps) * Math.PI * 2, k = this.half / Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a))); const sf = this.surface(Math.cos(a) * k * 0.98, Math.sin(a) * k * 0.98); tally.set(sf, (tally.get(sf) || 0) + 1); }
+        const far = [...tally.entries()].sort((a, b) => b[1] - a[1])[0][0];
         const c = new THREE.Color();
         const ring = [];
         for (let s = 0; s <= steps; s++) {
@@ -148,7 +152,7 @@ export class Terrain {
             // The point on the square's edge in this direction.
             const k = this.half / Math.max(Math.abs(dx), Math.abs(dz));
             const ex = dx * k, ez = dz * k, eh = this.height(ex * 0.999, ez * 0.999);
-            const sf = this.surface(ex * 0.98, ez * 0.98);
+            const sf = far;
             const row = [];
             for (let r = 0; r <= out; r++) {
                 const t = r / out, d = k + t * R;

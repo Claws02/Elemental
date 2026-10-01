@@ -66,6 +66,14 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Firestorm (Fire + Air): a held fireball and a second finger on the hero blow a cone of flame. *Abilities test.*
   - [x] Mud (Earth + Water): streaming, a second finger on open ground makes mud that bogs creatures down. *Abilities test.*
   - [x] Glide (Air) and thermals (Fire + Air): a fall off anything high becomes a glide; fire below lifts it. *Abilities test.*
+- [x] **Terrain and bigger places** (ROADMAP phase 5)
+  - [x] Height-field terrain with painted surfaces, chunked and culled; physics, the hero, creatures, the camera and the elements all stand on it. Water bodies (wade, deep, lava that burns). *Terrain test (`scenes/testlands.json`).*
+  - [x] Models: nature for every climate, region architecture (towers, bridges, docks, town walls, gatehouses, tents, chimneys, lamps, banners, statues, fountains; a hall or house set per kingdom), merged into batches per 40 m cell. *`scenes/gallery.json`.*
+  - [x] Twelve creatures: nine new (Shellback, Cindermite, Mudling, Brinecoil, Gale-kite, Frostmaw, Glass-wight, Lantern Sentinel, Wellspawn), each with a weakness to find. *Bestiary test (`scenes/bestiary.json`).*
+  - [x] Characters: the rulers, Kestrel, folk and guards per kingdom; patrol routes.
+  - [x] Every region blocked out at 240 m: Veyra's valley, the Verdant Reach, Emberwall, Saltmere, Skyreach, the Glass Expanse, Halcyra; joined by exits both ways; Lesson I leads into the Reach. A story told to its end stays told. *World test: 7 regions, 21 roads walked, 166–291 draw calls at each start; prologue test: +1.*
+  - [x] Editor: a Land tab (raise, lower, smooth, flatten, paint; size, strength; one undo per stroke), Select several (tap, box, move together, turn, delete), patrol routes as draggable points, every light. Water yields to panning. *Editor test: +12 checks.*
+  - [ ] **Played on a device** ← next: walk the world, then edit in the editor.
 
 ## Phase 2: elemental sandbox
 

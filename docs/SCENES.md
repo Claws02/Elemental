@@ -7,6 +7,14 @@ Every place in Elemental is a **scene file**: plain JSON in `scenes/`, made in [
 | `lesson1.json` | Lesson I · The Quiet Element (Cael's first lesson) | `?scene=lesson` (or `lesson1`) |
 | `courtyard.json` | The ruined courtyard: every element, the test obstacles | `?scene=sandbox` (or `courtyard`) |
 | `village.json` | A sample village made from the building kit, with a small gate puzzle | `?scene=village` |
+| `veyra.json` | The prologue: the night of the fire, in a valley that opens east to the Reach | New game, or `?scene=veyra` |
+| `verdant.json` | The Verdant Reach · Thornwick on the river, farmland, the Sunken Loom | `?scene=verdant` |
+| `emberwall.json` | The Emberwall Marches · Cindrel in its caldera, lava channels, the Anvil Vaults | `?scene=emberwall` |
+| `saltmere.json` | The Saltmere Coast · Lanthe on stilts and rope bridges, the Drowned Choir | `?scene=saltmere` |
+| `skyreach.json` | Skyreach Heights · Vaelmont on the peak, the wind-bridge, the Windless Stair | `?scene=skyreach` |
+| `glass.json` | The Glass Expanse · Sarn at the oasis, the scar and the Sealed Heart | `?scene=glass` |
+| `halcyra.json` | Halcyra · the palace on the Mirror Lake, the Lantern Office | `?scene=halcyra` |
+| `testlands.json`, `gallery.json`, `bestiary.json` | Test scenes: terrain and water, every model, every creature | `?scene=<id>` |
 
 Any other file in `scenes/` plays at `?scene=<its id>`.
 
@@ -22,7 +30,9 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 
 - **settings.ground**: the base floor, `half` metres each way from the centre; `style` is flagstone, grass, dirt, cobble or sand.
 - **settings.region**: the kingdom the scene is in (verdant, emberwall, saltmere, skyreach, glass, capital); the ledger counts what you do there against it.
-- **settings.mood**: the light the scene opens in (`day`, `dusk`, `night`); the story can change it.
+- **settings.mood**: the light the scene opens in (`day`, `dusk`, `night`, and the regions' `ember`, `sea`, `peaks`, `glare`); the story can change it.
+- **settings.terrain**: a height field instead of the flat floor: `{ size, cell, heights, paint }` (`size` metres square, a corner every `cell` metres; `heights` are base64 Int16 centimetres, `paint` base64 bytes, one surface per corner: grass, dirt, rock, sand, snow, ash, glass, cobble, salt, moss, basalt, mud). Objects sit on the ground where they're placed (`y` is above it); the edge is a wall, and past it the land rolls on into the fog. Region scenes are 240 m.
+- **settings.view**: `{ far }` how far you see, in metres (default 170 on terrain); things past it are culled.
 - **settings.persistent**: the scene remembers what happens to its objects in the save (a barricade burned, a stone revealed, a gate opened, a hay bale burned) and puts it back when you return.
 - **settings.profile**: `story` (the story's element states, saved on the device) or `sandbox` (everything trained, never saved). `resetProgress` starts the story over; `resetAfter` is the testing aid that puts disturbed props back after that many quiet seconds (0 = off).
 - **objects**: every object has an `id` (unique), a `type`, a position (`x`, `z`; `y` is the height of its base) and a turn (`rotY`, radians; the object's front faces +Z before turning). The rest are the type's properties. `src/scene/schema.js` lists them all, with defaults and ranges.
@@ -41,6 +51,9 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Buildings | wall (stone, timber or plaster; door, window, two windows or arch), floor, roof, stairs, fence, post, and **prefab buildings** (cottage, town house, smithy, watchtower, shed) |
 | Creatures | creature groups: Emberwing (flying fire bird), Bristleback (charging boar), Thornhound (pack hunter); a count, a spread, attacks on sight, one elite; `embers` off makes Emberwings go only for the player; `fragile` (a first fight: any hit kills) and `damage` (× what they do) |
 | Travel | exit to another scene |
+| Land (phase 5) | **water** (a lake, river stretch or sea at an absolute `level`; rect or `round`; `kind` water — wade, then swim-blocked past 1.25 m — or lava, which burns), tree kinds per climate, plant, boulder, tower, bridge (stone, whitestone, marble, plank, rope), dock, town wall, gatehouse, tent, forge chimney, lamp, banner, statue, fountain; prefab halls for every kingdom |
+| Creatures (phase 5) | Shellback, Cindermite (swarm; `vent` keeps them coming), Mudling, Brinecoil, Gale-kite, Frostmaw, Glass-wight, Lantern Sentinel, Wellspawn |
+| Characters (phase 5) | the rulers (Maren, Vorn, Oriel, Senn, Yessa, Ilvane, Corvane), Kestrel, each kingdom's folk and guards; `role` patrol walks `route` (`"x,z; x,z; …"`) |
 | Ground | ground patch (grass, dirt, cobble, sand, flagstone; square or round) |
 
 **Every object** also takes `showWhen`: it exists only when those conditions hold as the scene loads. Conditions are separated by commas: `flagName`, `!flagName`, `flag=value`, `state:ObjectId=value`. It's how one scene file holds Veyra burned and rebuilt, or a region before and after its seal opens. Things someone owns take `owner` (civilian or empire): harm to them goes in the ledger.
@@ -104,10 +117,29 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **The card** text can read the outcome, counters, levels and flags: `{outcome|quiet=…|loud=…}`, `{fireSeen|0=…|1=…|*=You did it # times}`, `{earth.power}`.
 
+## Regions and the world map
+
+The kingdoms are separate scenes joined by exits at their edges (not an open world). Each region is built by a script, `scripts/scenes/<id>.mjs`, from the helpers in `scripts/scenes/lib/` (land shaping, roads, towns, scattered growth, people), so a layout change is a code review. `npm run scenes:build` rebuilds them all; the same seed gives the same scene.
+
+```
+              Emberwall ── Skyreach
+             /    |     \  /    |
+  Veyra ── Verdant ── Halcyra ── Glass
+             \    |     /        |
+              Saltmere ──────────┘
+```
+
+The roads are `LINKS` in `scripts/scenes/lib/region.mjs`. Every exit is `Exit_<to>` and arrives at `from_<this scene>` in the other one; each region also has a `start`. Veyra's road east opens once the prologue is done (`showWhen: prologue=done`); Lesson I's end card has an **Into the Verdant Reach** button (a card button may carry `travel: { scene, at }`).
+
+A story told to its end stays told: coming back to its scene doesn't start it over or reset progress.
+
+Edit a region in the editor and it becomes a hand-edited scene; tell Claude, and the script is updated to match or retired for that region.
+
 ## Checking a scene
 
 ```bash
 npm run scenes     # every scenes/*.json through src/scene/validate.js
+npm run world      # every region loads, stands, draws within budget, and every road leads both ways
 ```
 
 The editor runs the same checks as you work and lists them under **Check**. CI runs them on every push.

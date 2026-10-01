@@ -8,7 +8,7 @@
 // game; warnings are probably mistakes.
 // ============================================================
 
-import { FORMAT, TYPES, CONDITIONS, ACTIONS, REACTION_EVENTS, GROUND_STYLES, signalsOf, actionsOf } from './schema.js';
+import { FORMAT, TYPES, CONDITIONS, ACTIONS, REACTION_EVENTS, GROUND_STYLES, MOOD_NAMES, REGION_NAMES, signalsOf, actionsOf } from './schema.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
 import { parseWhen } from './when.js';
 
@@ -21,6 +21,9 @@ export function validateScene(data) {
     if (!data.id || !/^[\w-]+$/.test(data.id)) err('scene', 'id must be letters, digits, - or _');
     const g = data.settings?.ground;
     if (g && !GROUND_STYLES.includes(g.style)) err('settings', `unknown ground style "${g.style}"`);
+    const st = data.settings || {};
+    if (st.mood && !MOOD_NAMES.includes(st.mood)) err('settings', `unknown mood "${st.mood}" (${MOOD_NAMES.join(', ')})`);
+    if (st.region && !(st.region in REGION_NAMES)) err('settings', `unknown kingdom "${st.region}" (${Object.keys(REGION_NAMES).join(', ')})`);
 
     // ---- objects -------------------------------------------------------------
     const ids = new Map();

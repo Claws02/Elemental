@@ -432,6 +432,21 @@
    "height": 1.5,
    "gentleHeight": 0.6,
    "chainTo": "TestRoom_Barricade_01"
+  },
+  {
+   "id": "Exit_verdant",
+   "type": "exit",
+   "x": 0,
+   "y": 0,
+   "z": 26,
+   "rotY": 0,
+   "to": "verdant",
+   "at": "from_veyra",
+   "label": "Verdant Reach",
+   "width": 6,
+   "depth": 2,
+   "height": 4,
+   "showWhen": "lesson1"
   }
  ],
  "wires": [
@@ -891,6 +906,13 @@
     "{fireSeen|0=You left the fire alone.|1=You reached for fire once. Cael noticed.|*=You reached for fire # times. Cael noticed.}"
    ],
    "buttons": [
+    {
+     "label": "Into the Verdant Reach",
+     "travel": {
+      "scene": "verdant",
+      "at": "from_veyra"
+     }
+    },
     {
      "label": "Again",
      "href": "?scene=lesson"

@@ -62,7 +62,8 @@ export class CameraRig {
         // In fast, out slow.
         this.curDist += (d - this.curDist) * (d < this.curDist ? 1 - Math.exp(-25 * dt) : 1 - Math.exp(-3 * dt));
         this.cam.position.copy(this.focus).addScaledVector(dir, this.curDist);
-        const gy = Ground.height(this.cam.position.x, this.cam.position.z) + 0.3;
+        const cp = this.cam.position, w = Ground.water(cp.x, cp.z);
+        const gy = Math.max(Ground.height(cp.x, cp.z), w ? w.level : -Infinity) + 0.3;      // never under the ground, or the water
         if (this.cam.position.y < gy) this.cam.position.y = gy;
         this.cam.lookAt(this.focus);
     }

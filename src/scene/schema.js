@@ -186,7 +186,7 @@ export const TYPES = {
     b_wall: {
         label: 'Wall', group: 'Buildings',
         props: {
-            length: num('Length', 4, 1, 12, 0.5), height: num('Height', 3, 1, 8, 0.1), style: BSTYLE,
+            length: num('Length', 4, 1, 30, 0.5), height: num('Height', 3, 1, 8, 0.1), style: BSTYLE,
             opening: select('Opening', 'none', ['none', 'door', 'window', 'two windows', 'arch']),
             seed: SEED, hidden: HIDDEN,
         },
@@ -211,7 +211,7 @@ export const TYPES = {
     },
     b_fence: {
         label: 'Fence', group: 'Buildings',
-        props: { length: num('Length', 4, 1, 12, 0.5), height: num('Height', 1.1, 0.5, 2.5, 0.1), seed: SEED, hidden: HIDDEN },
+        props: { length: num('Length', 4, 1, 30, 0.5), height: num('Height', 1.1, 0.5, 2.5, 0.1), seed: SEED, hidden: HIDDEN },
     },
     b_post: {
         label: 'Post', group: 'Buildings',
@@ -228,7 +228,7 @@ export const TYPES = {
     },
     dock: {
         label: 'Dock', group: 'Buildings',
-        props: { length: num('Length', 10, 2, 40, 0.5), width: num('Width', 3, 1, 8, 0.1), height: num('Deck height', 1.2, 0.3, 4, 0.1), seed: SEED, hidden: HIDDEN },
+        props: { length: num('Length', 10, 2, 40, 0.5), width: num('Width', 3, 1, 8, 0.1), height: num('Deck height', 1.2, 0.3, 8, 0.1), seed: SEED, hidden: HIDDEN },
     },
     town_wall: {
         label: 'Town wall', group: 'Buildings',
@@ -242,7 +242,7 @@ export const TYPES = {
         label: 'Tent', group: 'Buildings',
         props: { size: num('Size', 4, 2, 12, 0.5), colour: select('Colour', 'red', ['red', 'blue', 'ochre', 'green']), seed: SEED, hidden: HIDDEN },
     },
-    chimney: { label: 'Forge chimney', group: 'Buildings', props: { height: num('Height', 6, 2, 16, 0.5), seed: SEED, hidden: HIDDEN } },
+    chimney: { label: 'Forge chimney', group: 'Buildings', props: { height: num('Height', 6, 1, 16, 0.5), seed: SEED, hidden: HIDDEN } },
     lamp: { label: 'Lamp post', group: 'Props', props: { height: num('Height', 3.2, 2, 6, 0.1), hidden: HIDDEN } },
     banner: { label: 'Banner', group: 'Props', props: { height: num('Height', 5, 2, 12, 0.5), colour: select('Colour', 'green', ['green', 'red', 'blue', 'white', 'gold', 'ochre', 'sky']), seed: SEED, hidden: HIDDEN } },
     statue: { label: 'Statue (Oruun)', group: 'Ruins', props: { height: num('Height', 4, 2, 14, 0.5), style: BSTYLE, seed: SEED, hidden: HIDDEN } },
@@ -266,7 +266,7 @@ export const TYPES = {
     // ---- ground --------------------------------------------------------------------------
     water: {
         label: 'Water (lake, river, sea)', group: 'Ground',
-        props: { width: num('Width', 30, 2, 400, 1), depth: num('Depth', 20, 2, 400, 1), round: bool('Round (an ellipse)', false), level: num('Water level (m)', 0, -40, 80, 0.1) },
+        props: { kind: select('Kind', 'water', ['water', 'lava']), width: num('Width', 30, 2, 400, 1), depth: num('Depth', 20, 2, 400, 1), round: bool('Round (an ellipse)', false), level: num('Level (m)', 0, -40, 80, 0.1) },
         note: 'A sheet of water at an absolute level: where the ground is lower, there is water. A stream draws from it; shallow water slows you, deep water stops you; a frozen stream leaves ice you can stand on.',
     },
     patch: {
@@ -293,6 +293,8 @@ for (const [type, t] of Object.entries(TYPES)) {
 // Ground styles for the scene's base floor.
 export const GROUND_STYLES = ['flagstone', 'grass', 'dirt', 'cobble', 'sand'];
 export const PROFILES = ['story', 'sandbox'];
+/** The light a scene can open in (src/engine/Renderer.js MOODS). */
+export const MOOD_NAMES = ['day', 'dusk', 'night', 'ember', 'sea', 'peaks', 'glare'];
 export const REGION_NAMES = { verdant: 'Verdant Reach', emberwall: 'Emberwall Marches', saltmere: 'Saltmere Coast', skyreach: 'Skyreach Heights', glass: 'The Glass Expanse', capital: 'Halcyra' };
 
 // ---- the script: steps, conditions and actions ------------------------------------------

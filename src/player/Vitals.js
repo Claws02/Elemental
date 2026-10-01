@@ -37,7 +37,7 @@ export const VITALS = {
 
 export class Vitals {
     constructor({ player, fire }) {
-        Object.assign(this, { player, fire });
+        Object.assign(this, { player, fire });     // player: the lava flows ask where the hero stands
         this.health = VITALS.max;
         this.since = 99;            // seconds since last hurt
         this.dead = false;

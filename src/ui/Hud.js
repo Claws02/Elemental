@@ -146,7 +146,10 @@ export class Hud {
         el.querySelectorAll('a').forEach((a, i) => {
             a.textContent = buttons[i].label;
             a.href = buttons[i].href;
-            a.addEventListener('click', e => { if (this.onLink) { e.preventDefault(); this.onLink(buttons[i].href); } });
+            a.addEventListener('click', e => {
+                if (buttons[i].go) { e.preventDefault(); this.el('hud-card').classList.remove('on'); buttons[i].go(); return; }      // a road on into the world
+                if (this.onLink) { e.preventDefault(); this.onLink(buttons[i].href); }
+            });
         });
         el.classList.add('on');
     }

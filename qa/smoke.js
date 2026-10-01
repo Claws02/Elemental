@@ -610,8 +610,10 @@ const SHOTS = path.join(__dirname, 'shots');
         await new Promise(r => setTimeout(r, 400));
         const c = __thing('TestRoom_Crate_06'), p0 = c.entry.body.position.clone();   // the top crate: nothing on it
         __EL.air.gust(c.pos().sub(__EL.air.origin()).normalize());
-        await new Promise(r => setTimeout(r, 1500));
-        return +c.entry.body.position.distanceTo(p0).toFixed(2);
+        // Watch the crate, not the clock: under a loaded machine the physics runs fewer steps a second.
+        let d = 0;
+        for (let t = 0; t < 4000 && d <= 0.05; t += 100) { await new Promise(r => setTimeout(r, 100)); d = c.entry.body.position.distanceTo(p0); }
+        return +d.toFixed(2);
     });
     check(shifted > 0.05, `a gust shifts a crate (${shifted} m)`);
 

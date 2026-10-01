@@ -85,6 +85,11 @@ export function resize() {
 export const MOODS = {
     day:   { skyHigh: 0x6f8fb0, skyLow: 0xd9c7a8, fogNear: 28, fogFar: 95, sun: 0xffe2b8, sunI: 1.9, hemiSky: 0xcfe0ff, hemiGround: 0x5a4a38, hemiI: 0.75, exposure: 1.05 },
     dusk:  { skyHigh: 0x4a4a78, skyLow: 0xe0905a, fogNear: 24, fogFar: 80, sun: 0xff9a5a, sunI: 1.25, hemiSky: 0x8a86b8, hemiGround: 0x4a3428, hemiI: 0.6, exposure: 1.0 },
+    // Each kingdom's own light (the region scenes open in these).
+    ember: { skyHigh: 0x7a5a58, skyLow: 0xe0a070, fogNear: 30, fogFar: 100, sun: 0xffc890, sunI: 2.0, hemiSky: 0xe0c0a8, hemiGround: 0x6a4a3a, hemiI: 0.9, exposure: 1.15 },
+    sea:   { skyHigh: 0x6f98b8, skyLow: 0xd8e2e4, fogNear: 30, fogFar: 105, sun: 0xfff0d8, sunI: 1.8, hemiSky: 0xd8ecff, hemiGround: 0x6a7a7a, hemiI: 0.85, exposure: 1.05 },
+    peaks: { skyHigh: 0x5f88c0, skyLow: 0xe4ecf2, fogNear: 34, fogFar: 115, sun: 0xfff6e8, sunI: 2.1, hemiSky: 0xe0eeff, hemiGround: 0x7a8088, hemiI: 0.85, exposure: 1.0 },
+    glare: { skyHigh: 0x7aa8d0, skyLow: 0xf0e0c4, fogNear: 34, fogFar: 115, sun: 0xfff2d8, sunI: 2.3, hemiSky: 0xf4ecdc, hemiGround: 0x9a8a70, hemiI: 0.9, exposure: 0.98 },
     night: { skyHigh: 0x0e1426, skyLow: 0x2a2c44, fogNear: 18, fogFar: 64, sun: 0x8aa0d0, sunI: 0.35, hemiSky: 0x4a5a88, hemiGround: 0x1c1814, hemiI: 0.42, exposure: 1.1 },
 };
 

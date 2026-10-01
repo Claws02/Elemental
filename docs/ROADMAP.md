@@ -37,7 +37,7 @@ Every phase keeps the game playable from the title screen and ends with the test
 2. **Creatures and combat.** A creature framework (data-driven archetypes, simple state-machine AI, physics bodies that elements act on), elemental weaknesses that follow from physics, the first 3 archetypes, and an elite.
 3. **The prologue: the village fire.** A playable disaster where fire spreads through real village buildings, with measured damage, Cael's arrival and the aftermath. Lesson I follows it.
 4. **Elemental expansion.** The abilities in the brief's list, each as a material + gesture verb (no cooldown buttons), the combinations, and traversal (platforms, thermal lift, glide, freeze).
-5. **Terrain and bigger places.** Height-field terrain, larger scenes with culling, and editor support for terrain, multi-select and NPC routes.
+5. **Terrain and bigger places.** Height-field terrain, larger scenes with culling, and editor support for terrain, multi-select and NPC routes. *Built: every region blocked out as a 240 m terrain scene, linked by exits, with region architecture, nature, twelve creatures and the rulers (CHECKLIST.md).*
 6. **World and story, act by act.** Acts I–VI: regions, rulers, companions, the ancient mystery, the transformation (world-state variants), Cael's discovery, the fracture, the confrontation and his death, the final act and the endings.
 7. **Bosses.** Five or six, each a mechanic to understand, one per act or region.
 8. **Polish.** Synthesised audio and music hooks, VFX, lighting, UI, and performance on device.

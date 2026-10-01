@@ -72,7 +72,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const profile = st.profile === 'story' ? 'story' : 'sandbox';
     session ||= new Session(0, null, { persist: false });
     const prog = new Progression(profile, { session });
-    if (st.resetProgress && fresh) prog.reset();
+    // A story told to its end stays told: coming back (an exit, travel) never starts it over or resets progress.
+    const toldKey = `story:${data.id}`, told = session.state(toldKey) === 'done';
+    if (st.resetProgress && fresh && !told) prog.reset();
     Renderer.setMood(st.mood || 'day');
     Renderer.setView(st.view?.far || (st.terrain ? 170 : 95));
     const world = buildScene(scene, data, { flag: n => prog.flags[n], state: id => session.state(id) });
@@ -136,7 +138,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
+    if (data.script) EventBus.on(EV.LESSON, e => { if (e.step === 'done') session.setState(toldKey, 'done'); });
+    const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: told ? 'done' : step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
         protect: v => { vitals.floor = v; }, flameSpill: v => { jet.spill = { target: v.target, radius: v.radius ?? 8, after: v.after || 0, cause: v.cause || 'awakening' }; } } }) : null;
     if (story) hud.story();
     // Cael's charm: refused, it stays in your pocket, and you can put it on any time. Once on, it stays on.
@@ -192,7 +195,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
             const m = inst.mesh;
             if (!m || inst.hidden || inst.batched || inst.type === 'water') continue;
             const it = inst.item;
-            m.visible = Math.hypot((it.x || 0) - c.x, (it.z || 0) - c.z) < CULL;
+            m.visible = Math.hypot((it.x || 0) - c.x, (it.z || 0) - c.z) < (inst.npc ? Math.min(CULL, 70) : CULL);     // people cost a rig each: nearer
         }
         for (const b of world.batches) b.mesh.visible = Math.hypot(b.x - c.x, b.z - c.z) < CULL + 28;
     };
@@ -231,6 +234,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         vitals.update(dt);
         surges.update(dt);
         world.waters.update(player);
+        world.waters.burn(dt, { vitals, creatures, fire });
         cull(dt);
         if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }
         hud.vitals?.(vitals.danger);

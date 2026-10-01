@@ -603,6 +603,7 @@ export const CATALOG = {
             const body = ctx.world.waters.add(it, m);
             const inst = { mesh: m, entries: [], water: body };
             inst.wire = sys => {
+                if (it.kind === 'lava') return;          // lava is no source: it burns (WaterBodies.burn)
                 const thing = sys.interactables.add({ id: it.id, mesh: m, material: 'water' });
                 sys.water.addSource(thing, ctx.world.waters.nearest(body, new THREE.Vector3(it.x, it.level, it.z)), p => ctx.world.waters.nearest(body, p));
             };
