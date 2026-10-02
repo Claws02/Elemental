@@ -187,6 +187,7 @@ export class HeroAnimator {
         this.throwT = -1;        // seconds since a throw began, -1 when not throwing
         this.jumpT = -1;         // seconds since a jump began
         this.climbT = -1;        // seconds into a climb (of climbDur)
+        this.touchT = -1;        // seconds into a touch (of touchDur)
         this.climbDur = 1;
         this.p = {};             // current joint angles
     }
@@ -194,6 +195,8 @@ export class HeroAnimator {
     throw() { this.throwT = 0; }
     jump() { this.jumpT = 0; }
     climb(dur) { this.climbT = 0; this.climbDur = dur; }
+    /** A hand laid on something in front, held there a moment (the standing stone). */
+    touch(dur = 1.6) { this.touchT = 0; this.touchDur = dur; }
 
     update(dt, { speed = 0, channel = null, swim = false } = {}) {
         this.clock += dt;
@@ -278,6 +281,14 @@ export class HeroAnimator {
             if (u >= 1) this.climbT = -1;
         }
 
+        // Touching: the lead hand out, flat against what's in front, and held.
+        if (this.touchT >= 0) {
+            this.touchT += dt;
+            const u = this.touchT / this.touchDur, k = Math.min(1, u * 4, (1 - u) * 4);
+            T.shX[1] = _lerp(T.shX[1], -1.45, k); T.elX[1] = _lerp(T.elX[1], -0.15, k); T.shZ[1] = _lerp(T.shZ[1], 0.05, k);
+            T.spineX = _lerp(T.spineX, 0.12, k); T.neckX = _lerp(T.neckX, -0.1, k);
+            if (u >= 1) this.touchT = -1;
+        }
         // Throwing: wind back, then whip the lead arm through and follow on.
         if (this.throwT >= 0) {
             this.throwT += dt;

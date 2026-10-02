@@ -212,6 +212,14 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const frameInfo = { held: null, hero: player.position };
     let last = performance.now(), raf = 0, running = true;
     let swumOnce = false;          // the swimming hint, said once
+    // A hand on a standing stone: the hero turns to it and lays a hand on it.
+    const offTouch = EventBus.on(EV.STONE_TOUCHED, e => {
+        const m = world.objects.get(e.id)?.mesh;
+        if (!m) return;
+        player.faceTarget = m.position.clone();
+        player.anim.touch?.(1.6);
+        setTimeout(() => { if (player.faceTarget?.equals?.(m.position)) player.faceTarget = null; }, 1700);
+    });
     // Where a frame's time goes (the benchmark and the debug readout read it): ms, smoothed.
     const perf = { frame: 16.7, update: 0, physics: 0, render: 0, frames: 0, onFrame: null };
     let lowPowerSaid = false, lowPowerT = 0;
@@ -305,6 +313,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         running = false;
         cancelAnimationFrame(raf);
         story?.dispose();
+        offTouch();
         ledger.dispose();
         creatures.dispose();
         works.dispose();

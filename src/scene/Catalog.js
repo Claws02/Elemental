@@ -507,18 +507,48 @@ export const CATALOG = {
             root.add(look);
             ctx.scene.add(root);
             const entries = _boxes(ctx, it, [{ x: 0, y: it.height / 2, z: 0, w: 1.1, h: it.height, d: 0.8 }], { solid: root });
-            let cracked = !!it.cracked;
+            let cracked = !!it.cracked, touched = false, hum = 0;
+            // Touched, it hums: its runes brighten and the four elements' lights rise round it, for a few seconds.
+            const glow = () => { let m = null; look.traverse(o => { if (o.isMesh && o.material.isMeshBasicMaterial) m = o.material; }); return m; };
+            let runes = glow();
+            const motes = [ELEMENT.earth, ELEMENT.fire, ELEMENT.water, ELEMENT.air].map(e => {
+                const m = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), new THREE.MeshBasicMaterial({ color: e.rune, transparent: true, opacity: 0 }));
+                m.visible = false;
+                root.add(m);
+                return m;
+            });
+            const HUM = 4;
             const crack = (quiet = false) => {
                 if (cracked) return;
                 cracked = true;
                 root.remove(look);
                 look = _standingStone(it, true);
                 root.add(look);
+                runes = glow();
                 if (!quiet) { ctx.world.onGate?.(it.id, 'cracked'); EventBus.emit(EV.STRUCTURE_STATE, { id: it.id, from: 'Intact', to: 'Cracked', cause: 'awakening', name: 'The standing stone' }); }
             };
             return {
                 mesh: root, entries,
-                signal: n => n === 'cracked' && cracked,
+                wire(sys) {
+                    const thing = sys.interactables.add({ id: it.id, mesh: root, entry: entries[0], material: 'standing' });
+                    thing.use = () => {
+                        touched = true; hum = HUM;
+                        EventBus.emit(EV.STONE_TOUCHED, { id: it.id, cracked });
+                    };
+                },
+                update(dt) {
+                    if (hum <= 0) return;
+                    hum = Math.max(0, hum - dt);
+                    const t = HUM - hum, env = Math.sin(Math.PI * t / HUM);          // swells and fades
+                    if (runes) runes.color.setScalar(1 + 1.6 * env * (0.8 + 0.2 * Math.sin(t * 9)));
+                    motes.forEach((m, i) => {
+                        const a = t * 1.6 + i * Math.PI / 2, r = 0.95 + 0.15 * Math.sin(t * 2 + i);
+                        m.visible = hum > 0;
+                        m.position.set(Math.cos(a) * r, 0.6 + ((t * 0.55 + i * 0.25) % 1) * (it.height - 0.4), Math.sin(a) * r);
+                        m.material.opacity = env * 0.9;
+                    });
+                },
+                signal: n => (n === 'cracked' && cracked) || (n === 'touched' && touched),
                 act: n => { if (n === 'crack') crack(); },
                 restoreState: s => { if (s === 'cracked') crack(true); },
                 top: () => (it.y || 0) + it.height,

@@ -64,6 +64,10 @@ export const MATERIALS = {
         flammable: { fuel: 3, ignitesAt: 0.6, reach: 2 },
         soaks: 20,
     },
+    standing: {
+        name: 'old stone',              // the standing stone: anyone can touch it; it answers (scene/Catalog.js)
+        use: 'touch',
+    },
     door: {
         name: 'door',                   // no element: anyone can open a door, powers or not
         use: 'door',                    // a tap opens or closes it

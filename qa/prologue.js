@@ -2,7 +2,7 @@
 // PROLOGUE — the Veyra fire, played twice: carefully and recklessly.
 //
 //   title → the character creator → Veyra, morning (no powers yet) → the forge,
-//   a choice → the square → the stone → dusk, home → the flock goes for you →
+//   a choice → the square → the stone (touched; it answers; Wynn) → dusk, home → the flock goes for you →
 //   the stone cracks, every element answers wild, and your own roof catches →
 //   the fire → Cael → the aftermath (what burned, who is blamed, Bram's barn) →
 //   Cael's charm, worn or refused → a choice → the prophecy → Lesson I, with
@@ -79,6 +79,21 @@ const SHOTS = path.join(__dirname, 'shots');
         await until(() => __EL.story.step === 'stone', 10000);
         await at(0, 0.6);
         const powerless = await ev(() => ['earth', 'fire', 'water', 'air'].every(el => !__EL.prog.has(el)));
+        // The stone: you must touch it (a tap on it, no powers needed). It answers, and Wynn talks it over with you.
+        await until(() => __EL.story.step === 'touch', 15000);
+        const stone = await ev(async () => {
+            __EL.cam.yaw = 0;                                              // looking along -z: the stone ahead
+            await new Promise(r => setTimeout(r, 600));
+            const p = __EL.world.objects.get('StandingStone').mesh.position, s = __screen(new __EL.THREE.Vector3(p.x, 2.4, p.z));
+            const was = __EL.world.signal('StandingStone', 'touched');
+            __touch('pointerdown', 9, s.x, s.y); await new Promise(r => setTimeout(r, 60)); __touch('pointerup', 9, s.x, s.y);
+            await new Promise(r => setTimeout(r, 900));
+            const motes = __EL.world.objects.get('StandingStone').mesh.children.filter(m => m.isMesh && m.visible && m.material.opacity > 0.05).length;
+            return { was, touched: __EL.world.signal('StandingStone', 'touched'), motes, on: s.on };
+        });
+        stone.talk = await until(() => __EL.story.step === 'wynn' && !!__EL.story.choosing, 20000);
+        await ev(() => __EL.story.choose(0));
+        stone.flag = await ev(() => __EL.prog.flags['veyra.stone']);
         const home = await until(() => ['home', 'attack', 'awaken'].includes(__EL.story.step), 15000);
         await ev(() => { window.__fires = []; __EL.EventBus.on('FireStarted', e => __fires.push(e.cause)); });
         await at(6.5, 8);
@@ -111,13 +126,15 @@ const SHOTS = path.join(__dirname, 'shots');
             return { state, dead: bird.state === 'dead', secs, used: +__EL.jet.used.toFixed(2), home: __EL.world.signal('Veyra_House_Home', 'burning'), spilled: !__EL.jet.spill };
         });
         await ev(() => { __EL.vitals.invulnerable = true; });
-        return { met, dusk: home, woke, powerless, beforeCrack, fought };
+        return { met, stone, dusk: home, woke, powerless, beforeCrack, fought };
     }
 
     // ---- 1. Carefully ---------------------------------------------------------------------------------
     const a = await toTheFire('Rowan');
     const opening = await ev(() => ({ name: __EL.session.work.custom.name, hair: __EL.session.work.custom.look.hair, tone: __EL.prog.flags['veyra.tone'] }));
     check(opening.name === 'Rowan' && opening.hair && opening.tone === 'earnest', `New game: a name and a look, then Veyra; the forge choice is remembered (${JSON.stringify(opening)})`);
+    check(!a.stone.was && a.stone.touched && a.stone.motes >= 3 && a.stone.talk && a.stone.flag === 'asked',
+        `the stone must be touched: a tap and it answers (its four lights rise), and Wynn talks it over, your answer remembered (${JSON.stringify(a.stone)})`);
     check(a.met && a.dusk && a.woke && a.powerless, `the morning (no powers yet) leads to dusk, home, the flock, and the awakening (${JSON.stringify(a)})`);
     check(a.beforeCrack.fires === 0 && a.beforeCrack.hp < 100 && a.beforeCrack.hp >= 35 && !a.beforeCrack.dead && !a.beforeCrack.any,
         `the flock goes for you, not the thatch; you can't answer yet, and they can hurt you but not kill you (${JSON.stringify(a.beforeCrack)})`);

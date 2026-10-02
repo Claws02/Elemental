@@ -81,6 +81,7 @@ export const EV = {
     PLATE:              'Plate',
     TOO_HEAVY:          'TooHeavy',
     LEDGER:             'Ledger',
+    STONE_TOUCHED:      'StoneTouched',    // { id, cracked }: the hero laid a hand on a standing stone
     LANDMARK:           'Landmark',        // { id, name, to, region }: a ruler's hall or the palace brought down by the player
     CREATURE:           'Creature',
     HURT:               'Hurt',

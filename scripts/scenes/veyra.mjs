@@ -91,8 +91,19 @@ const script = {
     { id: 'village', objective: 'Walk to the square', until: { signal: { obj: 'Zone_Square', name: 'entered' } },
       then: { say: ['@Mira Oven\'s full. If anything burns tonight, let it be my bread and not my roof.'] } },
     { id: 'stone', objective: 'Go to the standing stone', mark: 'StandingStone', until: { signal: { obj: 'Zone_Stone', name: 'entered' } },
-      then: { say: ['@Wynn Older than the valley, that stone.', '@Wynn My grandmother said it hums on harvest nights. Don\'t lean on it.',
-                    '@Wynn Now go home and wash the forge off you. Lanterns at dark.'], do: [{ mood: { name: 'dusk', secs: 8 } }] } },
+      then: { say: ['@Wynn Older than the valley, that stone.', '@Wynn Festival morning. Everyone puts a hand on it, for luck. Go on.'] } },
+    // The stone answers the hero's hand, and only theirs: the first sign of what they are. Wynn saw it.
+    { id: 'touch', objective: 'Touch the standing stone', mark: 'StandingStone', until: { signal: { obj: 'StandingStone', name: 'touched' } } },
+    { id: 'wynn',
+      say: ['@Wynn …', '@Wynn Sixty years I\'ve kept this stone. It hums on harvest nights, a little.', '@Wynn It has never once answered a hand.',
+            '@Wynn My grandmother had a verse about it. The stone wakes for the one who carries all four.', '@Wynn I was six. I thought it was a song about the weather.'],
+      choices: [
+        { label: 'What does it mean?', flag: { name: 'veyra.stone', value: 'asked' }, say: ['@Wynn I don\'t know. I\'d rather not find out on a festival night.'] },
+        { label: 'It was nothing. The sun on it.', flag: { name: 'veyra.stone', value: 'dismissed' }, say: ['@Wynn Maybe. The sun\'s never done it before either.'] },
+        { label: 'Can I touch it again?', flag: { name: 'veyra.stone', value: 'drawn' }, say: ['@Wynn No. I don\'t think you should.'] },
+      ] },
+    { id: 'dusk', say: ['@Wynn Go home and wash the forge off you. Lanterns at dark.', '@Wynn And say nothing to the others about this. They\'ll only fret.'],
+      do: [{ mood: { name: 'dusk', secs: 8 } }], until: { talking: false } },
     { id: 'home', objective: 'Go home before the lanterns', mark: 'Veyra_House_Home', do: [{ checkpoint: true }],
       until: { signal: { obj: 'Zone_Home', name: 'entered' } } },
     { id: 'attack',
@@ -128,6 +139,12 @@ const script = {
       say: ['@Cael Enough.', '@Cael Stand still. Breathe. It answers you, so it stops when you do.'],
       mark: 'Cael',
       until: { talking: false } },
+    // Wynn tells Cael what the stone did this morning; he answers what you said to her.
+    { id: 'witness', say: ['@Wynn This morning, before any of this, the stone answered their hand. I saw it.', '@Cael Did it.'],
+      ends: [
+        { when: { flag: { name: 'veyra.stone', is: 'asked' } }, say: ['@Cael You asked her what it meant. Good. Keep asking.'] },
+        { when: { flag: { name: 'veyra.stone', is: 'drawn' } }, say: ['@Cael You wanted to touch it again. So would I.'] },
+        { when: { time: 0 }, say: ['@Cael You told her it was nothing. It wasn\'t.'] } ] },
     { id: 'damage', ends: [
       { when: { many: { prefix: 'Veyra_', type: 'timber_house', signal: 'burned', min: 3 } }, say: ['@Wynn Half the village. In one night.', '@Mira My ovens. My house.'], do: [{ setFlag: { name: 'veyra.fire', value: 'ruin' } }] },
       { when: { many: { prefix: 'Veyra_', type: 'timber_house', signal: 'burned', min: 1 } }, say: ['@Wynn We lost some. We kept more.'], do: [{ setFlag: { name: 'veyra.fire', value: 'some' } }] },

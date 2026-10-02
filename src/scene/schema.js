@@ -63,7 +63,7 @@ export const TYPES = {
     standing_stone: {
         label: 'Standing stone', group: 'Ruins',
         props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), seed: SEED, hidden: HIDDEN },
-        signals: ['cracked'],
+        signals: ['cracked', 'touched'],
         actions: ['crack'],
         note: 'An Oruun marker: a seal. It cracks at the awakening (and stays cracked in a scene that remembers).',
     },
