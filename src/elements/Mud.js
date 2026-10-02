@@ -25,7 +25,7 @@ export class Mud {
         Object.assign(this, { scene, fire, creatures, player });
         this.patches = [];
         this.n = 0;
-        this.mat = new THREE.MeshStandardMaterial({ color: 0x3e2c1c, roughness: 0.35, metalness: 0.05, flatShading: true });
+        this.mat = new THREE.MeshPhongMaterial({ color: 0x3e2c1c, flatShading: true, shininess: 30 });
     }
 
     /** Turn the ground at p to mud. */

@@ -239,6 +239,7 @@ export class Hud {
         const p = info.physics;
         this.el('hud-debug').textContent =
             `${this.fps.toFixed(0)} fps · ${info.calls} calls · ${(info.tris / 1000).toFixed(1)}k tris\n` +
+            (info.perf ? `${info.perf.frame.toFixed(1)} ms: logic ${info.perf.update.toFixed(1)} · physics ${info.perf.physics.toFixed(1)} · draw ${info.perf.render.toFixed(1)} · ${info.ratio}× q${info.level}\n` : '') +
             `bodies ${p.total} · awake ${p.awake} · debris ${p.debris}\n` +
             (info.barricade ? `barricade ${info.barricade.state} ${info.barricade.broken}/${info.barricade.total}` : 'no barricade') +
             (info.fire ? `\nfire ${info.fire.burning} burning · ${info.fire.burned} burned · particles ${info.fx.flame + info.fx.smoke}` : '');

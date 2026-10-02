@@ -14,7 +14,13 @@ import { THREE } from './lib.js';
 
 let renderer, scene, camera, sun, sunTarget, hemi;
 let mood = null;              // { from, to, t, dur } while a change of light is under way
-export const quality = { tier: 'high', pixelRatio: 1, shadowSize: 1024, maxRatio: 1, minRatio: 1, adaptive: true };
+export const quality = { tier: 'high', pixelRatio: 1, shadowSize: 1024, maxRatio: 1, minRatio: 1, adaptive: true, level: 0, fx: 1, viewK: 1 };
+// The QUALITY LADDER, below the resolution: when the resolution is already at its floor and frames still run
+// long, step down a level (and back up, first, when there's room). Level 0 is everything.
+//   1  shadows drawn every other frame
+//   2  shadows every third frame, a smaller shadow map, three-quarters of the flames
+//   3  shadows every fourth frame, half the flames
+export const LEVELS = [{ shadowEvery: 1, shadowSize: 1, fx: 1 }, { shadowEvery: 2, shadowSize: 1, fx: 1 }, { shadowEvery: 3, shadowSize: 0.75, fx: 0.75 }, { shadowEvery: 4, shadowSize: 0.5, fx: 0.5 }];
 // Adaptive resolution: frame time held over SLOW for `down` s → a step down; under FAST for `up` s → a step back up.
 export const ADAPT = { slow: 1 / 34, fast: 1 / 52, down: 0.6, up: 3, stepDown: 0.15, stepUp: 0.1 };
 const _adapt = { ema: 1 / 60, over: 0, under: 0 };
@@ -22,10 +28,15 @@ const _adapt = { ema: 1 / 60, over: 0, under: 0 };
 export function init(canvas) {
     const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && innerWidth < 1100);
     quality.tier = mobile ? 'mobile' : 'high';
-    quality.pixelRatio = Math.min(window.devicePixelRatio || 1, mobile ? 2 : 2);
+    // Phones start at 1.5× (a sharp picture for a third fewer pixels than 2×) and climb to 2× when there's room.
+    const dpr = window.devicePixelRatio || 1;
+    quality.maxRatio = Math.min(dpr, 2);
+    quality.pixelRatio = mobile ? Math.min(dpr, 1.5) : quality.maxRatio;
+    quality.minRatio = Math.min(quality.pixelRatio, mobile ? 0.85 : Math.max(0.6, quality.maxRatio * 0.5));
     quality.shadowSize = mobile ? 1024 : 2048;
-    quality.maxRatio = quality.pixelRatio;
-    quality.minRatio = Math.max(0.6, quality.maxRatio * 0.5);
+    quality.viewK = mobile ? 0.85 : 1;           // phones see a little less far (the fog closes in to match)
+    quality.level = 0; quality.fx = 1;
+    _frameNo = 0;
     Object.assign(_adapt, { ema: 1 / 60, over: 0, under: 0 });
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -33,6 +44,8 @@ export function init(canvas) {
     renderer.setSize(innerWidth, innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;    // r180+ removed PCFSoft; PCF is now the soft one
+    renderer.shadowMap.autoUpdate = false;           // render() decides when the shadows are redrawn (the quality ladder)
+    renderer.shadowMap.needsUpdate = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
 
@@ -125,9 +138,13 @@ function _applyMood(a, b, k) {
 }
 
 // How far the scene can be seen: the moods' fog is for a courtyard; a region on terrain sees further.
-const view = { k: 1 };
+const view = { k: 1, far: 95 };
+/** How far the scene is drawn (after the device's share): culling follows it. */
+export const viewFar = () => view.far;
 /** Set how far the world is visible (metres to the far fog at day; 95 is the courtyard). */
 export function setView(far = 95) {
+    far *= quality.viewK;
+    view.far = far;
     view.k = Math.max(0.5, far / MOODS.day.fogFar);
     camera.far = Math.max(200, far * 1.6);
     camera.updateProjectionMatrix();
@@ -167,7 +184,36 @@ export function dispose() {
     renderer = scene = camera = null;
 }
 
-export function render() { renderer.render(scene, camera); }
+let _frameNo = 0;
+export function render() {
+    if (_frameNo++ % LEVELS[quality.level].shadowEvery === 0) renderer.shadowMap.needsUpdate = true;
+    renderer.render(scene, camera);
+}
+
+function _setLevel(n) {
+    quality.level = n;
+    const L = LEVELS[n];
+    quality.fx = L.fx;
+    const size = Math.round(quality.shadowSize * L.shadowSize);
+    if (sun.shadow.mapSize.x !== size) {
+        sun.shadow.mapSize.set(size, size);
+        sun.shadow.map?.dispose();
+        sun.shadow.map = null;                       // three makes a new one at the new size
+    }
+    renderer.shadowMap.needsUpdate = true;
+}
+
+/** Compile every material in the scene (and `extra` ones the effects will use) now, while loading, not mid-fight. */
+export function warm(extra = []) {
+    const holder = new THREE.Group();
+    const geo = new THREE.BoxGeometry(0.01, 0.01, 0.01);
+    for (const m of extra) holder.add(new THREE.Mesh(geo, m));
+    holder.position.copy(camera.position).add(new THREE.Vector3(0, 0, -2).applyQuaternion(camera.quaternion));
+    scene.add(holder);
+    try { renderer.compile(scene, camera); } catch (e) { /* compiling ahead is an optimisation only */ }
+    scene.remove(holder);
+    geo.dispose();
+}
 
 /** Hold the frame rate by trading sharpness: call once a frame with the real (unclamped) frame time. */
 export function adapt(frameSecs) {
@@ -177,8 +223,16 @@ export function adapt(frameSecs) {
     a.over = a.ema > ADAPT.slow ? a.over + t : 0;
     a.under = a.ema < ADAPT.fast ? a.under + t : 0;
     let r = quality.pixelRatio;
-    if (a.over > ADAPT.down && r > quality.minRatio) { r = Math.max(quality.minRatio, r - ADAPT.stepDown); a.over = 0; }
-    else if (a.under > ADAPT.up && r < quality.maxRatio) { r = Math.min(quality.maxRatio, r + ADAPT.stepUp); a.under = 0; }
+    // Down: resolution first, then the ladder. Up: the ladder first, then the resolution.
+    if (a.over > ADAPT.down) {
+        if (r > quality.minRatio) r = Math.max(quality.minRatio, r - ADAPT.stepDown);
+        else if (quality.level < LEVELS.length - 1) _setLevel(quality.level + 1);
+        a.over = 0;
+    } else if (a.under > ADAPT.up) {
+        if (quality.level > 0) _setLevel(quality.level - 1);
+        else if (r < quality.maxRatio) r = Math.min(quality.maxRatio, r + ADAPT.stepUp);
+        a.under = 0;
+    }
     if (r !== quality.pixelRatio) { quality.pixelRatio = +r.toFixed(2); renderer.setPixelRatio(quality.pixelRatio); renderer.setSize(innerWidth, innerHeight); }
 }
 export function info() { return renderer.info.render; }

@@ -223,7 +223,7 @@ export function sentinel(look) {
 export function wellspawn() {
     const root = new THREE.Group();
     // A creature of pure element: a bright core in a shell of shards that turn with it. Its colour is its element.
-    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), new THREE.MeshStandardMaterial({ color: 0xff6a1a, emissive: 0xff6a1a, emissiveIntensity: 1.2, flatShading: true }));
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), new THREE.MeshPhongMaterial({ color: 0xff6a1a, emissive: 0xff6a1a, emissiveIntensity: 1.2, flatShading: true, shininess: 20 }));
     core.position.y = 1.0;
     root.add(core);
     const body = part(k => {

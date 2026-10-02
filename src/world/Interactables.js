@@ -45,7 +45,8 @@ export class Interactables {
         if (t.entry) this.byEntry.delete(t.entry);
     }
 
-    forEntry(entry) { return this.byEntry.get(entry) || null; }
+    /** The thing an entry is. A structure's single body answers for the piece whose `shape` was touched. */
+    forEntry(entry, shape = null) { return this.byEntry.get(entry) || (shape && entry?.data?.structure?.thingForShape(shape)) || null; }
 
     /**
      * What a touch at (x, y) lands on. `usable(thing)` filters to things the

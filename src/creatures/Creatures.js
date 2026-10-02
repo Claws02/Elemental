@@ -219,7 +219,7 @@ class Creature {
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
         if (!this.ice) {
             this.ice = new THREE.Mesh(new THREE.IcosahedronGeometry(this.entry.data.radius * 1.35 / this.model.root.scale.x, 0),
-                new THREE.MeshStandardMaterial({ color: 0xcfefff, transparent: true, opacity: 0.55, roughness: 0.1, emissive: 0x2a6a8a, emissiveIntensity: 0.4, flatShading: true }));
+                new THREE.MeshPhongMaterial({ color: 0xcfefff, transparent: true, opacity: 0.55, emissive: 0x2a6a8a, emissiveIntensity: 0.4, flatShading: true, shininess: 90 }));
             this.model.root.add(this.ice);
         }
         this.ice.visible = true;

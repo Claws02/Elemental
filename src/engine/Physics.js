@@ -71,6 +71,14 @@ export function init() {
 
 export function getWorld() { return world; }
 
+/**
+ * In a 'collide' event: the shape of the OTHER body that was touched (a structure's piece is a shape of its body).
+ * Asked of the shapes themselves: cannon does not keep a contact's shapes in the order of its bodies.
+ */
+export const otherShape = ev => shapeOf(ev.contact, ev.body);
+/** The shape of `body` in contact `c`. */
+export const shapeOf = (c, body) => (c.si?.body === body ? c.si : c.sj?.body === body ? c.sj : null);
+
 /** Is `body` resting on something (a contact from the last step pushing it up)? */
 export function supported(body) {
     for (const c of world.contacts) {
@@ -112,11 +120,37 @@ export function add({ body, mesh = null, tier, id = null, data = {} }) {
 
 export function remove(e) {
     if (!entries.has(e)) return;
-    world.removeBody(e.body);
+    if (e.body.world) world.removeBody(e.body);
+    e.parked = false;
     entries.delete(e);
     const i = debrisQueue.indexOf(e);
     if (i >= 0) debrisQueue.splice(i, 1);
     e.mesh?.parent?.remove(e.mesh);
+}
+
+/**
+ * PARKING. A region has hundreds of static bodies (walls, building pieces, trees), and every one of them takes
+ * part in every step's broadphase even when nothing moves near it. Static bodies further than `radius` from
+ * `center` (the hero) leave the world, and come back as the hero nears them. The ground never leaves. Call a
+ * few times a second.
+ */
+const _lo = new CANNON.Vec3(), _hi = new CANNON.Vec3();
+export function park(center, radius = 50) {
+    let parked = 0;
+    for (const e of entries) {
+        const b = e.body;
+        if (b.type !== CANNON.Body.STATIC || e.id === 'Ground' || e.id === 'Edge' || e.data?.ground) continue;
+        if (b.world || e.parked) {
+            b.computeAABB?.();
+            const lo = b.aabb.lowerBound, hi = b.aabb.upperBound;
+            const dx = Math.max(lo.x - center.x, 0, center.x - hi.x), dz = Math.max(lo.z - center.z, 0, center.z - hi.z);
+            const d = Math.hypot(dx, dz);
+            if (b.world && d > radius + 6) { world.removeBody(b); e.parked = true; }
+            else if (e.parked && d < radius) { world.addBody(b); e.parked = false; }
+        }
+        if (e.parked) parked++;
+    }
+    return parked;
 }
 
 /** Turn a static destructible piece into simulated debris. */
@@ -181,8 +215,9 @@ function _freeze(e) {
 
 export function step(dt) {
     if (!world) return;
-    // Cover a 100 ms frame at the 1/60 fixed step without slow motion.
-    world.step(1 / 60, Math.min(dt, 0.1), 6);
+    // At most 3 fixed steps a frame: a slow frame plays a touch slower rather than costing more steps, which would
+    // make the next frame slower still (the spiral that sinks a phone's frame rate in a heavy moment).
+    world.step(1 / 60, Math.min(dt, 0.1), 3);
     for (const e of entries) {
         const b = e.body;
         if (b.type === CANNON.Body.STATIC) continue;

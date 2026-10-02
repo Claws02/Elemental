@@ -50,13 +50,15 @@ function _lin(col) {
     return c;
 }
 
-// One material per layer for the whole world.
+// One material per layer for the whole world. Cheap lighting on purpose (phones): the art is flat colour,
+// so Lambert looks the same as a physically based material at a fraction of the cost per pixel; metal and
+// glass keep a Phong highlight.
 let _mats = null;
 export function kitMaterials() {
     if (_mats) return _mats;
     _mats = {
-        body:  new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.0 }),
-        sheen: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.35 }),
+        body:  new THREE.MeshLambertMaterial({ vertexColors: true }),
+        sheen: new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 36, specular: 0x5a5a5a }),
         glow:  new THREE.MeshBasicMaterial({ vertexColors: true }),
     };
     return _mats;
@@ -201,4 +203,44 @@ export class Kit {
         if (own) grp.userData.ownMaterials = M;
         return grp;
     }
+}
+
+/**
+ * A still copy of `root` as it stands now: every vertex-coloured mesh under it merged, one mesh per material,
+ * in root's own frame. For far-off characters (a frozen pose costs one or two draw calls, not fifteen).
+ * `skip(mesh)` leaves a mesh out.
+ */
+export function bakeStill(root, skip = () => false) {
+    root.updateMatrixWorld(true);
+    const inv = root.matrixWorld.clone().invert();
+    const byMat = new Map();
+    root.traverse(o => {
+        if (!o.isMesh || !o.geometry.attributes.color || skip(o)) return;
+        const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
+        (byMat.get(o.material) || byMat.set(o.material, []).get(o.material)).push(g);
+    });
+    const out = new THREE.Group();
+    out.name = 'still';
+    for (const [mat, gs] of byMat) {
+        const n = gs.reduce((a, g) => a + g.attributes.position.count, 0);
+        const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), col = new Float32Array(n * 3);
+        let off = 0;
+        for (const g of gs) {
+            pos.set(g.attributes.position.array, off * 3);
+            if (g.attributes.normal) nor.set(g.attributes.normal.array, off * 3);
+            col.set(g.attributes.color.array, off * 3);
+            off += g.attributes.position.count;
+            g.dispose();
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        geo.computeBoundingSphere();
+        const m = new THREE.Mesh(geo, mat);
+        m.castShadow = true;
+        out.add(m);
+    }
+    return out;
 }

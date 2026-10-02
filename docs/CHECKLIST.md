@@ -84,6 +84,8 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Rulers' halls and the palace are landmarks: bringing one down costs the kingdom far more (harm 12, excess) and sets `destroyed.<id>`. Oruun ruins stay whole.
   - [x] Thornwick's bridge is timber and burns stretch by stretch; a ford downstream can be waded. *Buildings test.*
   - [x] Burning performance: every building draws as ONE mesh while it burns and breaks (`world/Skin.js`: char, glow and gone by vertex attribute); fire spread on a grid a few times a second; a shared flame budget; no shadows from debris; resolution adapts to the frame time. Burning Veyra: draw calls 520 → 210, fire's CPU 3.6 → 0.55 ms. *Buildings test: draw calls held while a cottage burns.*
+- [x] **60 fps on a phone** (`docs/PERFORMANCE.md`): cheap lighting, 1.5× start with adaptive resolution and a quality ladder, one physics body per building and parking far statics, idle systems asleep, people baked still far off, shader warm-up, a benchmark (`?bench`). *Bench headless: physics 16 → 3 ms a frame (one step 2.6 → 0.4 ms), draw calls held; buildings test: a fireball still lights the piece it hits.*
+  - [ ] **Benchmark on the iPhone** ← next: open `?bench`, copy the card.
   - [ ] **Played on a device** ← next: walk the world, then edit in the editor.
 
 ## Phase 2: elemental sandbox

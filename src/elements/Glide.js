@@ -38,7 +38,7 @@ export class Glide {
         const g = -Physics.getWorld().gravity.y * dt;
         if (b.velocity.y < -GLIDE.fall + g) b.velocity.y = -GLIDE.fall + g;
         // A fire below: the heat rises, and carries the hero with it.
-        for (const f of this.fire.flammables.values()) {
+        for (const f of this.fire.live) {          // (only what is alight or heating: never the whole village)
             if (!f.burning) continue;
             const q = f.thing.pos();
             if (q.y < p.y && Math.hypot(q.x - p.x, q.z - p.z) < GLIDE.thermalRadius && p.y - q.y < GLIDE.thermalHeight) { this.thermal = true; break; }

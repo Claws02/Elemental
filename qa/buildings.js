@@ -96,6 +96,30 @@ const SHOTS = path.join(__dirname, 'shots');
     });
     check(!blows.after1 && blows.after3, `a stone wall takes heavy blows to break: one doesn't, three do (${JSON.stringify(blows)})`);
 
+    // ---- 4b. a fireball thrown at a wall sets that piece alight (the building is one body; the piece hit is found) ----
+    const thrown = await ev(async () => {
+        const E = __EL, b = E.player.body, s = __S('Shed_01');
+        b.position.set(7, 0.6, -6); b.velocity.set(0, 0, 0);
+        await __W(300);
+        const br = [...E.interactables.things].find(t => t.id === 'Brazier_01');
+        E.fire.pullFrom(br, 'player');
+        await __W(300);
+        const f = E.fire.fireballs.values().next().value;
+        if (!f) return { err: 'no fireball' };
+        // An east wall piece, thrown at from 3 m east: a clear line (the cottage burned down earlier lies to the west).
+        const p = s.pieces.filter(q => q.kind === 'b_wall' && !q.broken && q.box.min.y > 0.5).sort((a, b) => s.things.get(b).pos().x - s.things.get(a).pos().x)[0];
+        const tp = s.things.get(p).pos();
+        f.entry.body.position.set(tp.x + 3, tp.y, tp.z); f.entry.body.velocity.set(0, 0, 0);
+        const hits = [];
+        f.entry.body.addEventListener('collide', ev => { const sh = E.Physics.otherShape(ev); hits.push({ id: E.interactables.forEntry(ev.body.userData, sh)?.id || ev.body.userData?.id, idx: ev.body.shapes.indexOf(sh), n: ev.body.shapes.length, mapped: !!s.shapePiece.get(sh), bi: ev.contact.bi === ev.body, siIsShape: ev.contact.si === sh }); });
+        const i0 = E.fire.ignitions;
+        E.channel.throwEntry(f.entry, new E.THREE.Vector3(-1, 0, 0), 22, 'fire');     // west, at the wall
+        // Struck and caught: any of the shed's pieces alight now, or burned already (a shed burns fast).
+        const r = await __until(() => s.pieces.some(q => E.fire.isBurning(s.things.get(q)) || q.burned), 20000);
+        return { ...r, hits: hits.slice(0, 4), ignitions: E.fire.ignitions - i0, lit: s.pieces.filter(q => E.fire.isBurning(s.things.get(q))).length };
+    });
+    check(thrown.ok, `a fireball thrown at a shed's wall sets the piece it hits alight (${JSON.stringify(thrown)})`);
+
     // ---- 5. a landmark brought down -------------------------------------------------------------------------------
     const landmark = await ev(async () => {
         const s = __S('Cottage_02');

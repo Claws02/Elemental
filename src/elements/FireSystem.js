@@ -41,6 +41,7 @@ import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { WILD } from '../data/growth.js';
 import { FIRE, LAVA } from '../data/elements.js';
+import { quality } from '../engine/Renderer.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { FIRE };
@@ -63,6 +64,7 @@ export class FireSystem {
         this.time = 0;
         this.ignitions = 0;
         this.embers = [];
+        this.live = new Set();        // flammables burning, heating or wet: the only ones a frame needs to look at
     }
 
     // ---- registration ----------------------------------------------------
@@ -80,7 +82,7 @@ export class FireSystem {
         e.data.heat = 0;
         e.body.addEventListener('collide', ev => {
             if (e.data.molten && this.channel?.held?.entry !== e && Math.abs(ev.contact.getImpactVelocityAlongNormal()) > LAVA.splashSpeed) this.queue.push({ kind: 'lava', src: thing });
-            if ((e.data.heat || 0) > FIRE.hotIgnites) this.queue.push({ kind: 'hot', src: thing, other: ev.body.userData });
+            if ((e.data.heat || 0) > FIRE.hotIgnites) this.queue.push({ kind: 'hot', src: thing, other: ev.body.userData, shape: Physics.otherShape(ev) });
         });
     }
 
@@ -127,6 +129,7 @@ export class FireSystem {
         if (direct && this.prog?.wild('fire')) this._sparks(thing, cause);
         f.burning = true;
         f.heat = 1;
+        this.live.add(f);
         f.cause = cause;
         f.age = 0;                     // a new fire starts low and builds (FIRE.buildUp)
         this.ignitions++;
@@ -214,6 +217,7 @@ export class FireSystem {
         const first = !f.wet;
         f.wet = thing.mat.soaks || 20;
         f.heat = 0;
+        this.live.add(f);
         if (first) EventBus.emit(EV.OBJECT_SOAKED, { id: thing.id, cause });
         return true;
     }
@@ -319,7 +323,7 @@ export class FireSystem {
         const [a, b] = WILD.fire.burstAfter;
         const fb = { thing, entry, born: this.time, created: this.time, origin, shell, wild, burstAt: this.time + a + Math.random() * (b - a) };
         // Held-or-not is judged at the moment of contact (see WaterSystem).
-        body.addEventListener('collide', ev => this.queue.push({ kind: 'fireball', fb, other: ev.body.userData, held: this._held(entry) }));
+        body.addEventListener('collide', ev => this.queue.push({ kind: 'fireball', fb, other: ev.body.userData, shape: Physics.otherShape(ev), held: this._held(entry) }));
         this.fireballs.add(fb);
         return thing;
     }
@@ -348,12 +352,16 @@ export class FireSystem {
         // Burning and spreading. Spread is worked out a few times a second, against a grid of what can still
         // catch (only the cells around a fire), not every fire against every flammable every frame: a burning
         // village was the slowest thing in a frame.
-        const burning = [...this.flammables.values()].filter(f => f.burning);
+        // Only what is burning, heating or wet is looked at: an idle village costs nothing here.
+        const burning = this._burning ||= [];
+        burning.length = 0;
+        for (const f of this.live) if (f.burning) burning.push(f);
         const heated = this._heated ||= new Set();
         this.spreadT = (this.spreadT || 0) + dt;
-        const spreading = this.spreadT >= SPREAD_TICK, sdt = this.spreadT;
-        if (spreading) { this.spreadT = 0; heated.clear(); this._grid(); }
-        const share = Math.min(1, FLAME_BUDGET / Math.max(1, burning.length));
+        const spreading = this.spreadT >= SPREAD_TICK && burning.length > 0, sdt = this.spreadT;
+        if (this.spreadT >= SPREAD_TICK) { this.spreadT = 0; heated.clear(); }
+        if (spreading) this._grid();
+        const share = Math.min(1, FLAME_BUDGET * quality.fx / Math.max(1, burning.length));      // fewer flames when the frame rate needs it
         for (const f of burning) {
             const p = f.thing.pos();
             f.fuel -= dt;
@@ -384,6 +392,7 @@ export class FireSystem {
                 o.heat += k * wind * FIRE.spreadRate * (1 - d / R) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * sdt;
                 o.heatCause = f.cause;
                 heated.add(o);
+                this.live.add(o);
             }
             if (f.fuel <= 0) {
                 f.burning = false;
@@ -393,7 +402,8 @@ export class FireSystem {
                 if (f.thing.mat.explodes) this._explode(f);
             }
         }
-        for (const o of this.flammables.values()) {
+        for (const o of this.live) {
+            if (o.burned || (!o.burning && o.wet <= 0 && o.heat <= 0)) { this.live.delete(o); continue; }       // settled: out of the live set
             if (o.wet > 0) {
                 o.wet -= dt;
                 if (o.wet <= 0) {         // dried out
@@ -462,7 +472,7 @@ export class FireSystem {
             if (c.kind === 'fireball') {
                 const fb = c.fb;
                 if (!this.fireballs.has(fb) || !c.other || c.other.tier === TIER.PLAYER) continue;
-                const other = this.interactables.forEntry(c.other);
+                const other = this.interactables.forEntry(c.other, c.shape);
                 // For a moment after it is pulled, it ignores what it came out of.
                 if (other && other === fb.origin && this.time - fb.created < FIRE.originGrace) continue;
                 const held = c.held;
@@ -494,7 +504,7 @@ export class FireSystem {
                 const d = c.src.entry.data;
                 if (d.molten) { d.molten = false; this.onMolten?.(c.src, d.heatCause || 'environment'); }
             } else if (c.kind === 'hot') {
-                const other = c.other && this.interactables.forEntry(c.other);
+                const other = c.other && this.interactables.forEntry(c.other, c.shape);
                 const d = c.src.entry.data;
                 if (other && this.flammables.has(other) && d.heat > FIRE.hotIgnites) {
                     if (this.ignite(other, d.heatCause || 'environment')) d.heat = Math.max(0, d.heat - 0.15);

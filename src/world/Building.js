@@ -310,7 +310,8 @@ export class Building {
             d.angle = Math.abs(diff) <= step ? d.want : d.angle + Math.sign(diff) * step;
             this._placeDoor();
         }
-        if (!this.live && this._stirred()) this.goLive();
+        // Is anything happening to it? (Asked a few times a second, not every frame: a village has many houses.)
+        if (!this.live && (this._stirT = (this._stirT || 0) - dt) <= 0) { this._stirT = 0.25; if (this._stirred()) this.goLive(); }
         for (const w of this.walls) w.update(dt);
         if (this.live) {
             // A panel that broke off falls as a piece of its own; the skin stops drawing it.

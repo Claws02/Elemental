@@ -19,6 +19,8 @@
 import { THREE } from './engine/lib.js';
 import * as Renderer from './engine/Renderer.js';
 import * as Physics from './engine/Physics.js';
+import { kitMaterials } from './engine/Kit.js';
+import { skinMaterial } from './world/Skin.js';
 import { EventBus, EV } from './core/EventBus.js';
 import { buildScene, wireScene } from './scene/Loader.js';
 import { Interactables } from './world/Interactables.js';
@@ -115,6 +117,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const jet = new FlameJet({ scene, player, fire, fx, prog, creatures, interactables });
     const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
+    // Compile every shader now, while loading: the first fire, ice or lava then doesn't stall a frame to build one.
+    Renderer.warm([kitMaterials().body, kitMaterials().sheen, kitMaterials().glow, skinMaterial(), ice.mat, mud.mat, lava.hot, lava.crust, water.mat].filter(Boolean));
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
     const checkpoint = () => {
@@ -187,11 +191,13 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     hud.jump?.(() => player.jump());
 
     // A big scene: what is far off is not drawn (the fog has it by then). Checked a few times a second.
-    const CULL = (st.view?.far || 170) * 0.95;
+    const CULL = Renderer.viewFar() * 0.95;          // the view distance this device draws to
     let cullT = 0;
     const cull = dt => {
-        if (!world.terrain || (cullT -= dt) > 0) return;
+        if ((cullT -= dt) > 0) return;
         cullT = 0.3;
+        Physics.park(player.position, 50);          // static bodies far from the hero leave the physics world
+        if (!world.terrain) return;
         const c = camera.position;
         for (const inst of world.objects.values()) {
             const m = inst.mesh;
@@ -205,8 +211,13 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const _size = new THREE.Vector2();
     const frameInfo = { held: null, hero: player.position };
     let last = performance.now(), raf = 0, running = true;
+    // Where a frame's time goes (the benchmark and the debug readout read it): ms, smoothed.
+    const perf = { frame: 16.7, update: 0, physics: 0, render: 0, frames: 0, onFrame: null };
+    let lowPowerSaid = false, lowPowerT = 0;
+    const ease = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
     function frame(now) {
         if (!running) return;
+        const t0 = performance.now();
         // Capped at 0.1 s: Physics sub-steps cover that without slow motion, and
         // a longer hitch is treated as a pause rather than a teleport. Never
         // negative: the first rAF timestamp can predate `last`.
@@ -222,7 +233,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         player.rig.setElement(intent.element);
         player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
         glide.update(dt);
+        const tp = performance.now();
         Physics.step(dt);
+        const tp1 = performance.now();
         glide.after();
         works.update(dt);
         ice.update(dt);
@@ -249,12 +262,22 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         cam.update(dt, player.position, held);
         Renderer.updateMood(dt);
         Renderer.followSun(player.position);
+        const tr = performance.now();
         Renderer.render();
+        const tr1 = performance.now();
+        ease('frame', raw * 1000); ease('physics', tp1 - tp); ease('render', tr1 - tr); ease('update', (tr - t0) - (tp1 - tp));
+        perf.frames++;
+        perf.onFrame?.({ raw: raw * 1000, update: (tr - t0) - (tp1 - tp), physics: tp1 - tp, render: tr1 - tr });
 
         hud.setElement(intent.element);
         hud.ring(intent.ring());
         const ri = Renderer.info();
-        hud.update(dt, { calls: ri.calls, tris: ri.triangles, physics: Physics.stats(), barricade: world.barricade?.summary() || null, fire: fire.stats(), fx: fx.stats() });
+        hud.update(dt, { calls: ri.calls, tris: ri.triangles, physics: Physics.stats(), barricade: world.barricade?.summary() || null, fire: fire.stats(), fx: fx.stats(), perf, ratio: Renderer.quality.pixelRatio, level: Renderer.quality.level });
+        // iOS Low Power Mode holds every page at 30 fps: the frame is 33 ms though the game's own work is light. Say so, once.
+        if (!lowPowerSaid && perf.frames > 240 && perf.frame > 31 && perf.frame < 36 && perf.update + perf.physics + perf.render < 9 && (lowPowerT += dt) > 4) {
+            lowPowerSaid = true;
+            hud.hint?.('Running at 30 fps: if Low Power Mode is on, turning it off lets the game run at 60.');
+        } else if (perf.frame < 30) lowPowerT = 0;
         raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
@@ -264,7 +287,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
         session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
-        renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio }),
+        renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
+        perf,
         setView: far => Renderer.setView(far),
         setMood: (n, s) => Renderer.setMood(n, s),
         throwRockAt(i, target, speed = 30) {

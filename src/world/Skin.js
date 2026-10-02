@@ -145,22 +145,23 @@ export class Skin {
         }
     }
 
-    /** Copy every panel whose stand-in changed since last time. Cheap when nothing did. */
+    /** Copy every panel whose stand-in changed since last time. Cheap when nothing did, and it allocates nothing. */
     update() {
         let changed = false;
+        const T = this.tint.array, E = this.emit.array, G = this.gone.array;
         for (const p of this.parts) {
             if (!p.range) continue;
-            const m = p.mat, k = m.emissiveIntensity;
-            const v = [m.color.r, m.color.g, m.color.b, m.emissive.r * k, m.emissive.g * k, m.emissive.b * k, p.gone?.() ? 1 : 0];
-            const L = p.last;
-            if (v.every((x, i) => Math.abs(x - L[i]) < 0.004)) continue;
-            p.last = v;
+            const m = p.mat, k = m.emissiveIntensity, L = p.last;
+            const r = m.color.r, g = m.color.g, b = m.color.b, er = m.emissive.r * k, eg = m.emissive.g * k, eb = m.emissive.b * k, gn = p.gone?.() ? 1 : 0;
+            if (Math.abs(r - L[0]) < 0.004 && Math.abs(g - L[1]) < 0.004 && Math.abs(b - L[2]) < 0.004 && Math.abs(er - L[3]) < 0.004
+                && Math.abs(eg - L[4]) < 0.004 && Math.abs(eb - L[5]) < 0.004 && gn === L[6]) continue;
+            L[0] = r; L[1] = g; L[2] = b; L[3] = er; L[4] = eg; L[5] = eb; L[6] = gn;
             changed = true;
-            const { start, count } = p.range, T = this.tint.array, E = this.emit.array, G = this.gone.array;
+            const { start, count } = p.range;
             for (let i = start; i < start + count; i++) {
-                T[i * 3] = v[0]; T[i * 3 + 1] = v[1]; T[i * 3 + 2] = v[2];
-                E[i * 3] = v[3]; E[i * 3 + 1] = v[4]; E[i * 3 + 2] = v[5];
-                G[i] = v[6];
+                T[i * 3] = r; T[i * 3 + 1] = g; T[i * 3 + 2] = b;
+                E[i * 3] = er; E[i * 3 + 1] = eg; E[i * 3 + 2] = eb;
+                G[i] = gn;
             }
         }
         if (changed) { this.tint.needsUpdate = true; this.emit.needsUpdate = true; this.gone.needsUpdate = true; }

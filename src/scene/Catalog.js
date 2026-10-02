@@ -596,7 +596,7 @@ export const CATALOG = {
             const local = expandPrefab({ ...it, x: 0, y: 0, z: 0, rotY: 0 }).filter(pc => STRUCTURAL.has(pc.type));
             const st = new Structure(ctx, { ...it, name: PREFABS[it.prefab]?.label, isLandmark: !!PREFABS[it.prefab]?.landmark }, kitPieces(local));
             return {
-                mesh: st.frame, entries: [...st.pieces.map(p => p.entry).filter(Boolean), ...st.entries], structure: st,
+                mesh: st.frame, entries: st.entries, structure: st,
                 wire: sys => st.wire(sys), update: dt => st.update(dt), signal: n => st.signal(n),
                 restoreState: s => st.restoreState(s), dispose: () => st.dispose(),
             };
@@ -650,7 +650,7 @@ function _structure(ctx, it, parts, mat) {
     }));
     const st = new Structure(ctx, it, { pieces });
     return {
-        mesh: st.frame, entries: st.pieces.map(p => p.entry).filter(Boolean), structure: st,
+        mesh: st.frame, entries: st.entries, structure: st,
         wire: sys => st.wire(sys), update: dt => st.update(dt), signal: n => st.signal(n),
         restoreState: s => st.restoreState(s), dispose: () => st.dispose(),
     };

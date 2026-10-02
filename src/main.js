@@ -9,6 +9,7 @@
 //                since, the scene starts again at the checkpoint's place and step
 //   an exit      the next scene, arriving at the exit's named start point
 //
+//   ?bench       the benchmark: a fixed run through Thornwick, fps measured (src/debug/Bench.js)
 //   ?scene=<id>  straight into a scene on a save that is never written
 //                (development and the QA tests; lesson → lesson1, sandbox → courtyard)
 //
@@ -149,8 +150,13 @@ function title() {
     main();
 }
 
-const param = new URLSearchParams(location.search).get('scene');
-if (param && /^[\w-]+$/.test(param)) {
+const query = new URLSearchParams(location.search);
+const param = query.get('scene');
+if (query.has('bench')) {
+    // The benchmark (src/debug/Bench.js): a fixed run through Thornwick, measured.
+    session = new Session(0, null, { persist: false });
+    play('verdant').then(() => import('./debug/Bench.js')).then(({ runBench }) => setTimeout(() => runBench(window.__EL), 1500)).catch(fail);
+} else if (param && /^[\w-]+$/.test(param)) {
     session = new Session(0, null, { persist: false });
     play(ALIAS[param] || param).catch(fail);
 } else {

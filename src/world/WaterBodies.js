@@ -102,8 +102,8 @@ export function waterSheet(it) {
     geo.rotateX(-Math.PI / 2);
     geo.scale(it.width / 2, 1, it.depth / 2);
     const mat = it.kind === 'lava'
-        ? new THREE.MeshStandardMaterial({ color: 0x3a1206, roughness: 0.6, emissive: 0xff5a14, emissiveIntensity: 1.5 })
-        : new THREE.MeshStandardMaterial({ color: it.colour ?? 0x2f7fa8, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.78, emissive: 0x0a2e44, emissiveIntensity: 0.35 });
+        ? new THREE.MeshPhongMaterial({ color: 0x3a1206, emissive: 0xff5a14, emissiveIntensity: 1.5, shininess: 10 })
+        : new THREE.MeshPhongMaterial({ color: it.colour ?? 0x2f7fa8, transparent: true, opacity: 0.78, emissive: 0x0a2e44, emissiveIntensity: 0.35, shininess: 60 });
     const m = new THREE.Mesh(geo, mat);
     m.receiveShadow = true;
     m.renderOrder = 1;

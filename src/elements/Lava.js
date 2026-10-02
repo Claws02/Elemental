@@ -31,8 +31,8 @@ export class Lava {
         this.pools = [];
         this.scorches = [];
         this.n = 0;
-        this.hot = new THREE.MeshStandardMaterial({ color: 0x3a1206, emissive: 0xff5a14, emissiveIntensity: 1.6, roughness: 0.6, flatShading: true });
-        this.crust = new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 1, flatShading: true });
+        this.hot = new THREE.MeshPhongMaterial({ color: 0x3a1206, emissive: 0xff5a14, emissiveIntensity: 1.6, flatShading: true, shininess: 10 });
+        this.crust = new THREE.MeshPhongMaterial({ color: 0x1a1512, flatShading: true, shininess: 4 });
         fire.onMolten = (thing, cause) => this.pool(thing.mesh.position.clone(), cause, thing);
     }
 

@@ -27,7 +27,8 @@ const VERT = /* glsl */`
         vTint = tint;
         vAlpha = alpha;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * projectionMatrix[1][1] * uViewH * 0.5 / max(0.1, -mv.z);
+        // Capped: a flame right at the lens would cover the screen (overdraw is what costs on a phone).
+        gl_PointSize = min(size * projectionMatrix[1][1] * uViewH * 0.5 / max(0.1, -mv.z), uViewH * 0.16);
         gl_Position = projectionMatrix * mv;
     }`;
 

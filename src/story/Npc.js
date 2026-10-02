@@ -23,6 +23,7 @@
 // their routes in the open.
 // ============================================================
 
+import { bakeStill } from '../engine/Kit.js';
 import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
@@ -267,6 +268,26 @@ export class Npc {
             const dx = this.point.x - p.x, dz = this.point.z - p.z;
             channel = { pitch: Math.atan2(this.point.y - 1.4, Math.max(0.3, Math.hypot(dx, dz))) * 0.6, yaw: 0 };
         }
-        this.anim.update(dt, { speed: this.speed, channel });
+        // Far off: a still, baked pose (one or two draw calls, no animation work). Near: the full rig.
+        const d = Math.hypot((hero?.x ?? p.x) - p.x, (hero?.z ?? p.z) - p.z);
+        const far = this.far ? d > NPC_LOD.near : d > NPC_LOD.far;
+        if (far !== !!this.far) this._lod(far);
+        if (!far) this.anim.update(dt, { speed: this.speed, channel });
+    }
+
+    _lod(far) {
+        this.far = far;
+        const root = this.rig.root;
+        if (far && !this.still) {
+            this.still = bakeStill(root, o => o.material?.transparent);      // (the contact shadow stays as it is)
+            root.add(this.still);
+        }
+        for (const c of root.children) {
+            if (c === this.still) c.visible = far;
+            else if (!(c.isMesh && c.material?.transparent)) c.visible = !far;
+        }
     }
 }
+
+/** People further than `far` from the hero go still (baked); they come alive again inside `near`. */
+export const NPC_LOD = { far: 28, near: 24 };

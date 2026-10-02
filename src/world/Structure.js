@@ -128,7 +128,20 @@ export class Structure {
         const W = this.frame.matrixWorld, qF = this.frame.quaternion;
         this.entries = [];
 
-        // Each piece: its mesh round its own centre (so it falls true), one static body of its boxes.
+        // ONE static body for the whole structure, a shape per box (a region has hundreds of pieces: one body each
+        // made every physics step pay for them all). Each shape knows its piece; a piece gets a body of its own only
+        // when it breaks off and falls.
+        const body = this.body = new CANNON.Body({ mass: 0, material: Physics.material('stone') });
+        body.position.set(this.frame.position.x, this.frame.position.y, this.frame.position.z);
+        body.quaternion.set(qF.x, qF.y, qF.z, qF.w);
+        this.shapePiece = new Map();
+        const addBox = (b, piece, phys) => {
+            const shape = new CANNON.Box(new CANNON.Vec3(Math.max(0.02, b.w / 2), Math.max(0.02, b.h / 2), Math.max(0.02, b.d / 2)));
+            shape.material = Physics.material(phys);
+            body.addShape(shape, new CANNON.Vec3(b.c.x, b.c.y, b.c.z), new CANNON.Quaternion(b.q.x, b.q.y, b.q.z, b.q.w));
+            if (piece) { piece.shapes.push(shape); this.shapePiece.set(shape, piece); }
+        };
+        // Each piece: its mesh round its own centre (so it falls true).
         this.pieces = pieces.map((p, i) => {
             const m = PIECE_MATERIALS[p.mat];
             // Its extent in the structure's frame: every corner of every (turned) box.
@@ -143,31 +156,26 @@ export class Structure {
             p.group.position.sub(c);
             wrapper.add(p.group);
             ctx.scene.add(wrapper);
-            const piece = { i, id: `${it.id}_S${i}`, mat: p.mat, m, hp: m.hp, hp0: m.hp, broken: false, burned: false, mesh: wrapper, box, kind: p.kind, entry: null, neighbours: [] };
-            if (p.boxes.length) {
-                const body = new CANNON.Body({ mass: 0, material: Physics.material(m.phys) });
-                for (const b of p.boxes) body.addShape(new CANNON.Box(new CANNON.Vec3(Math.max(0.02, b.w / 2), Math.max(0.02, b.h / 2), Math.max(0.02, b.d / 2))),
-                    new CANNON.Vec3(b.c.x - c.x, b.c.y - c.y, b.c.z - c.z), new CANNON.Quaternion(b.q.x, b.q.y, b.q.z, b.q.w));
-                body.position.set(wrapper.position.x, wrapper.position.y, wrapper.position.z);
-                body.quaternion.set(qF.x, qF.y, qF.z, qF.w);         // the body turns with the structure: its shapes sit in the structure's frame
-                piece.entry = Physics.add({ body, mesh: wrapper, tier: TIER.DESTRUCTIBLE, id: piece.id, data: { piece, owner: this } });
-                body.addEventListener('collide', e => this._onCollide(piece, e));
-            }
+            const piece = { i, id: `${it.id}_S${i}`, mat: p.mat, m, hp: m.hp, hp0: m.hp, broken: false, burned: false, mesh: wrapper, box, kind: p.kind, entry: null, neighbours: [],
+                shapes: [], boxes: p.boxes.map(b => ({ b, off: b.c.clone().sub(c) })) };
+            for (const b of p.boxes) addBox(b, piece, m.phys);
             return piece;
         });
         // Fixed parts (a ground floor): drawn in the skin, a plain collider each.
         const fixedMeshes = fixed.map(f => {
             this.frame.add(f.group);
-            for (const b of f.boxes) {
-                const body = new CANNON.Body({ mass: 0, material: Physics.material('stone') });
-                body.addShape(new CANNON.Box(new CANNON.Vec3(b.w / 2, b.h / 2, b.d / 2)));
-                const pw = b.c.clone().applyMatrix4(W), qq = qF.clone().multiply(b.q);
-                body.position.set(pw.x, pw.y, pw.z);
-                body.quaternion.set(qq.x, qq.y, qq.z, qq.w);
-                this.entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Floor' }));
-            }
+            for (const b of f.boxes) addBox(b, null, 'stone');
             return f.group;
         });
+        if (body.shapes.length) {
+            this.entry = Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Body', data: { structure: this, owner: this } });
+            this.entries.push(this.entry);
+            // Which piece was struck: the shape of ours in the contact.
+            body.addEventListener('collide', e => {
+                const piece = this.shapePiece.get(Physics.shapeOf(e.contact, body));       // our shape in the contact
+                if (piece) this._onCollide(piece, e);
+            });
+        }
         // Who holds whom up: pieces whose boxes come within TOUCH of each other. Grounded: reaching the ground.
         // Generous upward: a roof's slope sits a little above the wall tops it rests on (the eaves overhang).
         const grow = b => new THREE.Box3(b.min.clone().sub(new THREE.Vector3(TOUCH, 0.45, TOUCH)), b.max.clone().add(new THREE.Vector3(TOUCH, 0.45, TOUCH)));
@@ -209,7 +217,11 @@ export class Structure {
     /** Fire eating a piece: `amount` is a share of 100 (its whole burn), whatever the piece's own strength. */
     burn(piece, amount, cause = 'environment') { if (!piece.broken) this.pending.push({ piece, amount: amount * piece.hp0 / 100, cause, vel: new THREE.Vector3(), fire: true }); }
 
-    update() {
+    update(dt = 0) {
+        // Asleep until something happens to it (a fire, water, a blow): then the skin follows it every frame, and
+        // it goes back to sleep once nothing on it has been burning, heating or wet for a while.
+        if (this.pending.length) this.awake = 2;
+        if (!this.awake) return;
         if (this.pending.length) {
             const hits = this.pending.splice(0);
             let cause = 'environment';
@@ -228,6 +240,13 @@ export class Structure {
         }
         for (const p of this.parts) if (p.piece?.broken && !p.released && p.piece.entry?.body.world) this.skin.release(p);
         this.skin.update();
+        if ((this._checkT = (this._checkT || 0) - dt) <= 0) {
+            this._checkT = 0.5;
+            const F = this.sys?.fire;
+            const busy = F && [...this.things.values()].some(t => F.live.has(F.flammables.get(t)));
+            this.awake = busy ? 2 : this.awake - 0.5;
+            if (this.awake <= 0) { this.awake = 0; this.skin.update(); }
+        }
     }
 
     _damage(piece, amount, cause, vel, quiet = false) {
@@ -242,13 +261,32 @@ export class Structure {
         }
     }
 
+    /** The piece leaves the structure's body, and (if it has any shape) becomes a body of its own. */
+    _detach(piece, own = true) {
+        for (const sh of piece.shapes) { this.body.removeShape(sh); this.shapePiece.delete(sh); }
+        const had = piece.shapes.length;
+        piece.shapes = [];
+        if (!had || !own) return null;
+        const body = new CANNON.Body({ mass: 0, material: Physics.material(piece.m.phys) });
+        const q = this.frame.quaternion;
+        for (const { b, off } of piece.boxes) body.addShape(new CANNON.Box(new CANNON.Vec3(Math.max(0.02, b.w / 2), Math.max(0.02, b.h / 2), Math.max(0.02, b.d / 2))),
+            new CANNON.Vec3(off.x, off.y, off.z), new CANNON.Quaternion(b.q.x, b.q.y, b.q.z, b.q.w));
+        body.position.set(piece.mesh.position.x, piece.mesh.position.y, piece.mesh.position.z);
+        body.quaternion.set(q.x, q.y, q.z, q.w);
+        piece.entry = Physics.add({ body, mesh: piece.mesh, tier: TIER.DESTRUCTIBLE, id: piece.id, data: { piece, owner: this } });
+        return piece.entry;
+    }
+
+    /** What a touched shape of this structure's body is (Interactables.forEntry). */
+    thingForShape(shape) { const p = this.shapePiece.get(shape); return (p && this.things?.get(p)) || null; }
+
     _break(piece, cause, vel) {
         piece.broken = true;
         piece.hp = 0;
         piece.cause = cause;
-        if (!piece.entry) return;
         if (this.isBurning?.(piece)) piece.burned = true;
-        if (piece.burned && piece.m.vanish) { this._gone(piece); EventBus.emit(EV.PIECE_BROKEN, { id: this.id, piece: piece.id, cause, burned: true }); return; }
+        // Burned-through canvas is simply gone; a frame with no shape of its own is gone too. Anything else falls.
+        if ((piece.burned && piece.m.vanish) || !this._detach(piece)) { this._gone(piece); EventBus.emit(EV.PIECE_BROKEN, { id: this.id, piece: piece.id, cause, burned: piece.burned }); return; }
         const b = piece.entry.body;
         Physics.toDebris(piece.entry, piece.m.mass);
         if (cause !== 'environment') Object.assign(piece.entry.data, { thrownBy: cause, thrownAt: performance.now() });
@@ -301,6 +339,10 @@ export class Structure {
             this.things.set(p, thing);
         }
         this.isBurning = p => { const t = this.things.get(p); return !!t && sys.fire.isBurning(t); };
+        // Wake when fire or water reaches any of it.
+        const ids = new Set(this.pieces.map(p => p.id));
+        const wake = e => { if (ids.has(e.id)) this.awake = 2; };
+        this.off = [EventBus.on(EV.FIRE_STARTED, wake), EventBus.on(EV.OBJECT_SOAKED, wake), EventBus.on(EV.FIRE_OUT, wake)];
     }
 
     signal(name) {
@@ -337,11 +379,12 @@ export class Structure {
 
     _gone(p) {
         p.broken = true;
+        this._detach(p, false);
         if (p.entry) { Physics.remove(p.entry); p.entry = null; }
         if (this.things?.has(p)) this.sys.fire.markBurned?.(this.things.get(p));
     }
 
     summary() { return { id: this.id, state: this.state, pieces: this.pieces.length, broken: this.pieces.filter(p => p.broken).length, burned: this.pieces.filter(p => p.burned).length, burnable: this.burnable }; }
 
-    dispose() { this.skin.dispose(); this.frame.parent?.remove(this.frame); }
+    dispose() { this.off?.forEach(f => f()); this.skin.dispose(); this.frame.parent?.remove(this.frame); }
 }

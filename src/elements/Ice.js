@@ -42,7 +42,7 @@ export class Ice {
     constructor({ scene, fire, fx, creatures }) {
         Object.assign(this, { scene, fire, fx, creatures });
         this.arches = [];
-        this.mat = new THREE.MeshStandardMaterial({ color: 0xcfeeff, roughness: 0.08, metalness: 0.05, transparent: true, opacity: 0.72, emissive: 0x2a6a8a, emissiveIntensity: 0.35, flatShading: true });
+        this.mat = new THREE.MeshPhongMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.72, emissive: 0x2a6a8a, emissiveIntensity: 0.35, flatShading: true, shininess: 90 });
         this.n = 0;
     }
 

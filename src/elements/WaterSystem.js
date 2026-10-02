@@ -53,10 +53,9 @@ export class WaterSystem {
         this.time = 0;
         this.draws = 0;
 
-        this.mat = new THREE.MeshStandardMaterial({
-            color: 0x3aa0d8, roughness: 0.12, metalness: 0.1, transparent: true, opacity: 0.78,
-            emissive: 0x0c3a5a, emissiveIntensity: 0.6, depthWrite: false,
-        });
+        this.mat = new THREE.MeshPhongMaterial({
+            color: 0x3aa0d8, transparent: true, opacity: 0.78,
+            emissive: 0x0c3a5a, emissiveIntensity: 0.6, depthWrite: false, shininess: 60 });
         this.tube = this._makeTube();
         scene.add(this.tube);
         this.drops = new Pool(260, false);
@@ -158,7 +157,7 @@ export class WaterSystem {
         const orb = { thing, entry, born: this.time };
         // Whether it was held is judged when the contact happens, not later:
         // a touch in the hand must not burst it the moment it is let go.
-        body.addEventListener('collide', ev => this.queue.push({ orb, other: ev.body.userData, held: this.channel.held?.entry === entry }));
+        body.addEventListener('collide', ev => this.queue.push({ orb, other: ev.body.userData, shape: Physics.otherShape(ev), held: this.channel.held?.entry === entry }));
         this.orbs.add(orb);
         return thing;
     }
@@ -273,7 +272,7 @@ export class WaterSystem {
             const { orb, other } = c;
             if (!this.orbs.has(orb) || !other || other.tier === TIER.PLAYER) continue;
             const held = c.held;
-            const t = this.interactables.forEntry(other);
+            const t = this.interactables.forEntry(other, c.shape);
             if (held) {
                 // Pressed onto a fire, it puts it out and is spent.
                 if (t && this.fire.isBurning(t)) { this._burst(orb); this.channel.let(); }
