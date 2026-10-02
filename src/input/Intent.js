@@ -81,6 +81,7 @@ export class Intent {
     _changeVerb(thing, burning) {
         const cv = changeVerb(thing.mat, burning);
         if (!cv) return null;
+        if (cv.element === 'fire' && this.hero.swimming) return null;          // no fire comes in deep water
         const st = this.prog.live(cv.element);
         if (st === 'locked') return null;
         if (st === 'wild') {
@@ -133,7 +134,7 @@ export class Intent {
         // fat-finger assist. The hero's touch area is generous, and must not
         // steal a touch that lands squarely on a rock at their feet.
         // A creature under the finger: Fire's jet, held on it (FlameJet). First, because it moves.
-        const c = this.jet && this.prog.has('fire') ? this._pickCreature(x, y) : null;
+        const c = this.jet && this.prog.has('fire') && !this.hero.swimming ? this._pickCreature(x, y) : null;
         if (c) {
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'jet', element: 'fire' });
             this.jet.atCreature(c);
@@ -155,7 +156,8 @@ export class Intent {
         thing = thing || this.interactables.pick(x, y, this.camera, usable);
         if (!thing) {
             // Open ground: Earth can raise stone here, if the finger stays still.
-            const g = this.works && this.prog.can('raise') ? this.works.groundAt(x, y) : null;
+            // (Not while swimming: no footing to raise it from.)
+            const g = this.works && this.prog.can('raise') && !this.hero.swimming ? this.works.groundAt(x, y) : null;
             if (!g) return false;
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, t: 0, state: 'ground', ground: g, column: null, element: 'earth' });
             this.channel.aimAt(g, 'earth');
@@ -194,7 +196,7 @@ export class Intent {
     second(x, y) {
         const held = this.channel.held?.entry;
         // Holding a fireball, touch the hero: Fire + Air, a firestorm toward where the fireball was.
-        if (this.state === 'holding' && held?.data.fireball && this.storm && this.prog.can('firestorm') && this.air.onHero(x, y)) {
+        if (this.state === 'holding' && held?.data.fireball && this.storm && this.prog.can('firestorm') && !this.hero.swimming && this.air.onHero(x, y)) {
             const from = this.hero.position.clone(), dir = held.mesh.position.clone().sub(from);
             this.fire.spendFireball(held);
             this.channel.let();

@@ -211,6 +211,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const _size = new THREE.Vector2();
     const frameInfo = { held: null, hero: player.position };
     let last = performance.now(), raf = 0, running = true;
+    let swumOnce = false;          // the swimming hint, said once
     // Where a frame's time goes (the benchmark and the debug readout read it): ms, smoothed.
     const perf = { frame: 16.7, update: 0, physics: 0, render: 0, frames: 0, onFrame: null };
     let lowPowerSaid = false, lowPowerT = 0;
@@ -251,6 +252,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         vitals.update(dt);
         surges.update(dt);
         world.waters.update(player);
+        // The first time in deep water: how to get out, and what water takes away.
+        if (player.swimming && !swumOnce) { swumOnce = true; hud.hint?.('Swimming: head for a bank and swim into it to climb out. Fire won’t light in deep water, and stone won’t rise from it.'); }
         world.waters.burn(dt, { vitals, creatures, fire });
         cull(dt);
         if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }

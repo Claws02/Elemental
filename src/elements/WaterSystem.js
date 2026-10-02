@@ -35,6 +35,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
 import { WATER } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
+import { SWIM } from '../world/WaterBodies.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { WATER };
@@ -212,7 +213,7 @@ export class WaterSystem {
             if (this.channel.held?.entry === e) continue;
             const d = b.position.distanceTo(p);
             if (d > radius) continue;
-            const k = (1 - d / radius) / (1 + b.mass / 8);
+            const k = (1 - d / radius) / (1 + b.mass / 8) * (this.hero.swimming ? SWIM.weak : 1);
             const v = dir ? dir.clone().multiplyScalar(WATER.push * amount * k)
                           : new THREE.Vector3(b.position.x - p.x, 0.6, b.position.z - p.z).normalize().multiplyScalar(WATER.splashPush * k);
             b.wakeUp();

@@ -15,6 +15,9 @@
 //          hands up, haul, a knee over, stand. Reach is higher in the air, so
 //          jump then climb gets onto taller things. People and creatures
 //          aren't ledges.
+// SWIM     in deep water the hero floats (head and shoulders out) and swims
+//          slowly; out by finding the bottom, or by climbing a bank, wall or
+//          dock edge, with a longer reach from the water (world/WaterBodies.js).
 // ============================================================
 
 import { THREE, CANNON } from '../engine/lib.js';
@@ -22,7 +25,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { buildHero, HeroAnimator } from '../art/HeroModel.js';
 import { MUD, GLIDE } from '../data/elements.js';
-import { WADE } from '../world/WaterBodies.js';
+import { WADE, SWIM } from '../world/WaterBodies.js';
 import { Ground } from '../world/Ground.js';
 
 const RADIUS = 0.42;
@@ -38,6 +41,9 @@ export const CLIMB = {
     time: [0.45, 1.0],     // how long the climb takes: a low ledge … one at full reach
     onto: 0.5,             // how far past the edge the hero ends up
 };
+
+const SWIM_RAYS = [-0.9, -0.4, ...Array.from({ length: 12 }, (_, i) => 0.1 * (i + 1))];     // heights over the water
+const BANK = { ahead: 4, grade: 0.8, stuck: 0.4 };     // how far ahead a bank's top is looked for, how steep is still standing, how long held up first
 
 export class PlayerController {
     /** `look`: the protagonist's colours from the character creator (art/Palette.js HERO keys). */
@@ -64,6 +70,10 @@ export class PlayerController {
         this.jumpWant = 0;         // a jump asked for, still waiting to happen (s left)
         this.climb = null;         // { from, up, to, t, T, h } while climbing
         this.pushT = 0;            // how long we've walked into a ledge
+        this.stuckT = 0;           // how long, in water, we've pushed and gone nowhere
+        this.wading = 0;           // how deep the water is, wading (world/WaterBodies.js sets these)
+        this.swimming = null;      // the water body, swimming
+        this.water = null;         // the water body, wading or swimming
     }
 
     /** Ask to jump (the button, a flick, Space). Happens now, or as soon as the hero lands. */
@@ -90,7 +100,8 @@ export class PlayerController {
         const iz = move.x * sin + move.y * cos;
         const mag = Math.hypot(ix, iz);
         // Channelling slows the hero: you cannot sprint and hold a boulder.
-        const top = (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? 0.45 : 1) * (this.mired > 0 ? MUD.slow : 1) * (this.gliding ? GLIDE.speed : 1) * (this.wading ? WADE.slow : 1);
+        const top = this.swimming ? SWIM.speed * (channel ? 0.6 : 1)
+            : (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? 0.45 : 1) * (this.mired > 0 ? MUD.slow : 1) * (this.gliding ? GLIDE.speed : 1) * (this.wading ? WADE.slow : 1);
         let tx = mag > 0.05 ? (ix / mag) * top * Math.min(1, mag) : 0;
         let tz = mag > 0.05 ? (iz / mag) * top * Math.min(1, mag) : 0;
         // Walking into a person: step round them at full speed instead of pushing against them.
@@ -100,6 +111,13 @@ export class PlayerController {
         b.velocity.x += (tx - b.velocity.x) * k;
         b.velocity.z += (tz - b.velocity.z) * k;
 
+        // Swimming: float with the feet SWIM.float under the surface. Gravity's share of the coming step is paid in
+        // advance (as Glide does), so the hero holds there whatever the frame rate; a fall in is slowed, not stopped dead.
+        if (this.swimming) {
+            const want = Math.max(-3, Math.min(2, (this.swimming.level - SWIM.float + RADIUS - b.position.y) * 4));
+            b.velocity.y += (want - b.velocity.y) * Math.min(1, 8 * dt);
+            b.velocity.y -= Physics.getWorld().gravity.y * Math.min(dt, 0.1);
+        }
         // Jump: from the ground, or just after stepping off it.
         if (this.jumpWant > 0) {
             this.jumpWant -= dt;
@@ -111,10 +129,12 @@ export class PlayerController {
         }
         // Climb: walking into a ledge within reach.
         if (mag > 0.4 && !channel && !this.gliding) {
-            const ledge = this._ledge(ix / mag, iz / mag);
+            // In water and making no headway for a moment: a bank too steep to walk up is scrambled up like a ledge.
+            this.stuckT = this.water && this.speed < 0.35 * top ? this.stuckT + dt : 0;
+            const ledge = this._ledge(ix / mag, iz / mag) || (this.stuckT > BANK.stuck ? this._bank(ix / mag, iz / mag) : null);
             this.pushT = ledge ? this.pushT + dt : 0;
             if (ledge && this.pushT >= CLIMB.push) this._startClimb(ledge, ix / mag, iz / mag);
-        } else this.pushT = 0;
+        } else this.pushT = this.stuckT = 0;
 
         const p = b.position;
         this.rig.root.position.set(p.x, p.y - RADIUS, p.z);
@@ -129,7 +149,7 @@ export class PlayerController {
         this.facing += d * Math.min(1, TURN * dt);
         this.rig.root.rotation.y = this.facing;
 
-        this.anim.update(dt, { speed: this.speed, channel });
+        this.anim.update(dt, { speed: this.speed, channel, swim: !!this.swimming });
     }
 
     /** The target velocity with the part aimed into a person taken out, kept at full speed along their side. */
@@ -158,7 +178,8 @@ export class PlayerController {
         const skip = e => !e || e === this.entry || e.data?.npc || e.data?.creature || e.tier === TIER.DEBRIS;
         // A face in front, at knee to chest height.
         let face = null;
-        for (const h of [0.3, 0.8]) {
+        // (Swimming, also every 10 cm up to 1.2 m above the surface: a dock's deck is a thin board clear of the water.)
+        for (const h of this.swimming ? SWIM_RAYS.map(k => this.swimming.level - feet + k) : [0.3, 0.8]) {
             // From inside the hero (pressed against a wall the sphere sinks into it a little; the hero itself is skipped).
             face = Physics.rayFirst({ x: p.x, y: feet + h, z: p.z }, { x: p.x + fx * (RADIUS + 0.55), y: feet + h, z: p.z + fz * (RADIUS + 0.55) }, skip);
             if (face) break;
@@ -166,15 +187,36 @@ export class PlayerController {
         if (!face || Math.abs(face.normal.y) > 0.6 || face.normal.x * fx + face.normal.z * fz > -0.5) return null;      // not a face we walk into
         // Its top: down from above the reach, just past the face.
         const ax = face.point.x + fx * 0.35, az = face.point.z + fz * 0.35;
-        const top = Physics.rayFirst({ x: ax, y: feet + CLIMB.reach + 0.3, z: az }, { x: ax, y: feet + 0.1, z: az }, skip);
+        const reach = CLIMB.reach + (this.swimming ? SWIM.reach : 0);
+        const top = Physics.rayFirst({ x: ax, y: feet + reach + 0.3, z: az }, { x: ax, y: feet + 0.1, z: az }, skip);
         if (!top || top.normal.y < 0.75) return null;
         const h = top.point.y - feet;
-        if (h < CLIMB.low || h > CLIMB.reach) return null;
+        if (h < CLIMB.low || h > reach) return null;
         // Room to stand up there, and nothing in the way of the hands going up.
         const stand = { x: ax + fx * (CLIMB.onto - 0.35), y: top.point.y, z: az + fz * (CLIMB.onto - 0.35) };
         if (Physics.rayFirst({ x: stand.x, y: stand.y + 0.1, z: stand.z }, { x: stand.x, y: stand.y + 1.7, z: stand.z }, skip)) return null;
         if (Physics.rayFirst({ x: p.x, y: p.y, z: p.z }, { x: p.x, y: top.point.y + RADIUS + 0.3, z: p.z }, skip)) return null;
         return { h, top: top.point.y, stand };
+    }
+
+    /**
+     * Out of the water up a steep bank (terrain, not a face the rays find): the nearest ground ahead that is
+     * above the water and flat enough to stand on, within reach. Null if the bank rises too high first.
+     */
+    _bank(fx, fz) {
+        const p = this.body.position, feet = p.y - RADIUS, reach = CLIMB.reach + (this.swimming ? SWIM.reach : 0);
+        const H = (x, z) => Ground.height(x, z);
+        for (let s = RADIUS; s <= BANK.ahead; s += 0.25) {
+            const x = p.x + fx * s, z = p.z + fz * s, h = H(x, z);
+            if (h - feet > reach) return null;
+            if (h < this.water.level + 0.05) continue;
+            const grade = Math.hypot(H(x + 0.3, z) - H(x - 0.3, z), H(x, z + 0.3) - H(x, z - 0.3)) / 0.6;
+            if (grade > BANK.grade) continue;
+            const skip = e => !e || e === this.entry || e.data?.npc || e.data?.creature || e.tier === TIER.DEBRIS;
+            if (Physics.rayFirst({ x, y: h + 0.1, z }, { x, y: h + 1.7, z }, skip)) return null;     // something stands there
+            return { h: Math.max(CLIMB.low, h - feet), top: h, stand: { x, y: h, z } };
+        }
+        return null;
     }
 
     _startClimb(ledge, fx, fz) {

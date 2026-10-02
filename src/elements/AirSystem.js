@@ -31,6 +31,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 import { Pool } from '../art/FireFx.js';
 import { AIR } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
+import { SWIM } from '../world/WaterBodies.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { AIR };
@@ -126,7 +127,7 @@ export class AirSystem {
     // seconds of it; a gust: dt = 0 and `gust` true.
     _blow(dir, len, angle, dt, gust) {
         const o = this.origin();
-        const tan = Math.tan(angle);
+        const tan = Math.tan(angle), weak = this.hero.swimming ? SWIM.weak : 1;
         const _q = new THREE.Vector3();
         const inCone = q => {
             const v = _q.set(q.x, q.y, q.z).sub(o);       // q may be a three or a cannon vector
@@ -136,7 +137,7 @@ export class AirSystem {
             const wide = along * tan + 0.6;
             // A gust carries its strength further than a steady wind.
             const fall = gust ? 1 - 0.6 * along / len : 1 - along / len;
-            return across < wide ? fall * (1 - 0.5 * across / wide) : 0;
+            return across < wide ? fall * (1 - 0.5 * across / wide) * weak : 0;
         };
         // Fire: blown out if young, fanned if established.
         for (const t of this.interactables.things) {

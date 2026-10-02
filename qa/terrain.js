@@ -77,7 +77,7 @@ const SHOTS = path.join(__dirname, 'shots');
     });
     check(raise.found && raise.err < 0.6 && Math.abs(raise.base) < 0.05, `a touch on a hillside lands on it, and stone rises from the slope (${JSON.stringify(raise)})`);
 
-    // 4. The lake: a source; shallow water slows; deep water stops; a frozen stream leaves a floe to stand on.
+    // 4. The lake: a source; shallow water slows; deep water is swum (qa/swim.js); a frozen stream leaves a floe to stand on.
     const lake = await ev(async () => {
         const T = __G(), W = __EL.world.waters, b = __EL.player.body, lake = W.bodies[0];
         // Shallow edge, then try for the middle.
@@ -86,8 +86,8 @@ const SHOTS = path.join(__dirname, 'shots');
         await new Promise(r => setTimeout(r, 300));
         wade = __EL.player.wading;
         b.position.set(-25, T.height(-25, 25) + 0.5, 25);           // the deep middle
-        await new Promise(r => setTimeout(r, 300));
-        const kept = W.depth(b.position.x, b.position.z) <= 1.3;
+        await new Promise(r => setTimeout(r, 1200));
+        const kept = !!__EL.player.swimming && Math.abs(lake.level - (b.position.y - __EL.player.radius) - 1.2) < 0.4;     // swimming, afloat
         // Back on the shore; draw a stream from the lake and freeze it onto open water.
         b.position.set(-10, T.height(-10, 25) + 0.5, 25); b.velocity.set(0, 0, 0);
         __EL.cam.yaw = Math.PI / 2;                               // facing -x: the lake
@@ -108,7 +108,7 @@ const SHOTS = path.join(__dirname, 'shots');
         return { depthAt: +(lake.level - T.height(-25, 25)).toFixed(2), wade: +(wade || 0).toFixed(2), kept, source: ok && Math.abs(S.y - lake.level) < 0.01, floe: !!floe,
             onFloe: f ? +(b.position.y - f.y).toFixed(2) : null, wadingOnFloe: __EL.player.wading };
     });
-    check(lake.depthAt > 1.3 && lake.wade > 0.3 && lake.kept, `shallow water slows you; the deep middle of the lake is out of reach (${JSON.stringify(lake)})`);
+    check(lake.depthAt > 1.3 && lake.wade > 0.3 && lake.kept, `shallow water slows you; in the deep middle of the lake you swim, afloat (${JSON.stringify(lake)})`);
     check(lake.source && lake.floe && lake.onFloe > 0.2 && lake.onFloe < 0.8 && !lake.wadingOnFloe, `a stream draws from the lake; frozen onto open water it leaves a floe you can stand on (${JSON.stringify(lake)})`);
     await shot('T2-lake-floe');
 

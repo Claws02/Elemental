@@ -8,8 +8,13 @@
 //
 //   a source      touch it and Water draws a stream from the nearest point of
 //                 its surface (like a basin, but it never runs dry)
-//   wading        shallow water slows the hero; past WADE.deep they can't go
-//                 further (no swimming yet): they are held at the last safe step
+//   wading        shallow water slows the hero
+//   swimming      past WADE.deep the hero floats, head and shoulders out, and
+//                 swims slowly anywhere (PlayerController). Out at a shelving
+//                 bank by swimming until the feet find the bottom, or at a
+//                 wall, dock or steep bank by climbing (a longer reach from
+//                 the water). In deep water Fire won't come, stone won't rise
+//                 from the bed, and the other elements are weaker (SWIM.weak)
 //   ice           a stream frozen where it lands on open water leaves an ice
 //                 floe you can stand on (elements/Ice.js): an ice bridge, a
 //                 floe at a time
@@ -19,12 +24,17 @@ import { THREE } from '../engine/lib.js';
 import { Ground } from './Ground.js';
 
 export const WADE = { slow: 0.6, deep: 1.25 };
+export const SWIM = {
+    float: 1.2,        // the feet hang this far under the surface (just above WADE.deep: wading turns into swimming smoothly)
+    speed: 2.2,        // m/s, whatever the stick says
+    reach: 0.6,        // added to the climbing reach: a kick and a pull gets onto a bank or a dock
+    weak: 0.6,         // throws, streams and wind, while swimming
+};
 export const LAVA_FLOW = { burn: 35 };
 
 export class WaterBodies {
     constructor() {
         this.bodies = [];
-        this.safe = null;
     }
 
     /** A body from a scene item: { id, x, z, rotY, width, depth, round, level }. */
@@ -81,18 +91,14 @@ export class WaterBodies {
         return new THREE.Vector3(b.x + u * c + v * s, b.level, b.z - u * s + v * c);
     }
 
-    /** Per frame: slow the hero in shallow water, and keep them out of deep water. */
+    /** Per frame: is the hero wading (and how deep), or swimming (and in what)? PlayerController acts on it. */
     update(player) {
         const b = player.body, w = this.at(b.position.x, b.position.z);
         // Standing on something above the water (an ice floe, a bridge): not in it.
         const d = w && b.position.y - 0.45 < w.level - 0.15 ? w.level - Ground.height(b.position.x, b.position.z) : 0;
         player.wading = d > 0.35 ? d : 0;
-        if (d > WADE.deep && this.safe) {
-            b.position.x = this.safe.x; b.position.z = this.safe.z;
-            b.velocity.x = 0; b.velocity.z = 0;
-        } else if (d < WADE.deep * 0.8) {
-            (this.safe ||= { x: 0, z: 0 }).x = b.position.x; this.safe.z = b.position.z;
-        }
+        player.swimming = d > WADE.deep ? w : null;
+        player.water = d > 0.35 ? w : null;
     }
 }
 

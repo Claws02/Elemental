@@ -25,6 +25,7 @@ import { ELEMENT } from '../art/Palette.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { HOLD } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
+import { SWIM } from '../world/WaterBodies.js';
 
 // Tuning lives in src/data/elements.js (data, not code).
 export { HOLD };
@@ -89,7 +90,8 @@ export class Channel {
             dir.normalize();
             // Earth's throws grow with Earth's Power; the others throw at full reach.
             const max = element === 'earth' ? this.prog.earth('throwMax') : HOLD.throwMax;
-            const speed = HOLD.throwMin + (max - HOLD.throwMin) * Math.min(1, Math.max(0, (len - 900) / 2600));
+            // Swimming, there's nothing to throw from: weaker.
+            const speed = (HOLD.throwMin + (max - HOLD.throwMin) * Math.min(1, Math.max(0, (len - 900) / 2600))) * (this.hero.swimming ? SWIM.weak : 1);
             this.throwEntry(entry, dir, speed, element);
         } else {
             entry.data.droppedAt = performance.now();

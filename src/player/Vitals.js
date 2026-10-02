@@ -80,9 +80,9 @@ export class Vitals {
         const b = this.player.body, p = this.player.position;
         // Out of the world.
         if (b.position.y < Ground.height(b.position.x, b.position.z) + VITALS.killY) { this.health = 0; this._die('fell'); return; }
-        // Landing: the downward speed just before it stopped.
+        // Landing: the downward speed just before it stopped. Water breaks a fall.
         const vy = b.velocity.y;
-        if (this._vy < -VITALS.fallSafe && vy > this._vy + 8) this.hurt((-this._vy - VITALS.fallSafe) * VITALS.fallPer, 'fall');
+        if (this._vy < -VITALS.fallSafe && vy > this._vy + 8 && !this.player.water) this.hurt((-this._vy - VITALS.fallSafe) * VITALS.fallPer, 'fall');
         this._vy = vy;
         // Standing in fire.
         const near = this.fire.burningNear?.(p, VITALS.fireReach) || 0;

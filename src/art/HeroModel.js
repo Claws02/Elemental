@@ -195,7 +195,7 @@ export class HeroAnimator {
     jump() { this.jumpT = 0; }
     climb(dur) { this.climbT = 0; this.climbDur = dur; }
 
-    update(dt, { speed = 0, channel = null } = {}) {
+    update(dt, { speed = 0, channel = null, swim = false } = {}) {
         this.clock += dt;
         this.speed = speed;
         this.channel = channel;
@@ -222,6 +222,19 @@ export class HeroAnimator {
         };
         // Legs: thighX is applied with the forward = negative convention.
         T.thighX = T.thighX.map(v => -v);
+
+        // Swimming: a slow breaststroke, leaning into it when going somewhere; treading water when not.
+        if (swim) {
+            const w = this.clock * (2.4 + moving * 1.2), sw = Math.sin(w), cw = Math.cos(w);
+            T.hipsY = 0.95; T.hipsRy = 0; T.spineY = 0;
+            T.spineX = 0.1 + moving * 0.45; T.neckX = -0.1 - moving * 0.4;
+            T.thighX = [-0.35 - 0.35 * sw, -0.35 - 0.35 * sw];
+            T.kneeX = [0.5 + 0.6 * Math.max(0, cw), 0.5 + 0.6 * Math.max(0, cw)];
+            T.shX = [-1.5 + 0.45 * sw, -1.5 + 0.45 * sw];
+            T.shZ = [-0.35 - 0.45 * Math.max(0, cw), 0.35 + 0.45 * Math.max(0, cw)];
+            T.elX = [-0.5 - 0.5 * Math.max(0, -cw), -0.5 - 0.5 * Math.max(0, -cw)];
+            T.cloakX = 0.35 + moving * 0.3;
+        }
 
         // Channelling: the lead arm reaches toward the held object, the other
         // braces. Pitch 0 is level; positive pitch is up.

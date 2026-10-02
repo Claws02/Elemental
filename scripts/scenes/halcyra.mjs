@@ -11,7 +11,7 @@ import { Land, Dresser, fbm, smooth, exits, grow, people, scene, span } from './
 
 const SEED = 77;
 const L = new Land(240, 2, SEED);
-const ISLE = 20, SHORE = 60, TOP = 8, LEVEL = 4;           // island radius, shore radius, ground height, lake level
+const ISLE = 20, SHORE = 60, TOP = 8, LEVEL = 6.5;         // island radius, shore radius, ground height, lake level (a quay's height below: climbable from the water)
 L.shape((x, z) => {
     const d = Math.hypot(x, z);
     const land = TOP + fbm(x, z, 60, SEED) * 2.5 * smooth(SHORE + 8, SHORE + 40, d);
