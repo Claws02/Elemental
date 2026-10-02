@@ -24,6 +24,7 @@
 // ============================================================
 
 import { THREE } from '../engine/lib.js';
+import { Ground } from '../world/Ground.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { ELEMENT } from '../art/Palette.js';
 
@@ -311,7 +312,8 @@ export class Story {
             x = p.x; z = p.z;
         } else {
             const b = new THREE.Box3().setFromObject(inst.mesh);
-            top = b.max.y; x = (b.min.x + b.max.x) / 2; z = (b.min.z + b.max.z) / 2;
+            if (b.isEmpty()) { x = inst.item.x; z = inst.item.z; top = Ground.height(x, z) + 2; }      // a zone, an exit: nothing drawn
+            else { top = b.max.y; x = (b.min.x + b.max.x) / 2; z = (b.min.z + b.max.z) / 2; }
         }
         const y = top + 0.35;
         this.marker.visible = true;

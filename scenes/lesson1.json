@@ -441,7 +441,7 @@
    "z": 26,
    "rotY": 0,
    "to": "verdant",
-   "at": "from_veyra",
+   "at": "from_gate",
    "label": "Verdant Reach",
    "width": 6,
    "depth": 2,
@@ -910,7 +910,7 @@
      "label": "Into the Verdant Reach",
      "travel": {
       "scene": "verdant",
-      "at": "from_veyra"
+      "at": "from_gate"
      }
     },
     {

@@ -18,7 +18,7 @@ try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = requ
 const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace(/\?.*$/, '');
 const SHOTS = path.join(__dirname, 'shots');
 const ROOT = path.join(__dirname, '..');
-const REGIONS = ['veyra', 'verdant', 'emberwall', 'saltmere', 'skyreach', 'glass', 'halcyra'];
+const REGIONS = ['veyra', 'gate', 'verdant', 'emberwall', 'saltmere', 'skyreach', 'glass', 'halcyra'];
 const BUDGET = { calls: 400, triangles: 600000 };          // at the start point, looking along the start's facing
 
 (async () => {
@@ -149,7 +149,7 @@ const BUDGET = { calls: 400, triangles: 600000 };          // at the start point
 
         // Every road out: walk into the exit, arrive at the other end.
         for (const e of exitsOf(id)) {
-            if (e.showWhen) continue;                                // Veyra's road opens after the prologue (qa/prologue.js)
+            if (e.showWhen || e.hidden) continue;                   // Veyra's road opens at the prologue's dawn (qa/prologue.js)
             errors = [];
             await open(id);
             await ev(e => {

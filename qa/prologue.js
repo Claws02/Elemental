@@ -54,6 +54,24 @@ const SHOTS = path.join(__dirname, 'shots');
         return { shutX, ...tapped, inX };
     }
 
+    // After the verse: dawn, the road step, Cael walking with you; out by the east exit (no teleport).
+    async function walkOut() {
+        const step = (await until(() => __EL.story.step === 'road', 60000)) ? 'road' : await ev(() => __EL.story.step);
+        const r = await ev(async () => {
+            const cael = __EL.world.objects.get('Cael').npc.role, ex = __EL.world.objects.get('Exit_gate');
+            const b = __EL.player.body, x = ex.item.x - 6, z = ex.item.z, T = __EL.world.terrain;
+            b.position.set(60, T.height(60, 2) + 0.6, 2); b.velocity.set(0, 0, 0);               // the road zone: the story's step is done
+            await new Promise(r => setTimeout(r, 800));
+            const done = __EL.story.step;
+            b.position.set(x, T.height(x, z) + 0.6, z);
+            dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+            for (let i = 0; i < 100 && __EL.mode === 'veyra'; i++) { __EL.cam.yaw = -Math.PI / 2; await new Promise(r => setTimeout(r, 60)); }
+            dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+            return { cael, exit: !!ex, done };
+        }).catch(() => ({}));       // the page goes on to the Gate mid-call
+        return { step, ...r };
+    }
+
     // Morning to the awakening: the same both times.
     async function toTheFire(name) {
         await page.goto(BASE, { waitUntil: 'domcontentloaded' });
@@ -165,10 +183,11 @@ const SHOTS = path.join(__dirname, 'shots');
     check(after.fire !== 'ruin' && after.barn === 'saved' && after.blame !== 'you' && after.care > after.harm,
         `the careful night: little burned, Bram's barn saved, nobody blames you (${JSON.stringify(after)})`);
     await ev(() => __EL.story.choose(0));                              // help clear the ashes
-    const lesson = await until(() => __EL.mode === 'lesson1' && __EL.story?.step, 60000);
+    const road = await walkOut();
+    const lesson = await until(() => __EL.mode === 'gate' && __EL.story?.step, 60000);
     const carried = await ev(() => ({ mode: __EL.mode, fire: __EL.prog.state('fire'), earth: __EL.prog.state('earth'), water: __EL.prog.state('water'), charm: __EL.prog.flags.charm, canFire: __EL.prog.has('fire'), canEarth: __EL.prog.has('earth'), surges: __EL.surges.active, after: __EL.prog.flags['veyra.after'], prologue: __EL.prog.flags.prologue, saved: JSON.parse(localStorage.getItem('elemental.save.1')).meta.scene, name: __EL.session.work.custom.name }));
-    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'wild' && carried.charm === 'worn' && !carried.canFire && carried.canEarth && !carried.surges && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'lesson1' && carried.name === 'Rowan',
-        `on to Lesson I wearing the charm: what's wild is still, Earth (Cael's to teach) answers, nothing surges; the night is remembered and saved (${JSON.stringify(carried)})`);
+    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'wild' && carried.charm === 'worn' && !carried.canFire && carried.canEarth && !carried.surges && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'gate' && carried.name === 'Rowan' && road.step === 'road' && road.cael === 'follow' && road.exit,
+        `dawn, and out on the east road with Cael beside you, on foot to the Oruun Gate (Lesson I) wearing the charm: what's wild is still, Earth (Cael's to teach) answers, nothing surges; the night is remembered and saved (${JSON.stringify(carried)})`);
 
     // ---- 2. Recklessly ----------------------------------------------------------------------------------
     await toTheFire('Wren');
@@ -188,13 +207,14 @@ const SHOTS = path.join(__dirname, 'shots');
     await shot('P4-ruin');
     // The world remembers: come back to Veyra and it is still burned.
     await ev(() => __EL.story.choose(2));
-    await until(() => __EL.mode === 'lesson1' && __EL.story?.step, 60000);
+    await walkOut();
+    await until(() => __EL.mode === 'gate' && __EL.story?.step, 60000);
     await wait(800);
     // Refused: the power goes off on its own. Force one next to Cael and see it counted.
     const surged = await ev(() => {
         const c = __EL.world.objects.get('Cael').npc.position, h0 = __EL.ledger.get('harm');
-        __EL.player.body.position.set(c.x + 1.2, 0.45, c.z);
-        const s = __EL.surges.surge('air', { at: new __EL.THREE.Vector3(c.x + 1.2, 0, c.z) });
+        __EL.player.body.position.set(c.x + 1.2, c.y + 0.45, c.z);
+        const s = __EL.surges.surge('air', { at: new __EL.THREE.Vector3(c.x + 1.2, c.y, c.z) });
         return { active: __EL.surges.active, hurt: s.hurt, harm: __EL.ledger.get('harm') - h0, charmButton: document.getElementById('hud-charm').classList.contains('on'), canFire: __EL.prog.has('fire') };
     });
     check(surged.active && surged.hurt.includes('Cael') && surged.harm >= 1 && surged.charmButton && surged.canFire,
@@ -209,7 +229,7 @@ const SHOTS = path.join(__dirname, 'shots');
     await until(() => __EL.mode === 'veyra', 30000);
     await wait(800);
     const back = await ev(() => ({ burned: [...__EL.world.objects.keys()].filter(id => /^Veyra_(House|Barn)/.test(id) && __EL.world.signal(id, 'burned')).length, cracked: __EL.world.signal('StandingStone', 'cracked'),
-        step: __EL.story?.step, charm: __EL.prog.flags.charm, prologue: __EL.prog.flags.prologue, earth: __EL.prog.state('earth'), road: __EL.world.objects.has('Exit_verdant') }));
+        step: __EL.story?.step, charm: __EL.prog.flags.charm, prologue: __EL.prog.flags.prologue, earth: __EL.prog.state('earth'), road: __EL.world.objects.get('Exit_gate')?.hidden === false }));
     check(back.burned === after2.burned && back.cracked, `back in Veyra, the burned houses are still burned and the stone still cracked (${JSON.stringify(back)})`);
     check(back.step === 'done' && back.charm === 'worn' && back.prologue === 'done' && back.earth === 'trained' && back.road,
         `and the night isn't told again: nothing is reset, and the road east to the Reach is open (${JSON.stringify(back)})`);

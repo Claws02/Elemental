@@ -36,6 +36,7 @@ import { Intent } from './input/Intent.js';
 import { Gestures } from './input/Gestures.js';
 import { Hud } from './ui/Hud.js';
 import { Progression } from './core/Progression.js';
+import { Talk } from './story/Talk.js';
 import { Story } from './story/Story.js';
 import { Session } from './core/SaveGame.js';
 import { Ledger } from './core/Ledger.js';
@@ -146,6 +147,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const story = data.script ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: told ? 'done' : step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
         protect: v => { vitals.floor = v; }, flameSpill: v => { jet.spill = { target: v.target, radius: v.radius ?? 8, after: v.after || 0, cause: v.cause || 'awakening' }; } } }) : null;
     if (story) hud.story();
+    // Anyone can be talked to: a tap on a person (story/Talk.js).
+    const talk = new Talk({ world, story, hud, prog, ledger, session, channel, fire, camera, hero: player });
+    intent.talk = talk;
     // Cael's charm: refused, it stays in your pocket, and you can put it on any time. Once on, it stays on.
     const wearCharm = () => {
         if (story?.choosing || prog.flags.charm !== 'refused') return;
@@ -268,6 +272,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         hud.vitals?.(vitals.danger);
         hud.health?.(vitals.health / 100);
         story?.update(dt);
+        talk.update(dt);
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
@@ -297,7 +302,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const api = {
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
-        session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
+        session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
         setView: far => Renderer.setView(far),
@@ -314,6 +319,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         cancelAnimationFrame(raf);
         story?.dispose();
         offTouch();
+        talk.dispose();
         ledger.dispose();
         creatures.dispose();
         works.dispose();

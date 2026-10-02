@@ -16,6 +16,7 @@
 //             fire in someone's house and throws it (the Veyra fire)
 //   cower     keeps away from creatures
 //   patrol    walks its route (scene prop `route`: "x,z; x,z; …"), pausing at each point
+//   follow    walks with the player (Cael on the road): keeps a step or two away
 //
 // Anyone caught in one of the player's surges flinches away (startle()).
 //
@@ -151,6 +152,9 @@ export class Npc {
         this.speed = 0;
     }
 
+    /** Stop and face the player for `secs` (they're being talked to). */
+    hold(secs) { this.held = secs; }
+
     setRole(role, target = null) {
         this.role = role;
         this.target = target ? new THREE.Vector3(target.x, 0, target.z) : null;
@@ -171,6 +175,25 @@ export class Npc {
         this.speed = v;
         this._turn(Math.atan2(dx, dz), dt, 8);
         return false;
+    }
+
+    // Walk with the player: beside them (not behind, where the camera looks from), on whichever side they're on.
+    // Close the gap when it opens, at a run when it's wide; far behind (out of sight), catch up at once.
+    _follow(hero, dt) {
+        const p = this.position, last = this._heroWas;
+        this._heroWas = { x: hero.x, z: hero.z };
+        if (last) {
+            const mx = hero.x - last.x, mz = hero.z - last.z, m = Math.hypot(mx, mz);
+            if (m > 1e-3) {
+                this._side = { x: -mz / m, z: mx / m };
+                this._sign = (p.x - hero.x) * this._side.x + (p.z - hero.z) * this._side.z >= 0 ? 1 : -1;
+            }
+        }
+        const k0 = (this._sign || 1) * FOLLOW.beside, at = this._side ? { x: hero.x + this._side.x * k0, z: hero.z + this._side.z * k0 } : hero;
+        const d = Math.hypot(at.x - p.x, at.z - p.z);
+        if (d > FOLLOW.lost) { this._walk(at, 1, 1e6); return; }
+        this.following = d > FOLLOW.far || (this.following && d > FOLLOW.near);
+        if (this.following) this._walk(at, dt, d > FOLLOW.run ? 7 : 3.6);
     }
 
     _turn(want, dt, k = 3) {
@@ -249,12 +272,14 @@ export class Npc {
     /** Do their role; turn toward the player (or what they point at) and breathe. */
     update(dt, hero) {
         this.speed = 0;
-        if (this.flinch) {
+        if (this.held > 0) this.held -= dt;            // talking: stand, face the player
+        else if (this.flinch) {
             this.flinch.t -= dt;
             if (this.flinch.t <= 0 || this._walk(this.flinch.to, dt, 4.5)) this.flinch = null;
         } else if (this.role === 'brigade') this._brigade(dt);
         else if (this.role === 'cower') this._cower(dt);
         else if (this.role === 'walk' && this.target) { if (this._walk(this.target, dt)) this.role = 'idle'; }
+        else if (this.role === 'follow' && hero) this._follow(hero, dt);
         else if (this.role === 'patrol' && this.route?.length) {
             // Walk the route, point to point, pausing a moment at each.
             this.leg ??= 0;
@@ -291,3 +316,5 @@ export class Npc {
 
 /** People further than `far` from the hero go still (baked); they come alive again inside `near`. */
 export const NPC_LOD = { far: 28, near: 24 };
+/** follow: keep `beside` m to one side of the player; walk when `far` from there, stop at `near`, run past `run`; past `lost`, catch up at once. */
+export const FOLLOW = { beside: 1.8, near: 1, far: 3, run: 5, lost: 40 };

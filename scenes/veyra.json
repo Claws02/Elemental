@@ -721,31 +721,42 @@
    "height": 3
   },
   {
-   "id": "Exit_verdant",
+   "id": "Zone_Road",
+   "type": "trigger",
+   "x": 60,
+   "y": 0,
+   "z": 2,
+   "rotY": 0,
+   "width": 6,
+   "depth": 24,
+   "height": 6
+  },
+  {
+   "id": "Exit_gate",
    "type": "exit",
    "x": 113,
    "y": 0,
    "z": 0,
    "rotY": 1.571,
-   "to": "verdant",
+   "to": "gate",
    "at": "from_veyra",
-   "label": "Verdant Reach",
+   "label": "The Oruun Gate",
    "width": 10,
    "depth": 4,
    "height": 6,
-   "showWhen": "prologue=done"
+   "hidden": true
   },
   {
-   "id": "Start_from_verdant",
+   "id": "Start_from_gate",
    "type": "spawn",
    "x": 104,
    "y": 0,
    "z": 0,
    "rotY": -1.571,
-   "name": "from_verdant"
+   "name": "from_gate"
   },
   {
-   "id": "Waystone_verdant",
+   "id": "Waystone_gate",
    "type": "statue",
    "x": 113,
    "y": 0,
@@ -753,19 +764,17 @@
    "rotY": -1.571,
    "height": 4,
    "style": "stone",
-   "seed": 7,
-   "showWhen": "prologue=done"
+   "seed": 4
   },
   {
-   "id": "Banner_verdant_a",
+   "id": "Banner_gate_a",
    "type": "banner",
    "x": 113,
    "y": 0,
    "z": -7.2,
    "rotY": 0,
    "height": 5,
-   "colour": "green",
-   "showWhen": "prologue=done"
+   "colour": "green"
   },
   {
    "id": "Valley_Tree_001",
@@ -3616,14 +3625,40 @@
      "talking": false
     },
     "then": {
+     "say": [
+      "@Cael It's nearly light. Walk with me."
+     ],
      "do": [
       {
-       "travel": {
-        "scene": "lesson1",
-        "at": "start"
+       "mood": {
+        "name": "day",
+        "secs": 20
        }
+      },
+      {
+       "npc": {
+        "id": "Cael",
+        "role": "follow"
+       }
+      },
+      {
+       "reveal": [
+        "Exit_gate"
+       ]
       }
-     ]
+     ],
+     "next": "road"
+    }
+   },
+   {
+    "id": "road",
+    "objective": "Take the east road with Cael",
+    "mark": "Exit_gate",
+    "until": {
+     "signal": {
+      "obj": "Zone_Road",
+      "name": "entered"
+     }
     }
    }
   ],

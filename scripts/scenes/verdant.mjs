@@ -53,7 +53,7 @@ S.add('Start', 'spawn', TW.x + 4, TW.z + 14, Math.PI, { name: 'start' }, 2);
 const ends = exits('verdant', L, S, { banner: 'green', surface: 'dirt' });
 for (const e of ends) {
     // The west road stops at each bank: the bridge carries it over the river (placed after, on the roads' ground).
-    if (e.to === 'veyra') { L.road([[e.x, e.z], [bridgeX - 17, bridgeZ]], 4.5, 'dirt'); L.road([[bridgeX + 9, bridgeZ], [TW.x - 12, TW.z]], 4.5, 'dirt'); }
+    if (e.to === 'gate') { L.road([[e.x, e.z], [bridgeX - 17, bridgeZ]], 4.5, 'dirt'); L.road([[bridgeX + 9, bridgeZ], [TW.x - 12, TW.z]], 4.5, 'dirt'); }
     else L.road([[e.x, e.z], [(e.x + TW.x) / 2, (e.z + TW.z) / 2 + 6], [TW.x, TW.z]], 4.5, 'dirt');
 }
 // Thornwick's bridge: timber on posts. It can burn (the ford below is the other way over).

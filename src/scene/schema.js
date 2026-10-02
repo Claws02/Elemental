@@ -168,8 +168,8 @@ export const TYPES = {
     },
     npc: {
         label: 'Character', group: 'Characters',
-        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth', ...CHARACTER_NAMES]), role: select('Does', 'idle', ['idle', 'brigade', 'cower', 'patrol']), route: text('Patrol route (x,z; x,z; …)', ''), hidden: HIDDEN },
-        note: 'The script\'s lines are spoken by the character named as its speaker.',
+        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth', ...CHARACTER_NAMES]), role: select('Does', 'idle', ['idle', 'brigade', 'cower', 'patrol', 'follow']), route: text('Patrol route (x,z; x,z; …)', ''), home: ref('Lives in (else the nearest house)', ['timber_house', 'prefab', 'tent']), hidden: HIDDEN },
+        note: 'The script\'s lines are spoken by the character named as its speaker. Tap a character in play to talk: they answer from what the world remembers (data/talk.js), or from the script\'s talk lines for them.',
     },
 
     // ---- buildings (modular kit; prefabs are groups of these) -----------------------------

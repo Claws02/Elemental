@@ -70,6 +70,7 @@ add('Zone_Forge', 'trigger', -11, 11, 0, { width: 6, depth: 6, height: 3 });
 add('Zone_Square', 'trigger', 0, 1, 0, { width: 9, depth: 8, height: 3 });
 add('Zone_Stone', 'trigger', 0, -1, 0, { width: 4.5, depth: 4.5, height: 3 });
 add('Zone_Home', 'trigger', 6.5, 8, 0, { width: 4, depth: 6, height: 3 });
+add('Zone_Road', 'trigger', 60, 2, 0, { width: 6, depth: 24, height: 6 });
 
 const HOUSES = { many: { prefix: 'Veyra_House', signal: 'burning', max: 0 } };
 const BARNS = { many: { prefix: 'Veyra_Barn', signal: 'burning', max: 0 } };
@@ -175,14 +176,17 @@ const script = {
             '@Cael I came here following the stones. I didn\'t expect to find a person.', '@Cael Fire is the loudest thing in you. I\'ll teach you something quieter first.'],
       do: [{ setElement: { el: 'earth', state: 'trained' } }, { setFlag: { name: 'prologue', value: 'done' } }],
       until: { talking: false },
-      then: { do: [{ travel: { scene: 'lesson1', at: 'start' } }] } },
+      then: { say: ['@Cael It\'s nearly light. Walk with me.'], do: [{ mood: { name: 'day', secs: 20 } }, { npc: { id: 'Cael', role: 'follow' } }, { reveal: ['Exit_gate'] }], next: 'road' } },
+    // Dawn: out of the valley on foot, Cael beside you. The east road leads to the Oruun Gate (scenes/gate.json).
+    { id: 'road', objective: 'Take the east road with Cael', mark: 'Exit_gate', until: { signal: { obj: 'Zone_Road', name: 'entered' } } },
   ],
   card: null,
 };
 // ---- the road east out of the valley (open once the prologue is told) ----
 const ends = exits('veyra', L, S, { banner: 'green', surface: 'dirt' });
 for (const e of ends) L.road([[e.x, e.z], [60, 2], [30, 5], [18, 5]], 4, 'dirt');
-for (const it of o) if (/^(Exit|Waystone|Banner)_/.test(it.id)) it.showWhen = 'prologue=done';
+// The way out is there all along, but the exit itself opens only at dawn, when the night is told (revealed then, and remembered).
+for (const it of o) if (/^Exit_/.test(it.id)) it.hidden = true;
 grow(S, 'Valley', 'meadow', { x0: -115, z0: -115, x1: 115, z1: 115 }, { trees: 70, plants: 90, boulders: 25, ok: (x, z, h, sl) => Math.hypot(x, z) > 34 && sl < 0.7 && !L.busy(x, z, 2) });
 L.paint((x, z, h, sl, cur) => cur !== 0 ? null : sl > 0.65 ? 'rock' : h > 26 ? 'snow' : h > 16 && fbm(x, z, 12, 5) > 0 ? 'rock' : null);
 const veyra = {
@@ -191,12 +195,12 @@ const veyra = {
   objects: o, wires: [], script,
 };
 fs.writeFileSync('scenes/veyra.json', JSON.stringify(veyra, null, 1) + '\n');
-// Lesson I follows the prologue now: it no longer starts the story over.
+// Lesson I, played on its own (?scene=lesson): it no longer starts the story over. In the story it's played in the Oruun Gate.
 const L1 = JSON.parse(fs.readFileSync('scenes/lesson1.json', 'utf8'));
 L1.settings.resetProgress = false;
 // …and leads on into the world: the end card's first button, and (once it's done) a way out by the spawn.
-const into = { label: 'Into the Verdant Reach', travel: { scene: 'verdant', at: 'from_veyra' } };
+const into = { label: 'Into the Verdant Reach', travel: { scene: 'verdant', at: 'from_gate' } };
 L1.script.card.buttons = [into, ...L1.script.card.buttons.filter(b => !b.travel)];
 L1.objects = L1.objects.filter(it => it.id !== 'Exit_verdant');
-L1.objects.push({ id: 'Exit_verdant', type: 'exit', x: 0, y: 0, z: 26, rotY: 0, to: 'verdant', at: 'from_veyra', label: 'Verdant Reach', width: 6, depth: 2, height: 4, showWhen: 'lesson1' });
+L1.objects.push({ id: 'Exit_verdant', type: 'exit', x: 0, y: 0, z: 26, rotY: 0, to: 'verdant', at: 'from_gate', label: 'Verdant Reach', width: 6, depth: 2, height: 4, showWhen: 'lesson1' });
 fs.writeFileSync('scenes/lesson1.json', JSON.stringify(L1, null, 1) + '\n');

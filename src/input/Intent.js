@@ -27,6 +27,7 @@
 //                             an orb → holding
 //
 //   press near a CREATURE (fire usable)   → jet: flame from the hands, held on it until let go
+//   press on a PERSON in reach            → they talk to you (story/Talk.js) → done
 //   press on a DOOR (anyone, powers or not) → it opens or closes → done
 //   press on THE HERO                     → wind (Air comes from the hero; no source needed)
 //   press on a water SOURCE               → stream, at once (touch and the water comes)
@@ -138,6 +139,11 @@ export class Intent {
         if (c) {
             Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'jet', element: 'fire' });
             this.jet.atCreature(c);
+            return true;
+        }
+        // A person under the finger: talk to them (story/Talk.js).
+        if (this.talk?.press(x, y)) {
+            Object.assign(this, { x, y, ax: x, ay: y, thing: null, state: 'done', doneT: 0 });
             return true;
         }
         const usable = t => this._usable(t);

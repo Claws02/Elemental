@@ -124,14 +124,14 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 The kingdoms are separate scenes joined by exits at their edges (not an open world). Each region is built by a script, `scripts/scenes/<id>.mjs`, from the helpers in `scripts/scenes/lib/` (land shaping, roads, towns, scattered growth, people), so a layout change is a code review. `npm run scenes:build` rebuilds them all; the same seed gives the same scene.
 
 ```
-              Emberwall ── Skyreach
-             /    |     \  /    |
-  Veyra ── Verdant ── Halcyra ── Glass
-             \    |     /        |
-              Saltmere ──────────┘
+                         Emberwall ── Skyreach
+                        /    |     \  /    |
+  Veyra ── Oruun Gate ── Verdant ── Halcyra ── Glass
+                        \    |     /        |
+                         Saltmere ──────────┘
 ```
 
-The roads are `LINKS` in `scripts/scenes/lib/region.mjs`. Every exit is `Exit_<to>` and arrives at `from_<this scene>` in the other one; each region also has a `start`. Veyra's road east opens once the prologue is done (`showWhen: prologue=done`); Lesson I's end card has an **Into the Verdant Reach** button (a card button may carry `travel: { scene, at }`).
+The roads are `LINKS` in `scripts/scenes/lib/region.mjs`. Every exit is `Exit_<to>` and arrives at `from_<this scene>` in the other one; each region also has a `start`. Veyra's road east opens at dawn, when the prologue is told (its exit is `hidden` and the last step reveals it; the reveal is remembered). It leads to the Oruun Gate (`scripts/scenes/gate.mjs`), where Lesson I is played on the road with Cael walking beside you (character role `follow`), and on into the Reach. Played on its own (`?scene=lesson`), Lesson I's end card has an **Into the Verdant Reach** button (a card button may carry `travel: { scene, at }`).
 
 A story told to its end stays told: coming back to its scene doesn't start it over or reset progress.
 

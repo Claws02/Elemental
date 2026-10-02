@@ -304,30 +304,30 @@
    "name": "start"
   },
   {
-   "id": "Exit_veyra",
+   "id": "Exit_gate",
    "type": "exit",
    "x": -113,
    "y": 0,
    "z": 0,
    "rotY": 1.571,
-   "to": "veyra",
+   "to": "gate",
    "at": "from_verdant",
-   "label": "Veyra",
+   "label": "The Oruun Gate",
    "width": 10,
    "depth": 4,
    "height": 6
   },
   {
-   "id": "Start_from_veyra",
+   "id": "Start_from_gate",
    "type": "spawn",
    "x": -104,
    "y": 0,
    "z": 0,
    "rotY": 1.571,
-   "name": "from_veyra"
+   "name": "from_gate"
   },
   {
-   "id": "Waystone_veyra",
+   "id": "Waystone_gate",
    "type": "statue",
    "x": -113,
    "y": 0,
@@ -335,10 +335,10 @@
    "rotY": 1.571,
    "height": 4,
    "style": "stone",
-   "seed": 5
+   "seed": 4
   },
   {
-   "id": "Banner_veyra_a",
+   "id": "Banner_gate_a",
    "type": "banner",
    "x": -113,
    "y": 0,
