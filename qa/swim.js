@@ -80,7 +80,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     check(dive.swim && dive.hp === dive.hp0, `a 20 m fall into the river does no harm: water breaks the fall (${JSON.stringify(dive)})`);
     const east = await ev(async () => { await __drop(-31, 4, 4); return __out(-10, 4, 60000); });
     check(east.out !== null, `swimming east out of the river: on dry land at Thornwick's bank (${JSON.stringify(east)})`);
-    const west = await ev(async () => { await __drop(-31, 4, 4); return __out(-55, 4, 60000); });
+    const west = await ev(async () => { await __drop(-31, 4, 12); return __out(-55, 12, 60000); });       // clear of the bridge's end
     check(west.out !== null, `swimming west out of the river: on dry land at the far bank (${JSON.stringify(west)})`);
     const dock = await ev(async () => { await __drop(-35, 4, 22); return __out(-25, 22, 60000); });
     check(dock.out !== null && dock.climbed, `swimming into the end of the dock: the hero climbs onto it and walks off (${JSON.stringify(dock)})`);

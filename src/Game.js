@@ -238,6 +238,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         Physics.step(dt);
         const tp1 = performance.now();
         glide.after();
+        world.waters.update(player);         // wading or swimming, where physics just put the hero (Vitals: water breaks a fall)
         works.update(dt);
         ice.update(dt);
         lava.update(dt);
@@ -251,7 +252,6 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         world.update(dt, frameInfo);
         vitals.update(dt);
         surges.update(dt);
-        world.waters.update(player);
         // The first time in deep water: how to get out, and what water takes away.
         if (player.swimming && !swumOnce) { swumOnce = true; hud.hint?.('Swimming: head for a bank and swim into it to climb out. Fire won’t light in deep water, and stone won’t rise from it.'); }
         world.waters.burn(dt, { vitals, creatures, fire });
