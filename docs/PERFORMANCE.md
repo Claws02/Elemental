@@ -31,7 +31,7 @@ The target is a steady 60 fps on an iPhone 15/16 Pro, through the heaviest momen
 |---|---|---|
 | A building is ONE physics body (a shape per piece); a piece gets its own body only when it breaks off | `world/Structure.js` | Thornwick: 654 bodies → 191; a physics step 2.6 → 0.4 ms |
 | Static bodies more than 50 m from the hero leave the physics world until the hero nears | `Physics.park()` | The broadphase only pays for what's near |
-| At most 3 physics steps a frame | `Physics.step()` | A slow frame plays slightly slower instead of spiralling slower |
+| Fixed 1/60 s physics steps (up to 6 for a 100 ms frame) | `Physics.step()` | With a step now a fraction of a millisecond, catching up costs little; longer or fewer steps changed how things meet (tried, reverted) |
 | Fire looks only at what is burning, heating or wet; spread on a grid, 10 times a second | `FireSystem` (`live`, `_grid`) | An idle village costs nothing; a burning one a fraction of a millisecond |
 | Buildings asleep until fire, water or a blow reaches them | `Structure.update`, `Building` | Hundreds of pieces cost nothing while nothing happens |
 | No garbage in the hot loops (skins, fire) | `Skin.update` | No collector pauses (stutter on iOS) |

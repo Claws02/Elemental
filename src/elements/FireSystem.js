@@ -474,7 +474,8 @@ export class FireSystem {
                 if (!this.fireballs.has(fb) || !c.other || c.other.tier === TIER.PLAYER) continue;
                 const other = this.interactables.forEntry(c.other, c.shape);
                 // For a moment after it is pulled, it ignores what it came out of.
-                if (other && other === fb.origin && this.time - fb.created < FIRE.originGrace) continue;
+                // (A source like a brazier has no body of its own in the interactables: match its id too.)
+                if (fb.origin && (other === fb.origin || c.other.id === fb.origin.id) && this.time - fb.created < FIRE.originGrace) continue;
                 const held = c.held;
                 const cause = fb.entry.data.cause || 'player';
                 if (c.other.data?.creature && !held) {          // a fireball thrown into a creature
