@@ -285,9 +285,12 @@ export const TYPES = {
 //   flagName=value    a flag equals a value
 //   state:ObjectId=v  a remembered world state (burned, Collapsed, revealed…)
 // Things someone owns (`owner`) count against the player when harmed (Ledger).
-const OWNED = ['timber_house', 'barricade', 'gate', 'crate', 'barrel', 'hay', 'stall', 'brazier', 'basin', 'b_wall', 'b_floor', 'b_roof', 'b_stairs', 'b_fence', 'b_post', 'prefab', 'tree'];
+const OWNED = ['timber_house', 'barricade', 'gate', 'crate', 'barrel', 'hay', 'stall', 'brazier', 'basin', 'b_wall', 'b_floor', 'b_roof', 'b_stairs', 'b_fence', 'b_post', 'prefab', 'tree', 'tent', 'dock', 'bridge'];
+const LIVED_IN = ['prefab', 'tent', 'dock'];       // someone's home or living: theirs unless the scene says otherwise
 for (const [type, t] of Object.entries(TYPES)) {
-    if (OWNED.includes(type)) t.props.owner = select('Belongs to', 'none', ['none', 'civilian', 'empire']);
+    if (OWNED.includes(type)) t.props.owner = select('Belongs to', LIVED_IN.includes(type) ? 'civilian' : 'none', ['none', 'civilian', 'empire']);
+    // A landmark (a ruler's hall, the palace): bringing it down weighs on that kingdom far more, and is remembered.
+    if (type === 'prefab') t.props.landmark = bool('A landmark (heavy consequences)', false);
     t.props.showWhen = text('Only when', '');
 }
 

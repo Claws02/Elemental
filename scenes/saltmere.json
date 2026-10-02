@@ -524,7 +524,8 @@
    "rise": 0.4,
    "drop": -0.23,
    "style": "rope",
-   "seed": 19
+   "seed": 19,
+   "owner": "civilian"
   },
   {
    "id": "Bridge_Council_West",
@@ -538,7 +539,8 @@
    "rise": 0.4,
    "drop": 0.36,
    "style": "rope",
-   "seed": 19
+   "seed": 19,
+   "owner": "civilian"
   },
   {
    "id": "Bridge_Council_South",
@@ -552,7 +554,8 @@
    "rise": 0.4,
    "drop": 0.17,
    "style": "rope",
-   "seed": 20
+   "seed": 20,
+   "owner": "civilian"
   },
   {
    "id": "Walk_Shore",
@@ -566,7 +569,8 @@
    "rise": 0.3,
    "drop": 0.66,
    "style": "plank",
-   "seed": 10
+   "seed": 10,
+   "owner": "civilian"
   },
   {
    "id": "Choir_Pillar_1",

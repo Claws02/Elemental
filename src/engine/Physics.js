@@ -122,6 +122,7 @@ export function remove(e) {
 /** Turn a static destructible piece into simulated debris. */
 export function toDebris(e, mass) {
     const b = e.body;
+    e.mesh?.traverse(o => { o.castShadow = false; });     // debris is many and brief: no shadow pass for it
     b.type = CANNON.Body.DYNAMIC;
     b.mass = mass;
     b.updateMassProperties();

@@ -56,6 +56,8 @@ Any other file in `scenes/` plays at `?scene=<its id>`.
 | Characters (phase 5) | the rulers (Maren, Vorn, Oriel, Senn, Yessa, Ilvane, Corvane), Kestrel, each kingdom's folk and guards; `role` patrol walks `route` (`"x,z; x,z; …"`) |
 | Ground | ground patch (grass, dirt, cobble, sand, flagstone; square or round) |
 
+**Buildings burn and break true to material** (phase 5). A prefab building, a wooden bridge (plank or rope), a dock, a tent, a stall and a fence are structures: their walls come in cells, roofs and upper floors in strips, each piece burning (timber, plaster, thatch, shingle, canvas) or not (stone, brick, basalt, whitestone, marble, adobe, slate, tile, copper). Pieces hold each other up, so what stood on burned timber falls. A structure signals `burned`, `collapsed`, `damaged`, `intact`, `burning`; persistent scenes remember burned and collapsed. Prefabs belong to `civilian` unless set; a prefab can be a `landmark` (rulers' halls and the palace are by default): bringing one down weighs heavily on the kingdom and sets the flag `destroyed.<id>`.
+
 **Every object** also takes `showWhen`: it exists only when those conditions hold as the scene loads. Conditions are separated by commas: `flagName`, `!flagName`, `flag=value`, `state:ObjectId=value`. It's how one scene file holds Veyra burned and rebuilt, or a region before and after its seal opens. Things someone owns take `owner` (civilian or empire): harm to them goes in the ledger.
 
 **Player starts** have a `name`. `start` is where a scene begins; other names are arrival points. An **exit** (group Travel) is a zone that takes you to another scene (`to`) and arrives at a named start (`at`). Arriving saves a checkpoint.

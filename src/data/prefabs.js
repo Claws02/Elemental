@@ -73,6 +73,7 @@ export const PREFABS = {
     },
     // ---- the five kingdoms and Halcyra (phase 5) ------------------------------------------------------------
     thornwick_hall: {
+        landmark: true,
         label: 'Thornwick: the Lord-Warden\'s hall', footprint: [10, 8],
         pieces: [
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 10, depth: 8, style: 'stone' },
@@ -108,6 +109,7 @@ export const PREFABS = {
         ],
     },
     forge_hall: {
+        landmark: true,
         label: 'Cindrel: the Forge-Queen\'s hall', footprint: [14, 10],
         pieces: [
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 14, depth: 10, style: 'stone' },
@@ -132,6 +134,7 @@ export const PREFABS = {
         ],
     },
     lanthe_council: {
+        landmark: true,
         label: 'Lanthe: the council house', footprint: [11, 8],
         pieces: [
             ...[-5, -1.7, 1.7, 5].flatMap(x => [-3.7, 0, 3.7].map(z => ({ type: 'b_post', x, y: 0, z, rotY: 0, height: 3, style: 'timber' }))),
@@ -152,6 +155,7 @@ export const PREFABS = {
         ],
     },
     vaelmont_temple: {
+        landmark: true,
         label: 'Vaelmont: the Abbess-Prince\'s temple', footprint: [12, 12],
         pieces: [
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 12, depth: 12, style: 'stone' },
@@ -172,6 +176,7 @@ export const PREFABS = {
         ],
     },
     sarn_matriarch: {
+        landmark: true,
         label: 'Sarn: the Matriarch\'s tent', footprint: [12, 12],
         pieces: [
             { type: 'tent', x: 0, y: 0, z: 0, rotY: 0, size: 11, colour: 'ochre' },
@@ -193,6 +198,7 @@ export const PREFABS = {
         ],
     },
     imperial_palace: {
+        landmark: true,
         label: 'Halcyra: the imperial palace', footprint: [18, 14],
         pieces: [
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 18, depth: 14, style: 'stone' },

@@ -8,11 +8,10 @@
 // charred frame. Every panel is flammable: fire spreads panel to panel, wall
 // to roof, and from one house to the next when they stand close.
 //
-// DRAW CALLS. Each panel is its own mesh (it has to burn, crack and fall on
-// its own), which a whole village can't afford every frame. So an untouched
-// building is drawn as ONE merged mesh, and swaps to its panels the moment
-// anything happens to it (heat, fire, a hit, water). A quiet village costs a
-// handful of draw calls; only the buildings in trouble pay for their panels.
+// DRAW CALLS. A building is drawn as ONE mesh, burning or not (world/Skin.js):
+// each panel is a range of its vertices, charred, glowing or gone by
+// attribute. Only a panel that breaks off and falls is a mesh of its own,
+// while it is debris. A burning village costs what a quiet one does.
 //
 // A building is BURNED once half its panels have burned; it tells the world
 // once (STRUCTURE_STATE), and a persistent scene remembers it: coming back to
@@ -26,6 +25,7 @@ import { Kit, at, seeded, kitMaterials } from '../engine/Kit.js';
 import { WORLD } from '../art/Palette.js';
 import { plankPanel, timberPost } from '../art/PropModels.js';
 import { Destructible, STATE } from './Destructible.js';
+import { Skin } from './Skin.js';
 import { EventBus, EV } from '../core/EventBus.js';
 
 const PW = 1.0, PH = 0.95, PD = 0.16;
@@ -42,15 +42,15 @@ export function housePanel(seed, w, h, d) {
         k.box('body', w, 0.1, 0.04, at(0, h / 2 - 0.05, zs * (d / 2 + 0.02)), WORLD.timberDark);
         if (seeded(seed * 3.7) > 0.5) k.box('body', Math.hypot(w, h) * 0.9, 0.08, 0.04, at(0, 0, zs * (d / 2 + 0.02), 0, 0, Math.atan2(h, w)), WORLD.timberDark);
     }
-    return k.build({ own: true });
+    return k.build();          // its look while it falls is given by the skin (Skin.release)
 }
 
-/** One panel of thatch, laid on the roof's slope. Own materials. */
+/** One panel of thatch, laid on the roof's slope. */
 function thatchPanel(seed, w, len) {
     const k = new Kit();
     k.box('body', w, 0.26, len, at(0, 0, 0), pick(THATCH, seed), { ch: 0.05, skipBottom: false });
     k.box('body', w + 0.02, 0.05, 0.12, at(0, 0.14, len / 2 - 0.08), pick(THATCH, seed + 2));
-    return k.build({ own: true });
+    return k.build();
 }
 
 /**
@@ -170,18 +170,20 @@ export class Building {
         this.group.quaternion.copy(q);
         ctx.scene.add(this.group);
         this.entries = [];
+        this.frame = new THREE.Group();            // posts, gables, floor: they stand (charred) through a fire
+        this.group.add(this.frame);
         for (const c of _corners(it)) {
             const h = it.rows * PH + 0.3, post = timberPost(h);
             post.position.copy(c);
-            this.group.add(post);
+            this.frame.add(post);
             const body = new CANNON.Body({ mass: 0, material: Physics.material('wood') });
             body.addShape(new CANNON.Box(new CANNON.Vec3(0.15, h / 2, 0.15)));
             const p = toWorld(c.clone().setY(h / 2));
             body.position.set(p.x, p.y, p.z);
             this.entries.push(Physics.add({ body, tier: TIER.STATIC, id: it.id + '_Post' }));
         }
-        this.group.add(_gables(it));
-        this.group.add(_floor(it));
+        this.frame.add(_gables(it));
+        this.frame.add(_floor(it));
         // Roof: thatch panels (no physics of their own: one collider per slope, removed when the roof is gone).
         this.roof = _roof(it).map((r, i) => {
             const m = thatchPanel(r.seed, r.w, r.len);
@@ -219,55 +221,23 @@ export class Building {
             this._placeDoor();
         }
         this.off = EventBus.on(EV.FIRE_OUT, e => this._roofBurned(e));
-        this._merge();
+        this._skin();
     }
 
-    // One mesh for the whole untouched building: every panel's geometry, placed, in shared vertex-colour material.
-    _merge() {
-        const meshes = [...this.pieces.map(p => p.mesh), ...this.roof.map(r => r.mesh)];
-        const parts = [];
-        const inv = new THREE.Matrix4().copy(this.group.matrixWorld);
-        this.group.updateMatrixWorld(true);
-        inv.copy(this.group.matrixWorld).invert();
-        for (const m of meshes) {
-            m.updateMatrixWorld(true);
-            m.traverse(o => {
-                if (!o.isMesh || !o.geometry.attributes.color) return;
-                const g = o.geometry.clone();
-                g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld));
-                parts.push(g);
-            });
-        }
-        const count = parts.reduce((n, g) => n + g.attributes.position.count, 0);
-        const pos = new Float32Array(count * 3), nor = new Float32Array(count * 3), col = new Float32Array(count * 3);
-        let off = 0;
-        for (const g of parts) {
-            pos.set(g.attributes.position.array, off * 3);
-            nor.set(g.attributes.normal.array, off * 3);
-            col.set(g.attributes.color.array, off * 3);
-            off += g.attributes.position.count;
-            g.dispose();
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-        geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-        geo.computeBoundingSphere();
-        this.merged = new THREE.Mesh(geo, kitMaterials().body);
-        this.merged.castShadow = this.merged.receiveShadow = true;
-        this.group.add(this.merged);
-        for (const m of meshes) m.visible = false;
+    // One mesh for the whole building, for good: every wall panel, roof panel and the frame (world/Skin.js).
+    _skin() {
+        this.parts = [
+            ...this.pieces.map(piece => ({ mesh: piece.mesh, piece, gone: () => piece.broken })),
+            ...this.roof.map(r => ({ mesh: r.mesh, roof: r, gone: () => r.burned })),
+            { mesh: this.frame, frame: true },
+        ];
+        this.skin = new Skin(this.group, this.parts);
+        this.merged = this.skin.mesh;
         this.live = false;
     }
 
-    /** Something is happening to it: show the real panels. */
-    goLive() {
-        if (this.live) return;
-        this.live = true;
-        this.merged.visible = false;
-        for (const p of this.pieces) p.mesh.visible = true;
-        for (const r of this.roof) r.mesh.visible = !r.burned;
-    }
+    /** Something is happening to it: the skin starts following its panels every frame. */
+    goLive() { this.live = true; }
 
     _stirred() {
         if (!this.sys) return false;
@@ -342,6 +312,11 @@ export class Building {
         }
         if (!this.live && this._stirred()) this.goLive();
         for (const w of this.walls) w.update(dt);
+        if (this.live) {
+            // A panel that broke off falls as a piece of its own; the skin stops drawing it.
+            for (const p of this.parts) if (p.piece?.broken && !p.released && p.piece.entry.body.world) this.skin.release(p);
+            this.skin.update();
+        }
         if (this.state === STATE.BURNED) return;
         const all = this.pieces.length + this.roof.length;
         const burned = this.pieces.filter(p => p.burned).length + this.roof.filter(r => r.burned).length;
@@ -378,7 +353,8 @@ export class Building {
         for (const r of this.roof) { r.burned = true; r.mesh.visible = false; }
         for (const b of this.roofBodies) Physics.remove(b);
         Physics.remove(this.door.entry); this.door.leaf.visible = false; this.door.gone = true;
-        this.group.traverse(o => { if (o.isMesh && o.material?.color) { o.material = o.material.clone(); o.material.color.setScalar(0.18); } });
+        this.parts.find(p => p.frame).mat.color.setScalar(0.18);       // the charred frame
+        this.skin.update();
         this.state = STATE.BURNED;
     }
 

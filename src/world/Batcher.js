@@ -22,7 +22,7 @@ const CELL = 40;
 export function batchScenery(scene, world) {
     const cells = new Map();          // "cx,cz|materialUuid" → { mat, parts, cx, cz }
     for (const inst of world.objects.values()) {
-        if (!BATCHED.has(inst.type) || inst.hidden || inst.item.hidden || !inst.mesh?.parent) continue;
+        if (!BATCHED.has(inst.type) || inst.structure || inst.hidden || inst.item.hidden || !inst.mesh?.parent) continue;      // a structure burns: it draws itself
         const g = inst.mesh;
         g.updateMatrixWorld(true);
         const cx = Math.floor((inst.item.x || 0) / CELL), cz = Math.floor((inst.item.z || 0) / CELL);

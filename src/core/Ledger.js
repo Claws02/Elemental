@@ -29,6 +29,7 @@ export const STANDING = ['the cause of all this', 'dangerous', 'unpredictable', 
 
 // A surge is the player's own power going off: the world counts it as theirs.
 const yours = c => c === 'player' || c === 'surge';
+export const LANDMARK_HARM = 12;      // a ruler's hall brought down: about four houses' worth, and excess with it
 
 export class Ledger {
     /**
@@ -49,7 +50,15 @@ export class Ledger {
                 if (this._burst.length === 5) this.add('excess', 1);
             }),
             EventBus.on(EV.STRUCTURE_STATE, e => {
-                if (yours(e.cause) && ['Collapsed', 'Burned'].includes(e.to) && this._owned(e.id)) this.add('harm', 3);
+                if (!yours(e.cause) || !['Collapsed', 'Burned'].includes(e.to)) return;
+                // A landmark (a ruler's hall, the palace) weighs far more than a house, and the kingdom remembers it.
+                if (e.landmark) {
+                    this.add('harm', LANDMARK_HARM);
+                    this.add('excess', 1);
+                    const flags = this.session.work.progress.flags ||= {};
+                    flags[`destroyed.${e.id}`] = e.to.toLowerCase();
+                    EventBus.emit(EV.LANDMARK, { id: e.id, name: e.name, to: e.to, region: this.region });
+                } else if (this._owned(e.id)) this.add('harm', 3);
             }),
             EventBus.on(EV.FIRE_STARTED, e => { if (yours(e.cause) && this._owned(e.id)) this.add('harm', 0.5); }),
             // Lava is excess by nature: far more than any moment needs.
@@ -68,7 +77,7 @@ export class Ledger {
 
     dispose() { this.off.forEach(f => f()); }
 
-    _owned(id) { const o = this.ownerOf(String(id).replace(/_P\d+$/, '')); return o === 'civilian' || o === 'empire'; }
+    _owned(id) { const o = this.ownerOf(String(id).replace(/_[PS]\d+$/, '')); return o === 'civilian' || o === 'empire'; }
 
     _book(region = this.region) {
         const L = this.session.work.ledger;

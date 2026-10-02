@@ -447,7 +447,8 @@
    "rise": 1.2,
    "drop": -4.88,
    "style": "rope",
-   "seed": 6
+   "seed": 6,
+   "owner": "civilian"
   },
   {
    "id": "Stair_1",

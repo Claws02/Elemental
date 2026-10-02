@@ -124,10 +124,10 @@ export function river(S, id, pts, level, width = 24) {
  * A bridge from bank point a to bank point b ([x, z] each): its ends sit on the ground there (deck top
  * 5 cm above it), the far end `drop` higher if the banks differ, so you walk straight on and off.
  */
-export function span(L, S, id, a, b, { width = 3, rise = 1.2, style = 'stone', seed = id.length } = {}) {
+export function span(L, S, id, a, b, { width = 3, rise = 1.2, style = 'stone', seed = id.length, owner = 'civilian' } = {}) {
     const mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const ha = L.at(a[0], a[1]), hb = L.at(b[0], b[1]);
-    S.add(id, 'bridge', mx, mz, Math.atan2(-(b[1] - a[1]), b[0] - a[0]), { length: +len.toFixed(2), width, rise, drop: +(hb - ha).toFixed(2), style, seed, y: +((ha + hb) / 2 - 0.2 - L.at(mx, mz)).toFixed(2) }, 3);
+    S.add(id, 'bridge', mx, mz, Math.atan2(-(b[1] - a[1]), b[0] - a[0]), { length: +len.toFixed(2), width, rise, drop: +(hb - ha).toFixed(2), style, seed, owner, y: +((ha + hb) / 2 - 0.2 - L.at(mx, mz)).toFixed(2) }, 3);
     return { a, b, len };
 }
 

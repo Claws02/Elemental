@@ -27,6 +27,7 @@ import { Terrain, decodeTerrain } from '../world/Terrain.js';
 import { Ground } from '../world/Ground.js';
 import { WaterBodies } from '../world/WaterBodies.js';
 import { batchScenery } from '../world/Batcher.js';
+import { STRUCTURAL } from '../world/Structure.js';
 import { CATALOG, withDefaults, expandPrefab } from './Catalog.js';
 import { Wires } from './Wires.js';
 import { PropReset } from './PropReset.js';
@@ -38,7 +39,8 @@ import { STATE } from '../world/Destructible.js';
 export function flatObjects(data) {
     const out = [];
     for (const it of data.objects || []) {
-        if (it.type === 'prefab') out.push(...expandPrefab(withDefaults(it)));
+        // A prefab is one structure (its walls, floors, roofs); what else it holds (a brazier, a banner) stands on its own.
+        if (it.type === 'prefab') out.push(it, ...expandPrefab(withDefaults(it)).filter(pc => !STRUCTURAL.has(pc.type)));
         else out.push(it);
     }
     return out;

@@ -20,6 +20,18 @@ L.shape((x, z) => {
     const w = smooth(12, 46, bank);                                         // a valley: the land settles to a floor near the river…
     return (rolling + forest) * w + FLOOR * (1 - w) - (1 - smooth(5, 12, bank)) * 3.4;   // …and the channel cut into it
 });
+// A ford downstream of the bridge: gravel bars across the river, shallow enough to wade (if the bridge burns,
+// the way west is still open, only slower).
+const FORD = { x: -43, z: 28, across: [30, 22] };
+{
+    const [ax, az] = FORD.across, al = Math.hypot(ax, az), ux = ax / al, uz = az / al;
+    L.add((x, z, h) => {
+        const dx = x - FORD.x, dz = z - FORD.z, along = dx * ux + dz * uz, off = Math.abs(-dx * uz + dz * ux);
+        if (Math.abs(along) > 16 || off > 5) return 0;
+        const k = 1 - smooth(2.5, 5, off), bed = LEVEL - 0.5;
+        return h < bed ? (bed - h) * k : 0;
+    });
+}
 // Thornwick on the east bank; farmland north-east; the forest south-west.
 const TW = { x: 18, z: 4 };
 const S = new Dresser(L, SEED);
@@ -44,8 +56,10 @@ for (const e of ends) {
     if (e.to === 'veyra') { L.road([[e.x, e.z], [bridgeX - 17, bridgeZ]], 4.5, 'dirt'); L.road([[bridgeX + 9, bridgeZ], [TW.x - 12, TW.z]], 4.5, 'dirt'); }
     else L.road([[e.x, e.z], [(e.x + TW.x) / 2, (e.z + TW.z) / 2 + 6], [TW.x, TW.z]], 4.5, 'dirt');
 }
-bridgeAcross(L, S, 'Thornwick_Bridge', bridgeX, bridgeZ, 1, 0, LEVEL, { width: 4, rise: 1.4, style: 'stone', seed: 2 });
-L.paintCircle(TW.x, TW.z, 12, 'cobble');            // the plaza over the roads' ends
+// Thornwick's bridge: timber on posts. It can burn (the ford below is the other way over).
+bridgeAcross(L, S, 'Thornwick_Bridge', bridgeX, bridgeZ, 1, 0, LEVEL, { width: 4, rise: 0.5, style: 'plank', seed: 2 });
+L.paintCircle(TW.x, TW.z, 12, 'cobble');
+L.paint((x, z, h, sl, cur) => Math.hypot(x - FORD.x, z - FORD.z) < 15 && Math.abs(h - (LEVEL - 0.5)) < 0.15 ? 'sand' : null);     // the ford's gravel            // the plaza over the roads' ends
 // The Lord-Warden in his hall, folk in the market, guards at the bridge.
 const hall = T.spots[0];
 S.add('Maren', 'npc', hall.x + Math.sin(hall.face) * 6, hall.z + Math.cos(hall.face) * 6, hall.face + Math.PI, { name: 'Lord-Warden Aldric Maren', look: 'maren', role: 'idle' });

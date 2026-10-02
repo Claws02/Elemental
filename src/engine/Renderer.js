@@ -4,21 +4,29 @@
 //
 // One directional sun with a tight shadow frustum that follows the hero, a
 // hemisphere fill, and fog that doubles as atmosphere and as a draw-distance
-// limit. Quality is chosen once at boot from the device (pixel ratio and
-// shadow size); adaptive quality comes later, after profiling on phones.
+// limit. Quality is chosen at boot from the device (pixel ratio and shadow
+// size), then the resolution ADAPTS (adapt()): when frames run long (a big
+// fire, a crowded town) it renders fewer pixels, a step at a time, and goes
+// back up when things are calm. Sharpness is what a busy moment can spare.
 // ============================================================
 
 import { THREE } from './lib.js';
 
 let renderer, scene, camera, sun, sunTarget, hemi;
 let mood = null;              // { from, to, t, dur } while a change of light is under way
-export const quality = { tier: 'high', pixelRatio: 1, shadowSize: 1024 };
+export const quality = { tier: 'high', pixelRatio: 1, shadowSize: 1024, maxRatio: 1, minRatio: 1, adaptive: true };
+// Adaptive resolution: frame time held over SLOW for `down` s → a step down; under FAST for `up` s → a step back up.
+export const ADAPT = { slow: 1 / 34, fast: 1 / 52, down: 0.6, up: 3, stepDown: 0.15, stepUp: 0.1 };
+const _adapt = { ema: 1 / 60, over: 0, under: 0 };
 
 export function init(canvas) {
     const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && innerWidth < 1100);
     quality.tier = mobile ? 'mobile' : 'high';
     quality.pixelRatio = Math.min(window.devicePixelRatio || 1, mobile ? 2 : 2);
     quality.shadowSize = mobile ? 1024 : 2048;
+    quality.maxRatio = quality.pixelRatio;
+    quality.minRatio = Math.max(0.6, quality.maxRatio * 0.5);
+    Object.assign(_adapt, { ema: 1 / 60, over: 0, under: 0 });
 
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(quality.pixelRatio);
@@ -160,5 +168,18 @@ export function dispose() {
 }
 
 export function render() { renderer.render(scene, camera); }
+
+/** Hold the frame rate by trading sharpness: call once a frame with the real (unclamped) frame time. */
+export function adapt(frameSecs) {
+    if (!quality.adaptive || !renderer) return;
+    const a = _adapt, t = Math.min(0.5, Math.max(0, frameSecs));
+    a.ema += (t - a.ema) * 0.1;
+    a.over = a.ema > ADAPT.slow ? a.over + t : 0;
+    a.under = a.ema < ADAPT.fast ? a.under + t : 0;
+    let r = quality.pixelRatio;
+    if (a.over > ADAPT.down && r > quality.minRatio) { r = Math.max(quality.minRatio, r - ADAPT.stepDown); a.over = 0; }
+    else if (a.under > ADAPT.up && r < quality.maxRatio) { r = Math.min(quality.maxRatio, r + ADAPT.stepUp); a.under = 0; }
+    if (r !== quality.pixelRatio) { quality.pixelRatio = +r.toFixed(2); renderer.setPixelRatio(quality.pixelRatio); renderer.setSize(innerWidth, innerHeight); }
+}
 export function info() { return renderer.info.render; }
 export function get() { return { renderer, scene, camera }; }

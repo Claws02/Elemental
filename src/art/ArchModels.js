@@ -53,18 +53,21 @@ export function towerModel({ height: H = 9, radius: R = 2.2, style = 'stone', to
 }
 
 /** A bridge between two banks at the same height: stone arches, a plank span, or a rope bridge. Its deck is walkable. */
-export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, drop = 0, style = 'stone', seed = 1 } = {}) {
-    const k = new Kit();
-    const boxes = [];
+export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, drop = 0, style = 'stone', seed = 1 } = {}, { parts = false } = {}) {
+    const k0 = new Kit();
+    const boxes0 = [];
+    const pieces = [];                  // parts: one per stretch of deck, its rails and posts with it (a wooden bridge burns stretch by stretch)
     const n = Math.max(4, Math.round(L / 1.5));
     // The deck: n segments along x following a gentle arc (rope: a sag), each a walkable box.
     // `drop`: how much higher the +x end stands than the -x end, so each end meets its own bank.
     const yAt = x => (style === 'rope' ? -rise * 0.6 * (1 - (2 * x / L) ** 2) : rise * (1 - (2 * x / L) ** 2)) + drop * x / L;
+    const stone = style === 'stone' || style === 'marble' || style === 'whitestone';
     for (let i = 0; i < n; i++) {
+        const k = parts ? new Kit() : k0, boxes = parts ? [] : boxes0;
         const x0 = -L / 2 + i * L / n, x1 = x0 + L / n, y0 = yAt(x0), y1 = yAt(x1), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
         const len = Math.hypot(x1 - x0, y1 - y0) + 0.04, tilt = Math.atan2(y1 - y0, x1 - x0);
         const m = at(cx, cy + 0.1, 0, 0, 0, tilt);
-        if (style === 'stone' || style === 'marble' || style === 'whitestone') k.box('body', len, 0.3, W, m, pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + i), { ch: 0.03 });
+        if (stone) k.box('body', len, 0.3, W, m, pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + i), { ch: 0.03 });
         else for (let p = 0; p < 4; p++) k.box('body', len / 4 - 0.03, 0.08, W - 0.1, new THREE.Matrix4().makeTranslation(cx, cy + 0.2, 0).multiply(new THREE.Matrix4().makeRotationZ(tilt)).multiply(at(-len / 2 + (p + 0.5) * len / 4, 0, 0)), pick(WORLD.timber, seed + i * 4 + p), { ch: 0.01 });
         boxes.push({ x: cx, y: cy + 0.1, z: 0, w: len, h: 0.3, d: W, rz: tilt });
         // Parapets or rails.
@@ -72,17 +75,20 @@ export function bridgeModel({ length: L = 14, width: W = 3, rise = 1.2, drop = 0
             if (style === 'rope') k.box('body', len, 0.04, 0.04, at(cx, cy + 1.0, s * W / 2, 0, 0, tilt), 0xc8b088);
             else if (style === 'plank') k.box('body', len, 0.08, 0.08, at(cx, cy + 1.0, s * W / 2, 0, 0, tilt), WORLD.timber[2]);
             else k.box('body', len, 0.55, 0.3, at(cx, cy + 0.5, s * (W / 2 - 0.1), 0, 0, tilt), pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + i + 9), { ch: 0.03 });
-            if (style !== 'stone' && style !== 'marble' && style !== 'whitestone' && i % 2 === 0) k.box('body', 0.1, 1.1, 0.1, at(x0, y0 + 0.55, s * W / 2), WORLD.timber[1]);
+            if (!stone && i % 2 === 0) k.box('body', 0.1, 1.1, 0.1, at(x0, y0 + 0.55, s * W / 2), WORLD.timber[1]);
         }
         boxes.push({ x: cx, y: cy + 0.7, z: -W / 2, w: len, h: 1.1, d: 0.15, rz: tilt }, { x: cx, y: cy + 0.7, z: W / 2, w: len, h: 1.1, d: 0.15, rz: tilt });
+        // Posts under a plank bridge: down into the riverbed, with the stretch above them.
+        if (style === 'plank') for (let x = -L / 2 + 1.5; x < L / 2 - 1; x += 3) if (x >= x0 && x < x1) for (const s of [-1, 1]) {
+            k.box('body', 0.18, 4, 0.18, at(x, yAt(x) - 1.8, s * (W / 2 - 0.2)), WORLD.timber[0]);
+            if (parts) boxes.push({ x, y: yAt(x) - 1.8, z: s * (W / 2 - 0.2), w: 0.18, h: 4, d: 0.18 });
+        }
+        if (parts) pieces.push({ group: k.build(), boxes });
     }
-    // Piers and arches under a stone bridge; posts under a plank one.
-    if (style === 'stone' || style === 'marble' || style === 'whitestone') {
-        for (const x of [-L / 2, L / 2]) k.box('body', 1.2, 3, W + 0.4, at(x, yAt(x) - 1.4, 0), pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + 30), { ch: 0.05 });
-    } else if (style === 'plank') {
-        for (let x = -L / 2 + 1.5; x < L / 2 - 1; x += 3) for (const s of [-1, 1]) k.box('body', 0.18, 4, 0.18, at(x, yAt(x) - 1.8, s * (W / 2 - 0.2)), WORLD.timber[0]);
-    }
-    return { group: k.build(), boxes };
+    // Piers and arches under a stone bridge.
+    if (stone) for (const x of [-L / 2, L / 2]) k0.box('body', 1.2, 3, W + 0.4, at(x, yAt(x) - 1.4, 0), pick(COURSED[style === 'stone' ? 'stone' : style].cols, seed + 30), { ch: 0.05 });
+    if (parts) return { pieces };
+    return { group: k0.build(), boxes: boxes0 };
 }
 
 /** A dock: planks on posts over water, `height` above the ground at its root. */

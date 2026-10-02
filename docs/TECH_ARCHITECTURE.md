@@ -55,7 +55,9 @@ src/
   art/HeroModel.js      the protagonist: jointed model and procedural animator
   art/PropModels.js     rock, floor, ruin wall, pillar, arch, planks, posts
   art/TownModels.js     the building kit (walls, floors, roofs, stairs, fences, posts), trees, stalls, gates, ground
-  input/Gestures.js     move stick, press / drag / release velocity, orbit, pinch; WASD at a desk
+  input/Gestures.js     move stick (bottom-left corner), flick-up jump, press / drag / release velocity, orbit, pinch; WASD and Space at a desk
+  world/Structure.js    buildings, wooden bridges, docks, tents: pieces that burn or break by material, holding each other up
+  world/Skin.js         a whole building as one mesh while it burns and breaks (tint, glow, gone per vertex)
   input/Intent.js       what a touch means: material + gesture → element and verb (CONTEXT_CONTROLS.md)
   data/materials.js     which elements act on which material, and the hold times
   player/PlayerController.js   the hero's body, movement and facing

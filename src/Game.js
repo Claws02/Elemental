@@ -210,8 +210,10 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         // Capped at 0.1 s: Physics sub-steps cover that without slow motion, and
         // a longer hitch is treated as a pause rather than a teleport. Never
         // negative: the first rAF timestamp can predate `last`.
-        const dt = Math.max(0, Math.min(0.1, (now - last) / 1000));
+        const raw = (now - last) / 1000;
+        const dt = Math.max(0, Math.min(0.1, raw));
         last = now;
+        Renderer.adapt(raw);
         EventBus.tick(dt);
 
         intent.update(dt);
@@ -262,7 +264,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
         session, ledger, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
-        renderInfo: () => ({ ...Renderer.info() }),
+        renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio }),
         setView: far => Renderer.setView(far),
         setMood: (n, s) => Renderer.setMood(n, s),
         throwRockAt(i, target, speed = 30) {

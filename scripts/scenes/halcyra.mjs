@@ -22,7 +22,7 @@ const S = new Dresser(L, SEED);
 S.add('Mirror_Lake', 'water', 0, 0, 0, { kind: 'water', width: SHORE * 2 + 4, depth: SHORE * 2 + 4, round: true, level: LEVEL, colour: 0x5a90b0 });
 // The island: the palace facing south, fountains, banners, Ilvane before it.
 L.flatten(0, 0, ISLE, TOP, 0.9); L.paintCircle(0, 0, ISLE, 'cobble');
-S.add('Imperial_Palace', 'prefab', 0, -3, 0, { prefab: 'imperial_palace', style: 'prefab', seed: 1 }, 12);
+S.add('Imperial_Palace', 'prefab', 0, -3, 0, { prefab: 'imperial_palace', style: 'prefab', seed: 1, owner: 'empire' }, 12);
 for (const [x, z] of [[-8, 11], [8, 11]]) S.add(`Palace_Fountain_${x < 0 ? 'W' : 'E'}`, 'fountain', x, z, 0, { radius: 2, style: 'marble', seed: 3 }, 2);
 S.add('Ilvane', 'npc', 0, 9, 0, { name: 'Empress Ilvane IV', look: 'ilvane', role: 'idle' });
 for (const [x, z, f] of [[-3, 6, 0], [3, 6, 0], [-11, -12, Math.PI], [11, -12, Math.PI]]) S.add(`Palace_Guard_${S.objects.length}`, 'npc', x, z, f, { name: 'Imperial Guard', look: 'imperial_guard', role: 'idle' });
@@ -52,7 +52,7 @@ villas.forEach((v, i) => {
 });
 L.flatten(OFFICE.x, OFFICE.z, 13, TOP, 0.8); L.paintCircle(OFFICE.x, OFFICE.z, 11, 'cobble');
 const of = Math.atan2(-OFFICE.x, -OFFICE.z), ox = Math.sin(of), oz = Math.cos(of), px = oz, pz = -ox;
-S.add('Lantern_Office', 'prefab', OFFICE.x, OFFICE.z, of, { prefab: 'halcyra_villa', style: 'basalt', seed: 9 }, 8);
+S.add('Lantern_Office', 'prefab', OFFICE.x, OFFICE.z, of, { prefab: 'halcyra_villa', style: 'basalt', seed: 9, owner: 'empire', landmark: true }, 8);
 for (const t of [-1, 1]) {
     S.add(`Lantern_Office_Tower_${t > 0 ? 'R' : 'L'}`, 'tower', OFFICE.x + px * 6.5 * t, OFFICE.z + pz * 6.5 * t, 0, { height: 12, radius: 1.6, style: 'basalt', top: 'crenels', seed: 5 }, 2);
     S.add(`Lantern_Office_Banner_${t > 0 ? 'R' : 'L'}`, 'banner', OFFICE.x + ox * 6 + px * 3 * t, OFFICE.z + oz * 6 + pz * 3 * t, 0, { height: 6, colour: 'gold' }, 1);

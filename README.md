@@ -61,6 +61,7 @@ npm run terrain    # standing, climbing, wading and culling on terrain
 npm run bestiary   # the twelve creatures and their weaknesses
 npm run world      # every region loads, every road leads both ways, bridges walk, creature tiers
 npm run movement   # jump, the stick's corner, climbing, full speed on stone and past people
+npm run buildings  # houses burn and break true to material, landmarks, the wooden bridge and the ford
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
 ```
 

@@ -49,6 +49,8 @@ const EMBER = new THREE.Color(0xff5a2a);
 const HOT = new THREE.Color(0xe0300a);
 const MOLTEN = new THREE.Color(0xff7a1a);
 const CHAR = 0.14;
+const SPREAD_TICK = 0.1;      // seconds between spread passes
+const FLAME_BUDGET = 28;      // burning things at full flame; more share it
 
 export class FireSystem {
     constructor({ scene, fx, interactables, channel, hero, prog }) {
@@ -65,9 +67,11 @@ export class FireSystem {
 
     // ---- registration ----------------------------------------------------
 
-    addFlammable(thing, { onBurn = null } = {}) {
+    /** `size` (metres across, default 1): a bigger piece burns longer and throws its fire further. */
+    addFlammable(thing, { onBurn = null, size = 1 } = {}) {
         const fl = thing.mat.flammable;
-        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel: fl.fuel, fuelMax: fl.fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, reach: fl.reach || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
+        const k = Math.max(1, Math.min(2.2, size)), fuel = fl.fuel * k, reach = (fl.reach || FIRE.spreadRadius) + (k - 1) * 0.9;
+        this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel, fuelMax: fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, reach: size > 1 ? reach : fl.reach || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
     }
 
     addHeatable(thing) {
@@ -341,9 +345,15 @@ export class FireSystem {
 
         for (const s of this.sources) this.fx.burn(s.pos, dt, { rate: 12, w: 0.45, h: 0.15, size: 0.5, smoke: 0.2 });
 
-        // Burning and spreading.
+        // Burning and spreading. Spread is worked out a few times a second, against a grid of what can still
+        // catch (only the cells around a fire), not every fire against every flammable every frame: a burning
+        // village was the slowest thing in a frame.
         const burning = [...this.flammables.values()].filter(f => f.burning);
-        const heated = new Set();
+        const heated = this._heated ||= new Set();
+        this.spreadT = (this.spreadT || 0) + dt;
+        const spreading = this.spreadT >= SPREAD_TICK, sdt = this.spreadT;
+        if (spreading) { this.spreadT = 0; heated.clear(); this._grid(); }
+        const share = Math.min(1, FLAME_BUDGET / Math.max(1, burning.length));
         for (const f of burning) {
             const p = f.thing.pos();
             f.fuel -= dt;
@@ -356,20 +366,22 @@ export class FireSystem {
             const fanned = (f.fanUntil || 0) > this.time;
             f.onBurn?.((100 / f.fuelMax) * dt * (fanned ? 1.4 : 1), f.cause);
             const kv = Math.min(1, k);      // how big it looks: a flash spreads faster, it isn't bigger
-            this.fx.burn(p, dt, { rate: 22 * kv * (fanned ? 1.7 : 1), w: 0.85, h: 0.4 + 0.4 * kv, size: (0.5 + 0.35 * kv) * (fanned ? 1.25 : 1) });
+            // A budget across all fires: past FLAME_BUDGET burning things, each emits less but a little bigger,
+            // so a burning street costs what a burning house does (particles, and the screen they cover).
+            this.fx.burn(p, dt, { rate: 22 * kv * (fanned ? 1.7 : 1) * share, w: 0.85, h: 0.4 + 0.4 * kv, size: (0.5 + 0.35 * kv) * (fanned ? 1.25 : 1) * (1 + (1 - share) * 0.35) });
             // A low, flickering ember glow: the flames carry the fire, the
             // wood only smoulders under them (a strong glow reads as a lamp).
             this._glow(f.thing, 0.16 + Math.sin(this.time * 17 + p.x * 3) * 0.06 + Math.sin(this.time * 7.3) * 0.04);
-            for (const o of this.flammables.values()) {
+            if (spreading) for (const o of this._near(p)) {
                 if (o === f || o.burning || o.burned || o.wet > 0) continue;
-                const q = o.thing.pos();
+                const q = o.q;
                 const d = p.distanceTo(q);
                 // Fanned by wind, fire reaches further and faster downwind.
                 const align = fanned && d > 0 ? Math.max(0, q.clone().sub(p).normalize().dot(f.windDir)) : 0;
                 const R = (f.reach || FIRE.spreadRadius) * (1 + 0.8 * align);      // thatch throws fire further than planks
                 if (d >= R) continue;
                 const wind = fanned ? 1.3 + 1.5 * align : 1;
-                o.heat += k * wind * FIRE.spreadRate * (1 - d / R) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * dt;
+                o.heat += k * wind * FIRE.spreadRate * (1 - d / R) * (q.y > p.y + 0.3 ? FIRE.climb : 1) * sdt;
                 o.heatCause = f.cause;
                 heated.add(o);
             }
@@ -546,6 +558,29 @@ export class FireSystem {
         if (!f) return;
         Object.assign(f, { burning: false, burned: true, heat: 0, fuel: 0 });
         this._char(thing);
+    }
+
+    // The spread grid: everything that can still catch, by cell (cell size: the furthest any fire reaches, fanned).
+    _grid() {
+        let reach = FIRE.spreadRadius;
+        for (const f of this.flammables.values()) if (f.burning) reach = Math.max(reach, f.reach || 0);
+        const C = this._cell = reach * 1.8, g = this._cells = new Map();
+        for (const o of this.flammables.values()) {
+            if (o.burning || o.burned) continue;
+            o.q = o.thing.pos(o.q);
+            const k = `${Math.floor(o.q.x / C)},${Math.floor(o.q.z / C)}`;
+            let a = g.get(k); if (!a) g.set(k, a = []); a.push(o);
+        }
+    }
+
+    /** Everything that can catch in the cells round p. */
+    _near(p) {
+        const C = this._cell, cx = Math.floor(p.x / C), cz = Math.floor(p.z / C), out = [];
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+            const a = this._cells.get(`${cx + dx},${cz + dz}`);
+            if (a) for (const o of a) out.push(o);
+        }
+        return out;
     }
 
     _char(thing) {

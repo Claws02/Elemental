@@ -76,12 +76,18 @@ function _solids(L, H, holes) {
     return rects;
 }
 
-export function buildingWall({ length: L = 4, height: H = 3, style = 'stone', opening = 'none', seed = 1 } = {}) {
+/**
+ * A wall. `part` cuts it for a structure that breaks piece by piece (world/Structure.js): { clip: { x0, x1, y0, y1 } }
+ * draws only the solid wall inside that cell; 'trims' draws only the door and window frames (and their leaves).
+ */
+export function buildingWall({ length: L = 4, height: H = 3, style = 'stone', opening = 'none', seed = 1, part = null } = {}) {
     const k = new Kit();
     const holes = _openings(L, H, opening);
-    const rects = _solids(L, H, holes);
+    const clip = part?.clip;
+    const rects = part === 'trims' ? [] : _solids(L, H, holes).map(r => clip ? { x0: Math.max(r.x0, clip.x0), x1: Math.min(r.x1, clip.x1), y0: Math.max(r.y0, clip.y0), y1: Math.min(r.y1, clip.y1) } : r)
+        .filter(r => r.x1 - r.x0 > 0.02 && r.y1 - r.y0 > 0.02);
     const boxes = [];
-    let n = seed * 17;
+    let n = seed * 17 + (clip ? Math.round(clip.x0 * 7 + clip.y0 * 13) : 0);
     for (const r of rects) {
         const w = r.x1 - r.x0, h = r.y1 - r.y0, cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
         boxes.push({ x: cx, y: cy, z: 0, w, h, d: T });
@@ -135,7 +141,7 @@ export function buildingWall({ length: L = 4, height: H = 3, style = 'stone', op
         }
     }
     // Opening trims.
-    for (const o of holes) {
+    for (const o of (clip ? [] : holes)) {
         if (o.kind === 'door') {
             for (const sx of [-1, 1]) k.box('body', 0.12, o.y1, T + 0.08, at(o.x + sx * (o.w / 2 + 0.03), o.y1 / 2, 0), TOWN.beam, { ch: 0.02 });
             k.box('body', o.w + 0.3, 0.16, T + 0.1, at(o.x, o.y1 + 0.08, 0), TOWN.beam, { ch: 0.02 });
@@ -162,7 +168,14 @@ export function buildingWall({ length: L = 4, height: H = 3, style = 'stone', op
     return { group: k.build(), boxes };
 }
 
-export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks' } = {}) {
+export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks', part = null } = {}) {
+    if (part?.span) {
+        // A strip of the floor between x0 and x1 (an upper floor that burns through in places).
+        const [x0, x1] = part.span, f = buildingFloor({ width: x1 - x0, depth: D, style });
+        f.group.position.x = (x0 + x1) / 2;
+        const g = new THREE.Group(); g.add(f.group);
+        return { group: g, boxes: f.boxes.map(b => ({ ...b, x: b.x + (x0 + x1) / 2 })) };
+    }
     const k = new Kit();
     const th = 0.2;
     if (style === 'planks') {
@@ -186,9 +199,29 @@ export function buildingFloor({ width: W = 4, depth: D = 4, style = 'planks' } =
     return { group: k.build(), boxes: [{ x: 0, y: 0, z: 0, w: W, h: th, d: D }] };
 }
 
-export function buildingRoof({ width: W = 4, depth: D = 4, pitch: P = 1.8, style = 'thatch', gables = true } = {}) {
+/**
+ * A roof. `part` cuts it for a structure: { span: [x0, x1] } is the strip of both slopes (and the ridge) between
+ * those x; 'gables' is only the gable ends.
+ */
+export function buildingRoof({ width: W = 4, depth: D = 4, pitch: P = 1.8, style = 'thatch', gables = true, part = null } = {}) {
+    if (part?.span) {
+        // A strip: the same roof, as wide as the strip, moved to its place along the ridge; no gables.
+        const [x0, x1] = part.span, r = buildingRoof({ width: x1 - x0, depth: D, pitch: P, style, gables: false });
+        r.group.position.x = (x0 + x1) / 2;
+        const g = new THREE.Group(); g.add(r.group);
+        return { group: g, boxes: r.boxes.map(b => ({ ...b, x: b.x + (x0 + x1) / 2 })) };
+    }
     const k = new Kit();
     const half = D / 2, S = Math.hypot(half, P), a = Math.atan2(P, half);
+    if (part === 'gables') {
+        if (!gables || ['flat', 'dome', 'canvas'].includes(style)) return { group: k.build(), boxes: [] };
+        for (const sx of [-1, 1]) {
+            const m = new THREE.Matrix4().makeTranslation(sx * (W / 2 - 0.35), 0, 0).multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2));
+            k.prism('body', D - 0.5, P - 0.2, 0.2, m, TOWN.plaster[0]);
+            k.box('body', 0.12, P, 0.12, new THREE.Matrix4().makeTranslation(sx * (W / 2 - 0.3), P / 2, 0), TOWN.beam);
+        }
+        return { group: k.build(), boxes: [-1, 1].map(sx => ({ x: sx * (W / 2 - 0.35), y: P * 0.35, z: 0, w: 0.2, h: P * 0.7, d: D * 0.6 })) };
+    }
     if (style === 'flat' || style === 'dome' || style === 'canvas') return _otherRoof({ W, D, P, style });
     const th = style === 'thatch' ? 0.32 : 0.14;
     const cols = { thatch: TOWN.thatch, slate: TOWN.slate, shingle: TOWN.shingle, tile: [0xb05a38, 0xa4522f, 0xbc6440], copper: [0x5a9a88, 0x4e8a7a, 0x66a894] }[style] || TOWN.thatch;

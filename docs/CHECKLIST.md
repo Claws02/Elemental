@@ -79,6 +79,11 @@ Per task (brief §73): name the subsystem → dependencies → update this list 
   - [x] Climbing: walk into a ledge within reach and the hero climbs onto it; jump to reach higher. *Movement test: a 1.5 m column walked up, a 3 m one jumped and climbed.*
   - [x] Full speed on raised stone and past people (no friction from them; the hero steps round a person). *Movement test.*
   - [x] Creature tiers: each kind has a tier; a hero one tier short meets its young (fewer, half the health, 40% of the damage), further short meets none. Might is the elements known, their Power and Control, and training. *Unit + world tests.*
+- [x] **Buildings that burn and break, true to material (your notes)**
+  - [x] Every prefab building, wooden bridge, dock, tent, stall and fence is a structure (`world/Structure.js`): pieces of wall, roof, floor, frame. Timber, plaster, thatch, shingle and canvas burn; stone, brick, marble, slate and tile don't, and break only under heavy blows. Pieces hold each other up: burn the timber storey and the slate roof comes down onto the stone shell. *Buildings test.*
+  - [x] Rulers' halls and the palace are landmarks: bringing one down costs the kingdom far more (harm 12, excess) and sets `destroyed.<id>`. Oruun ruins stay whole.
+  - [x] Thornwick's bridge is timber and burns stretch by stretch; a ford downstream can be waded. *Buildings test.*
+  - [x] Burning performance: every building draws as ONE mesh while it burns and breaks (`world/Skin.js`: char, glow and gone by vertex attribute); fire spread on a grid a few times a second; a shared flame budget; no shadows from debris; resolution adapts to the frame time. Burning Veyra: draw calls 520 → 210, fire's CPU 3.6 → 0.55 ms. *Buildings test: draw calls held while a cottage burns.*
   - [ ] **Played on a device** ← next: walk the world, then edit in the editor.
 
 ## Phase 2: elemental sandbox

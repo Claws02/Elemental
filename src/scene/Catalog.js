@@ -31,6 +31,7 @@ import { buildingWall, buildingFloor, buildingRoof, buildingStairs, buildingFenc
 import { Destructible, STATE } from '../world/Destructible.js';
 import { Plate } from '../world/Plates.js';
 import { Building, buildingModel } from '../world/Building.js';
+import { Structure, kitPieces, STRUCTURAL } from '../world/Structure.js';
 import { Npc, npcModel } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
 import { EventBus, EV } from '../core/EventBus.js';
@@ -589,7 +590,17 @@ export const CATALOG = {
             }
             return g;
         },
-        spawn() { throw new Error('prefabs are expanded by the loader'); },
+        // One structure from its walls, floors, roofs, posts and stairs (world/Structure.js): it burns and breaks
+        // true to what each is made of. Anything else in it (a brazier, a banner) the loader places on its own.
+        spawn(ctx, it) {
+            const local = expandPrefab({ ...it, x: 0, y: 0, z: 0, rotY: 0 }).filter(pc => STRUCTURAL.has(pc.type));
+            const st = new Structure(ctx, { ...it, name: PREFABS[it.prefab]?.label, isLandmark: !!PREFABS[it.prefab]?.landmark }, kitPieces(local));
+            return {
+                mesh: st.frame, entries: [...st.pieces.map(p => p.entry).filter(Boolean), ...st.entries], structure: st,
+                wire: sys => st.wire(sys), update: dt => st.update(dt), signal: n => st.signal(n),
+                restoreState: s => st.restoreState(s), dispose: () => st.dispose(),
+            };
+        },
     },
 
     water: {
@@ -620,10 +631,37 @@ export const CATALOG = {
     },
 };
 
+// Things that burn: a structure (world/Structure.js) instead of a static shape. A wooden bridge in stretches;
+// a stall, a fence, a dock, a tent as one piece (a tent's canvas burns away; the rest falls as charred timber).
+const BURNS = { stall: 'wood', b_fence: 'wood', dock: 'wood', tent: 'cloth', bridge: 'wood' };
+const burnsNow = (type, it) => BURNS[type] && (type !== 'bridge' || it.style === 'plank' || it.style === 'rope');
+
+/** A burnable thing as a structure: its pieces (local boxes as { x, y, z, w, h, d, rx?, rz? }). */
+function _structure(ctx, it, parts, mat) {
+    const q0 = new THREE.Quaternion();
+    const pieces = parts.map(p => ({
+        group: p.group, mat, kind: it.type,
+        boxes: p.boxes.map(b => {
+            const q = q0.clone();
+            if (b.rx) q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), b.rx));
+            if (b.rz) q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), b.rz));
+            return { c: new THREE.Vector3(b.x, b.y, b.z), q, w: b.w, h: b.h, d: b.d };
+        }),
+    }));
+    const st = new Structure(ctx, it, { pieces });
+    return {
+        mesh: st.frame, entries: st.pieces.map(p => p.entry).filter(Boolean), structure: st,
+        wire: sys => st.wire(sys), update: dt => st.update(dt), signal: n => st.signal(n),
+        restoreState: s => st.restoreState(s), dispose: () => st.dispose(),
+    };
+}
+
 for (const [type, shape] of Object.entries(SHAPES)) {
     CATALOG[type] = {
         model: it => shape(it).group,
-        spawn: (ctx, it) => _static(ctx, it, shape(it), { mat: WOODEN.has(type) ? 'wood' : 'stone', solid: type === 'b_floor' || type === 'plant' ? false : undefined }),
+        spawn: (ctx, it) => burnsNow(type, it)
+            ? _structure(ctx, it, type === 'bridge' ? bridgeModel(it, { parts: true }).pieces : [shape(it)], BURNS[type])
+            : _static(ctx, it, shape(it), { mat: WOODEN.has(type) ? 'wood' : 'stone', solid: type === 'b_floor' || type === 'plant' ? false : undefined }),
     };
 }
 

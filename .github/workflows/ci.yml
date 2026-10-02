@@ -7,7 +7,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,6 +37,7 @@ jobs:
           node qa/bestiary.js
           node qa/world.js
           node qa/movement.js
+          node qa/buildings.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

@@ -43,7 +43,8 @@
    "rotY": 0,
    "prefab": "imperial_palace",
    "style": "prefab",
-   "seed": 1
+   "seed": 1,
+   "owner": "empire"
   },
   {
    "id": "Palace_Fountain_W",
@@ -471,7 +472,9 @@
    "rotY": -0.785,
    "prefab": "halcyra_villa",
    "style": "basalt",
-   "seed": 9
+   "seed": 9,
+   "owner": "empire",
+   "landmark": true
   },
   {
    "id": "Lantern_Office_Tower_L",
@@ -959,7 +962,8 @@
    "rise": 1.6,
    "drop": -0.08,
    "style": "marble",
-   "seed": 5
+   "seed": 5,
+   "owner": "civilian"
   },
   {
    "id": "Bridge_North",
@@ -973,7 +977,8 @@
    "rise": 1.6,
    "drop": -0.14,
    "style": "marble",
-   "seed": 5
+   "seed": 5,
+   "owner": "civilian"
   },
   {
    "id": "Bridge_East",
@@ -987,7 +992,8 @@
    "rise": 1.6,
    "drop": -0.08,
    "style": "marble",
-   "seed": 4
+   "seed": 4,
+   "owner": "civilian"
   },
   {
    "id": "Bridge_West",
@@ -1001,7 +1007,8 @@
    "rise": 1.6,
    "drop": -0.07,
    "style": "marble",
-   "seed": 4
+   "seed": 4,
+   "owner": "civilian"
   },
   {
    "id": "Garden_Tree_001",

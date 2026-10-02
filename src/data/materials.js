@@ -57,6 +57,13 @@ export const MATERIALS = {
         flammable: { fuel: 6, ignitesAt: 0.8, reach: 2.6 },   // burning straw carries: down the walls, over the ridge, to the next roof
         soaks: 20,
     },
+    cloth: {
+        name: 'cloth',                  // canvas: a tent, an awning; quickest to catch, quickest gone
+        change: { element: 'fire', verb: 'ignite', hold: 0.3 },
+        whenBurning: { element: 'fire', verb: 'pull', hold: 0.25 },
+        flammable: { fuel: 3, ignitesAt: 0.6, reach: 2 },
+        soaks: 20,
+    },
     door: {
         name: 'door',                   // no element: anyone can open a door, powers or not
         use: 'door',                    // a tap opens or closes it
