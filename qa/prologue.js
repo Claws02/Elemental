@@ -83,7 +83,7 @@ const SHOTS = path.join(__dirname, 'shots');
         await ev(() => { window.__fires = []; __EL.EventBus.on('FireStarted', e => __fires.push(e.cause)); });
         await at(6.5, 8);
         await until(() => __EL.story.step === 'attack', 10000);
-        await until(() => __EL.vitals.health < 100, 20000);             // they come for you
+        await until(() => __EL.vitals.health < 100, 40000);             // they come for you (a slow headless frame rate makes this real-time wait long)
         await wait(4000);                                               // let them keep at it: they hurt, but can't kill before you have powers
         const beforeCrack = await ev(() => ({ fires: __fires.length, hp: Math.round(__EL.vitals.health), floor: __EL.vitals.floor, dead: __EL.vitals.dead, any: ['earth', 'fire', 'water', 'air'].some(el => __EL.prog.has(el)) }));
         // The headless browser runs the game at about half speed: move the story's clock on through the waits.
