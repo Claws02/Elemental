@@ -215,9 +215,18 @@ function _freeze(e) {
 
 export function step(dt) {
     if (!world) return;
-    // At most 3 fixed steps a frame: a slow frame plays a touch slower rather than costing more steps, which would
-    // make the next frame slower still (the spiral that sinks a phone's frame rate in a heavy moment).
-    world.step(1 / 60, Math.min(dt, 0.1), 3);
+    // At most 3 steps a frame, each 1/60 s where it can be: a slow frame takes longer steps (up to 1/30 s) rather
+    // than more of them, so the cost stays bounded (no spiral that sinks a phone's frame rate in a heavy moment)
+    // and the world keeps time (no slow motion).
+    const t = Math.min(dt, 0.1);
+    if (t <= 0) return _sync();
+    const n = Math.min(3, Math.max(1, Math.round(t * 60)));
+    const h = Math.min(1 / 30, t / n);
+    for (let i = 0; i < n; i++) world.step(h);
+    _sync();
+}
+
+function _sync() {
     for (const e of entries) {
         const b = e.body;
         if (b.type === CANNON.Body.STATIC) continue;
