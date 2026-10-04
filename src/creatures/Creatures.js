@@ -32,6 +32,15 @@ import { ICE, MUD } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { BEHAVIOURS } from './Behaviours.js';
 import { Ground } from '../world/Ground.js';
+import { npcModel } from '../story/Npc.js';
+import { HeroAnimator } from '../art/HeroModel.js';
+
+// A Wielder is a person (the hero's rig in their order's colours), animated as one.
+function personModel(look) {
+    const rig = npcModel(look);
+    rig.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    return { root: rig.root, parts: {}, rig, anim: new HeroAnimator(rig) };
+}
 
 const G = 22;                 // the world's gravity (Physics.init)
 const FLEE_GONE = 32;         // metres from the hero at which a fleeing creature is gone
@@ -161,8 +170,8 @@ class Creature {
         this.gone = false;
         this.impacts = [];
 
-        this.model = CREATURE_MODELS[group.item.species](sp.look);
-        this.model.root.scale.setScalar(k.scale);
+        this.model = sp.person ? personModel(sp.person) : CREATURE_MODELS[group.item.species](sp.look);
+        this.model.root.scale.setScalar(k.scale * (sp.person ? this.model.root.scale.x : 1));
         this.model.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
         sys.scene.add(this.model.root);
 
@@ -469,6 +478,8 @@ class Creature {
             p.wings.forEach((w, i) => { w.rotation.z = (i ? -1 : 1) * Math.sin(T * 14 * beat + i) * 0.7 * beat; });
             if (this.state === 'dive') r.rotation.x = 0.5;
         }
+        // A person: walking, and whatever their behaviour has them doing with their hands.
+        if (this.model.anim) this.model.anim.update(dt, { speed: v, channel: this.B?.channel?.(this) || null });
         this.B?.pose?.(this, dt, T);
         if (this.state === 'windup') r.rotation.x = -0.12 + Math.sin(T * 30) * 0.03;      // pawing the ground: a readable tell
         if (this.state === 'stunned') r.rotation.z = Math.sin(T * 6) * 0.15;

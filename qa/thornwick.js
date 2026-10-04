@@ -91,7 +91,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         Object.assign(r, { up: __level('River_2'), down: __level('River_4'), wheel: __wheel() });
         await __skip(() => __EL.story.step === 'back');
         __at(18, -8); await __W(1500);
-        await __skip(() => ['gone', 'done'].includes(__EL.story.step));
+        await __skip(() => ['gone', 'ruinroad', 'done'].includes(__EL.story.step));
         await __W(2000);
         return { ...r, end: __EL.story.step, act: __EL.prog.flags['act1.mill'] };
     });
@@ -114,7 +114,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         r.hobb = document.querySelector('#hud-say .line')?.textContent;
         return r;
     });
-    check(back.up === 4.6 && back.down === 4.6 && back.wheel === 'turning' && back.sunk && !back.cael && ['done', null].includes(back.story) && /wheel|loaf/i.test(back.hobb || ''),
+    check(back.up === 4.6 && back.down === 4.6 && back.wheel === 'turning' && back.sunk && !back.cael && ['ruinroad', 'done', null].includes(back.story) && /wheel|loaf/i.test(back.hobb || ''),
         `back in the Reach: the river and the wheel as you left them, Cael gone on, and Hobb glad of it (${JSON.stringify(back)})`);
 
     // ---- 5. the loud way -------------------------------------------------------------------------------------------

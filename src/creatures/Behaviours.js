@@ -32,6 +32,9 @@ import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { OPPOSITE } from '../data/creatures.js';
 import { Ground } from '../world/Ground.js';
+import { CANNON } from '../engine/lib.js';
+import * as Physics from '../engine/Physics.js';
+import { TIER } from '../engine/Physics.js';
 
 const G = 22;
 const _v = new THREE.Vector3();
@@ -244,6 +247,62 @@ export const BEHAVIOURS = {
         },
     },
 
+    // ---- Stonebound (a Wielder) ------------------------------------------------------------------------------
+    // Keeps its distance, circling; lifts a stone over its head where you can see it, and throws it at you (stone
+    // raised between you blocks it). When you lift a stone, it raises a slab to take the throw. Never killed:
+    // hurt enough, it kneels and yields (the ledger's spared). The story can have its speaker hold one off.
+    wielder: {
+        own: true,
+        init: c => { c.nextAttack = 1.5 + Math.random() * 1.5; c.shieldCd = 1; c.stones = []; },
+        hold: (c, dt) => {
+            _wielderStones(c, dt);
+            if (c.state !== 'yield' && c.state !== 'held') return false;
+            c.body.velocity.x *= 0.8; c.body.velocity.z *= 0.8;
+            _dropShield(c);
+            if (c.state === 'held' && c.holder) { const d = toward(c, c.holder); c._face(Math.atan2(d.x, d.z), 4 * dt); }
+            return true;
+        },
+        update: (c, dt, move, speed, dist) => {
+            const sp = c.sp, hero = c.sys.player.position;
+            if (!c.engaged) { c.body.velocity.x *= 0.85; c.body.velocity.z *= 0.85; const d = toward(c, hero); c._face(Math.atan2(d.x, d.z), 2 * dt); return; }
+            const to = toward(c, hero).clone(), d = Math.max(0.01, to.length());
+            to.divideScalar(d);
+            // Hold the range, circling.
+            if (c.state !== 'windup') {
+                const tangent = new THREE.Vector3(-to.z, 0, to.x).multiplyScalar(c.orbitDir), radial = to.clone().multiplyScalar((d - sp.attack.range) * 0.5);
+                const w = tangent.multiplyScalar(0.7).add(radial);
+                if (w.lengthSq() > 0.01) move(w.normalize(), speed * 0.7);
+            } else { c.body.velocity.x *= 0.8; c.body.velocity.z *= 0.8; }
+            c._face(Math.atan2(to.x, to.z), 6 * dt);
+            // A stone lifted at it: raise a slab.
+            c.shieldCd -= dt;
+            if (c.shieldCd <= 0 && !c.shield && c.sys.channel.held?.element === 'earth' && d < 16) _raiseShield(c, to);
+            if (c.shield && (c.shield.t -= dt) <= 0) _dropShield(c);
+            // Lift where you can see it, then throw.
+            c.nextAttack -= dt;
+            if (c.state !== 'windup' && c.nextAttack <= 0 && d < sp.attack.range + 6) { c._to('windup'); c.lift = _liftStone(c); }
+            if (c.state === 'windup') {
+                c.lift.position.set(c.pos.x, c.pos.y + 1.2 + Math.min(1, c.t / sp.attack.windup) * 0.9, c.pos.z);
+                if (c.t >= sp.attack.windup) { _throwStone(c, c.lift); c.lift = null; c.nextAttack = sp.attack.every * (0.8 + Math.random() * 0.4); c._to('circle'); }
+            }
+        },
+        // Hurt enough, it yields: never killed.
+        react: (c, kind, amount, cause) => {
+            const w = c.sp.weak[kind] ?? 1, dmg = amount * w;
+            if (dmg <= 0.01) return null;
+            if (cause === 'player') { c.engaged = true; c.hitBy = 'player'; }
+            c.hp -= dmg;
+            c.flash = 0.15;
+            if (c.hp <= c.maxHp * c.sp.yieldAt) _yield(c, cause);
+            return null;
+        },
+        channel: c => c.state === 'windup' ? { pitch: 1.1, yaw: 0 } : c.state === 'held' ? { pitch: 0.2, yaw: 0 } : null,
+        pose: (c, dt) => {
+            const r = c.model.root;
+            if (c.state === 'yield') { r.position.y -= 0.32; r.rotation.x = 0.25; }       // on one knee, head down
+        },
+    },
+
     // ---- Lantern Sentinel ---------------------------------------------------------------------------------------
     sentinel: {
         own: true,
@@ -315,3 +374,73 @@ export const BEHAVIOURS = {
         },
     },
 };
+
+// ---- the Stonebound's stones and slab ------------------------------------------------------------------------------
+const STONE_R = 0.3;
+let _stoneMat = null;
+function _liftStone(c) {
+    _stoneMat ||= new THREE.MeshLambertMaterial({ color: 0x8a8274, flatShading: true });
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(STONE_R, 0), _stoneMat);
+    m.castShadow = true;
+    c.sys.scene.add(m);
+    return m;
+}
+// Thrown on a short arc at where the hero is; it hurts if it hits them fast, and it's a stone like any other after.
+function _throwStone(c, mesh) {
+    const hero = c.sys.player.position, from = mesh.position, sp = c.sp.attack;
+    const dx = hero.x - from.x, dz = hero.z - from.z, dy = hero.y + 0.9 - from.y, flat = Math.hypot(dx, dz), T = Math.max(0.35, flat / sp.speed);
+    const body = new CANNON.Body({ mass: 6, material: Physics.material('rock') });
+    body.addShape(new CANNON.Sphere(STONE_R));
+    body.position.set(from.x, from.y, from.z);
+    body.velocity.set(dx / T, dy / T + 0.5 * G * T, dz / T);
+    const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id: `${c.id}_stone_${c.stones.length}`, data: { radius: STONE_R, thrownBy: 'stonebound', thrownAt: performance.now(), stonebound: true } });
+    const s = { entry, mesh, t: 0, hit: false };
+    const player = c.sys.player.body;
+    body.addEventListener('collide', e => {
+        if (s.hit || e.body !== player) return;
+        if (Math.abs(e.contact.getImpactVelocityAlongNormal()) < 5) return;
+        s.hit = true;
+        c.sys.vitals.hurt(sp.damage * c.dmgK, 'Stonebound', c.id);
+    });
+    c.stones.push(s);
+    EventBus.emit(EV.CREATURE, { id: c.id, species: 'stonebound', to: 'threw' });
+}
+function _wielderStones(c, dt) {
+    for (const s of c.stones) s.t += dt;
+    for (const s of c.stones.filter(s => s.t > 8)) { Physics.remove(s.entry); s.mesh.parent?.remove(s.mesh); }
+    c.stones = c.stones.filter(s => s.t <= 8);
+}
+function _raiseShield(c, to) {
+    const sh = c.sp.shield;
+    c.shieldCd = sh.every;
+    const p = { x: c.pos.x + to.x * 1.3, z: c.pos.z + to.z * 1.3 }, g = Ground.height(p.x, p.z), yaw = Math.atan2(to.x, to.z);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2, 0.35), _stoneMat || (_stoneMat = new THREE.MeshLambertMaterial({ color: 0x8a8274, flatShading: true })));
+    mesh.position.set(p.x, g + 1, p.z);
+    mesh.rotation.y = yaw;
+    mesh.castShadow = true;
+    c.sys.scene.add(mesh);
+    const body = new CANNON.Body({ mass: 0, material: Physics.material('stone') });
+    body.addShape(new CANNON.Box(new CANNON.Vec3(0.9, 1, 0.175)));
+    body.position.set(p.x, g + 1, p.z);
+    body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), yaw);
+    c.shield = { mesh, entry: Physics.add({ body, tier: TIER.STATIC, id: `${c.id}_slab` }), t: sh.secs };
+    EventBus.emit(EV.CREATURE, { id: c.id, species: 'stonebound', to: 'shield' });
+}
+function _dropShield(c) {
+    if (!c.shield) return;
+    Physics.remove(c.shield.entry);
+    c.shield.mesh.parent?.remove(c.shield.mesh);
+    c.shield = null;
+}
+function _yield(c, cause) {
+    if (c.state === 'yield') return;
+    c.hp = Math.max(c.hp, 1);
+    if (c.lift) { c.lift.parent?.remove(c.lift); c.lift = null; }
+    _dropShield(c);
+    c._to('yield');
+    c.yielded = true;
+    EventBus.emit(EV.CREATURE, { id: c.id, species: 'stonebound', to: 'yielded', cause: cause === 'player' || c.hitBy === 'player' ? 'player' : cause });
+}
+/** The story's speaker holds one off (it stands, facing them, out of the fight), or ends it: everyone yields. */
+export function wielderHold(c, holder) { if (c.state === 'yield') return; if (c.lift) { c.lift.parent?.remove(c.lift); c.lift = null; } _dropShield(c); c.holder = holder; c._to('held'); }
+export function wielderYield(c) { _yield(c, 'story'); }

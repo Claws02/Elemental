@@ -32,6 +32,7 @@ import { Destructible, STATE } from '../world/Destructible.js';
 import { Plate } from '../world/Plates.js';
 import { Building, buildingModel } from '../world/Building.js';
 import { Structure, kitPieces, STRUCTURAL } from '../world/Structure.js';
+import { wielderHold, wielderYield } from '../creatures/Behaviours.js';
 import { Npc, npcModel, parseRoute } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
 import { EventBus, EV } from '../core/EventBus.js';
@@ -194,8 +195,11 @@ function _standingStone(it, cracked) {
             const nx = (seeded(i * 5.3 + it.seed) - 0.5) * 0.5, ny = y + (H - 0.6) / 9;
             const len = Math.hypot(nx - x, ny - y), a = Math.atan2(ny - y, nx - x);
             k.box('glow', len + 0.03, 0.05, 0.03, at((x + nx) / 2, (y + ny) / 2, z + 0.02, 0, 0, a), [ELEMENT.earth.rune, ELEMENT.fire.rune, ELEMENT.water.rune, ELEMENT.air.rune][i % 4]);
+            // Cracked on purpose: chisel bites along the crack, square and even, and a scrap of grey cloth at its foot.
+            if (it.chiselled) for (const s of [-1, 1]) k.box('body', 0.07, 0.07, 0.05, at((x + nx) / 2 + s * 0.08, (y + ny) / 2, z + 0.025, 0, 0, Math.PI / 4), WORLD.stoneDark);
             x = nx; y = ny;
         }
+        if (it.chiselled) k.box('body', 0.34, 0.03, 0.22, at(0.55, 0.37, z + 0.15, 0, 0.4, 0), 0x7c7f84);
     }
     return k.build();
 }
@@ -640,8 +644,16 @@ export const CATALOG = {
             ctx.world.creatureGroups.push(g);
             const inst = {
                 mesh, entries: [], group: g,
-                signal: name => name === 'engaged' ? g.engaged : name === 'gone' ? g.spawned && g.members.every(c => c.gone || c.state === 'dead' || c.state === 'flee' || c.state === 'off') : name === 'alarm' ? !!g.alarm : name === 'buried' ? !!g.buried : false,
-                act(name) { if (name === 'release') ctx.world.reveal(it.id); },
+                signal: name => name === 'engaged' ? g.engaged : name === 'gone' ? g.spawned && g.members.every(c => c.gone || c.state === 'dead' || c.state === 'flee' || c.state === 'off')
+                    : name === 'yielded' ? g.spawned && g.members.length > 0 && g.members.every(c => c.yielded || c.state === 'held' || c.gone)
+                    : name === 'alarm' ? !!g.alarm : name === 'buried' ? !!g.buried : false,
+                act(name) {
+                    if (name === 'release') ctx.world.reveal(it.id);
+                    // Wielders: the story's speaker holds one off (not the elite), or ends it.
+                    const speaker = ctx.world.objects.get(it.holder || ctx.world.data.script?.speaker || 'Cael')?.npc;      // `holder`: who holds one off
+                    if (name === 'hold') { const c = g.members.find(m => !m.elite && !m.yielded && m.state !== 'held'); if (c) wielderHold(c, speaker?.position || c.pos.clone()); }
+                    if (name === 'yieldAll') for (const c of g.members) wielderYield(c);
+                },
             };
             g.inst = inst;
             return inst;

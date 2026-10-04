@@ -129,6 +129,18 @@ export const SPECIES = {
         lamps: 3, lampWater: 1.2, alarmAt: 15, fears: [], fleeAt: 0,
         look: { body: 0x5a5e66, trim: 0xc8a85a, lamp: 0xffd68a, dark: 0x2a2c30 },
     },
+    // A Wielder of the Stonebound (Earth): a person, not a beast. Keeps its distance, lifts a stone where you can
+    // see it and throws it; raises a slab when you lift one. Never killed: hurt enough, it yields (spared).
+    stonebound: {
+        tier: 2, young: false, person: 'stonebound',
+        name: 'Stonebound', behaviour: 'wielder',
+        hp: 40, radius: 0.42, mass: 70, speed: 3.2, sense: 18, reach: 1.2,
+        attack: { damage: 7, every: 3.4, windup: 0.9, speed: 15, range: 8 },
+        shield: { every: 7, secs: 2.5 },
+        weak: { impact: 1.3, fire: 0.7, water: 0.4, wind: 0.6 },
+        yieldAt: 0.3, fears: [], fleeAt: 0,
+        look: {},
+    },
     wellspawn: {
         tier: 4, young: false,
         name: 'Wellspawn', behaviour: 'shifter',

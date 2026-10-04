@@ -124,6 +124,19 @@ S.add('Thornwick_Dockhand', 'npc', -19.5, 22, -Math.PI / 2, { name: 'Pell', look
 S.add('Doran', 'npc', -11, -33, -Math.PI / 2, { name: 'Doran of the Stonebound', look: 'stonebound', role: 'idle', showWhen: 'lesson1' });
 // Cael comes into the Reach with you (after the Gate), and goes on north when Thornwick's done.
 S.add('Cael', 'npc', -100, 2.5, Math.PI / 2, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'lesson1, !act1.mill' });
+// The Watchstone: an Oruun ruin north of the fields, its stone cracked on purpose; the Stonebound who keep it.
+const WATCH = { x: 34, z: -100 };
+L.flatten(WATCH.x, WATCH.z, 18, null, 0.8);
+L.paintCircle(WATCH.x, WATCH.z, 9, 'flagstone');
+S.add('Watchstone', 'standing_stone', WATCH.x, WATCH.z, 0.3, { height: 3.6, cracked: true, chiselled: true, seed: 9 }, 3);
+for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2 + 0.2; S.add(`Watch_Pillar_${i + 1}`, 'pillar', WATCH.x + Math.cos(a) * 11, WATCH.z + Math.sin(a) * 11, 0, { height: 3.5 + (i % 3), broken: i % 3 === 1, seed: 40 + i }, 2); }
+S.add('Watch_Wall_1', 'ruin_wall', WATCH.x - 7, WATCH.z - 12, 0.4, { length: 9, height: 2.4, runes: true, seed: 51 }, 3);
+S.add('Watch_Wall_2', 'ruin_wall', WATCH.x + 9, WATCH.z - 10, -0.6, { length: 7, height: 2, runes: true, seed: 52 }, 3);
+// Stones to answer them with, scattered through the ruin.
+for (let i = 0; i < 9; i++) { const a = i * 2.39, d = 4 + (i % 3) * 2.5; S.add(`Watch_Rock_${i + 1}`, 'rock', WATCH.x + Math.cos(a) * d, WATCH.z + Math.sin(a) * d, a, { radius: 0.4 + (i % 3) * 0.02, seed: 500 + i * 3 }); }
+S.add('Stonebound', 'creature', WATCH.x, WATCH.z - 9, 0, { species: 'stonebound', count: 3, spread: 4, aggressive: true, elite: true, tier: 'always', hidden: true, holder: 'Cael_Ruin' });
+S.add('Cael_Ruin', 'npc', WATCH.x - 4, WATCH.z + 3, -2.2, { name: 'Cael', look: 'cael', role: 'idle', hidden: true, showWhen: 'lesson1, !act1.ruin' });
+S.add('Zone_Ruin', 'trigger', WATCH.x, WATCH.z, 0, { width: 26, depth: 26, height: 6 });
 S.add('Zone_Plaza', 'trigger', TW.x - 4, TW.z, 0, { width: 16, depth: 16, height: 4 });
 S.add('Zone_Hall', 'trigger', 18, -11, 0, { width: 9, depth: 9, height: 4 });
 S.add('Zone_Slide', 'trigger', DX + 10, DZ - 1, 0, { width: 10, depth: 16, height: 6 });
@@ -135,7 +148,7 @@ const ROUTES = {
     hall: '12,-4; 15,-8',
     up: '6,-2; -4,-12; -9,-22; -11,-27',
     back: '-9,-22; -4,-12; 6,-4; 14,-7',
-    north: '30,-40; 46,-80; 60,-112',
+    north: '30,-40; 34,-80; 31,-92',
 };
 const script = {
     id: 'Thornwick', speaker: 'Cael', face: 'Cael', when: 'lesson1', flags: {},
@@ -203,7 +216,45 @@ const script = {
           say: ['@Cael There’s an Oruun ruin north of here, past the fields.', '@Cael Doran’s stones didn’t walk on their own. And his man in grey didn’t pay in Empire silver.',
                 '@Cael I’m going to look at it. Come when you’re ready. The road north, past the fields.'],
           until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }] } },
-        { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }] } },
+        // He goes on ahead to the ruin; there he waits (Cael_Ruin, revealed now and remembered).
+        { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }, { reveal: ['Cael_Ruin'] }, { checkpoint: true }] } },
+        // ---- Act I's end: the Watchstone, cracked on purpose; the Stonebound ----
+        { id: 'ruinroad', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_Ruin', name: 'inside' } } },
+        { id: 'watch', do: [{ npc: { id: 'Cael_Ruin', role: 'walk', target: { x: WATCH.x - 3, z: WATCH.z + 2.5 } } }],
+          say: ['@Cael_Ruin You came. Good.', '@Cael_Ruin Look at the stone. Put your hand on it. Tell me what you feel.'],
+          objective: 'Touch the cracked stone', mark: 'Watchstone', until: { signal: { obj: 'Watchstone', name: 'touched' } } },
+        { id: 'chisel',
+          say: ['@Cael_Ruin It answered you. Even broken.', '@Cael_Ruin Now look closer. Inside the crack.', '@Cael_Ruin Chisel marks. Square, even, patient. Someone cracked this on purpose, with the right tools and all night to do it.',
+                '@Cael_Ruin And that, at the foot of it. Grey cloth.', '@Cael_Ruin …', '@Cael_Ruin I know this hand.'],
+          choices: [
+              { label: 'Whose hand?', flag: { name: 'act1.chisel', value: 'asked' }, say: ['@Cael_Ruin Not yet. Not until I’m sure. If I say it and I’m wrong, I can’t unsay it.'] },
+              { label: 'The man in grey. Doran’s.', flag: { name: 'act1.chisel', value: 'grey' }, say: ['@Cael_Ruin Maybe. I hope not.'] },
+              { label: '(Say nothing.)', flag: { name: 'act1.chisel', value: 'silent' }, say: ['@Cael_Ruin …Thank you.'] },
+          ] },
+        { id: 'ambush', do: [{ checkpoint: true }, { reveal: ['Stonebound'] }, { protect: 20 }],
+          say: ['@Varn Step away from the stone.', '@Varn The Stonebound keep this place. Three stones cracked in the Reach since the hills shook, and here you are with your hand on the fourth.',
+                '@Cael_Ruin We didn’t crack it.', '@Varn Tell it to the stone.'],
+          until: { talking: false } },
+        { id: 'fight', do: [{ do: { obj: 'Stonebound', action: 'hold' } }],
+          say: ['@Cael_Ruin I’ll hold this one. The others are yours. Don’t kill them. Make them stop.', '@Cael_Ruin Stone answers stone. Throw.'],
+          objective: 'Make the Stonebound yield', mark: 'Stonebound',
+          waiting: [{ when: { time: 25 }, say: ['@Cael_Ruin Watch their hands. When the stone goes up, move. When they raise a slab, wait for it to drop.'] }],
+          until: { signal: { obj: 'Stonebound', name: 'yielded' } },
+          then: { do: [{ do: { obj: 'Stonebound', action: 'yieldAll' } }, { protect: 0 }, { npc: { id: 'Cael_Ruin', role: 'walk', target: { x: WATCH.x, z: WATCH.z - 6 } } }] } },
+        { id: 'ended',
+          say: ['@Cael_Ruin Enough.', '@Varn …You held Hollin without a scratch on him. What are you?', '@Cael_Ruin Someone who doesn’t need to break anything to win.',
+                '@you Why are these people attacking us?', '@Cael_Ruin Because they think we’re the problem.', '@you Are we?', '@Cael_Ruin Not yet.'],
+          until: { talking: false } },
+        { id: 'judgement', say: ['@Varn Well? We’re yours to deal with.'],
+          choices: [
+              { label: 'Go. Keep your stones.', flag: { name: 'act1.varn', value: 'freed' }, do: [{ ledger: { tally: 'spared', add: 1 } }], say: ['@Varn …Doran said you were fair. I didn’t believe him.'] },
+              { label: 'The Lord-Warden can judge you.', flag: { name: 'act1.varn', value: 'maren' }, say: ['@Varn The Lord-Warden hasn’t a cell that holds a Stonebound. But we’ll go. We keep our word.'] },
+              { label: 'Who told you we’d come?', flag: { name: 'act1.varn', value: 'asked' }, say: ['@Varn Nobody tells the Stonebound anything.', '@Varn …A grey man, at the Loom, a week back. He said the Conduit would come north to crack the next stone. He was very sure.', '@Cael_Ruin Of course he was.'] },
+          ] },
+        { id: 'act1', do: [{ setFlag: { name: 'act1.ruin', value: 'done' } }, { checkpoint: true }],
+          say: ['@Cael_Ruin There are more stones like this between here and the sea. If someone’s cracking them, someone’s counting on the cracks.',
+                '@Cael_Ruin South, then. Saltmere. There’s an Oruun cistern on the way, and you’ve a great deal to learn about water.'],
+          until: { talking: false }, then: { do: [{ hint: 'Act I is told: The Road and the Reach. Act II begins on the road south.' }] } },
     ],
     card: null,
 };
@@ -215,6 +266,10 @@ const folk = [
     { when: started, say: [['The mill’s been quiet three days. You don’t know how loud quiet is till the wheel stops.'], ['River’s so low you can walk the ford and not wet your knees.'], ['The Lord-Warden’s men came back from the throat with a broken arm between them.']] },
 ];
 script.talk = {
+    Cael_Ruin: [
+        { when: { flag: { name: 'act1.ruin' } }, say: [['South, when you\u2019re ready. The cistern won\u2019t teach itself.'], ['Varn will talk. Stonebound always talk, eventually. Mostly to stones.']] },
+        { say: [['Look at the crack. Then tell me stones walk.']] },
+    ],
     Cael: [
         { when: mill('quiet'), say: [['The wheel. Listen to it. That’s what not breaking things sounds like.']] },
         { when: mill('loud'), say: [['You opened the river. The river opened the dock. That’s how it goes.']] },

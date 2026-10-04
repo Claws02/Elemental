@@ -69,7 +69,7 @@ export const TYPES = {
     },
     standing_stone: {
         label: 'Standing stone', group: 'Ruins',
-        props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), seed: SEED, hidden: HIDDEN },
+        props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), chiselled: bool('Cracked on purpose (chisel marks)', false), seed: SEED, hidden: HIDDEN },
         signals: ['cracked', 'touched'],
         actions: ['crack'],
         note: 'An Oruun marker: a seal. It cracks at the awakening (and stays cracked in a scene that remembers).',
@@ -157,15 +157,15 @@ export const TYPES = {
     creature: {
         label: 'Creatures', group: 'Creatures',
         props: {
-            species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound', 'shellback', 'cindermite', 'mudling', 'brinecoil', 'galekite', 'frostmaw', 'glasswight', 'sentinel', 'wellspawn']),
+            species: select('Species', 'thornhound', ['emberwing', 'bristleback', 'thornhound', 'shellback', 'cindermite', 'mudling', 'brinecoil', 'galekite', 'frostmaw', 'glasswight', 'sentinel', 'wellspawn', 'stonebound']),
             count: int('How many', 3, 1, 12), spread: num('Spread (m)', 3, 0, 30, 0.5),
             aggressive: bool('Attacks on sight', true), elite: bool('One is an elite', false), embers: bool('Emberwings drop embers', true),
             fragile: bool('Fragile: any hit kills (a first fight)', false), vent: bool('Pours from a vent until it is blocked (Cindermites)', false), damage: num('Damage they do (×)', 1, 0, 3, 0.05),
             tier: select('Appears from tier (kind: its species’; always: the story needs them)', 'kind', ['kind', 'always', '1', '2', '3', '4']), hidden: HIDDEN,
         },
-        signals: ['gone', 'engaged', 'visible'],
-        actions: ['release'],
-        note: 'A group. Hidden, it arrives when revealed (or released). "gone" = every one of them dead or driven off.',
+        signals: ['gone', 'engaged', 'visible', 'yielded'],
+        actions: ['release', 'hold', 'yieldAll'],
+        note: 'A group. Hidden, it arrives when revealed (or released). "gone" = every one of them dead or driven off. Wielders (Stonebound) yield instead of dying: "yielded" = every one not held has yielded; "hold" has the speaker hold one off; "yieldAll" ends it.',
     },
 
     // ---- characters -----------------------------------------------------------------------
