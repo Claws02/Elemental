@@ -46,7 +46,15 @@ for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; S.add(`Thornwick_
 S.add('Thornwick_Well', 'basin', TW.x, TW.z, 0, { seed: 4, owner: 'civilian' }, 2);
 // A dock on the river below the town, and a bridge west over it.
 const bridgeX = -26, bridgeZ = 4;
-river(S, 'River', RIVER, LEVEL, 22);
+// The river, a sheet per stretch; the two that meet at the dam (THROAT, a bend of RIVER) stop there, so the water
+// can stand higher above it than below while the slide holds (the Dry Mill, below).
+const THROAT = 2;                                             // RIVER[THROAT] is where the slide came down
+for (let k = 0; k < RIVER.length - 1; k++) {
+    const [ax, az] = RIVER[k], [bx, bz] = RIVER[k + 1], len = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / len, uz = (bz - az) / len;
+    const pa = k === THROAT ? 0.6 : 22 * 0.3, pb = k + 1 === THROAT ? 0.6 : 22 * 0.3;
+    const cx = (ax - ux * pa + bx + ux * pb) / 2, cz = (az - uz * pa + bz + uz * pb) / 2;
+    S.add(`River_${k + 1}`, 'water', cx, cz, Math.atan2(bx - ax, bz - az), { kind: 'water', width: 22, depth: len + pa + pb, level: LEVEL });
+}
 dock(L, S, 'Thornwick_Dock', 0, 22, -1, 0, LEVEL);
 S.add('Start', 'spawn', TW.x + 4, TW.z + 14, Math.PI, { name: 'start' }, 2);
 // Roads: exits to the town, through the bridge.
@@ -99,5 +107,144 @@ L.paint((x, z, h, s, cur) => {
     if (-x - z * 0.3 > 70 && fbm(x, z, 15, 3) > -0.2) return 'moss';
     return null;
 });
-fs.writeFileSync('scenes/verdant.json', JSON.stringify(scene('verdant', 'The Verdant Reach · Thornwick', L, S, { region: 'verdant' }), null, 1) + '\n');
+// ---- Act I: The Dry Mill (docs/STORY.md) ----
+// Since the night the stone cracked, a slide has dammed the river at the throat above town: the water stands high
+// behind it and runs low below it (the ford dry, the dock in mud, the mill's wheel still). A Stonebound warden was paid
+// to keep people off it. Lift the rocks off the timber jam and the river carries it away (quiet); break the jam
+// and the river comes all at once (the dock and the mill's wheel go with it); burn it, and the hillside smokes.
+const [DX, DZ] = RIVER[THROAT];
+S.add('Slide_Jam', 'barricade', DX - 1.5, DZ, 0, { cols: 12, rows: 3, posts: false, regenAfter: 0, owner: 'none' });
+for (let i = 0; i < 6; i++) S.add(`Slide_Rock_${i + 1}`, 'rock', DX - 6.5 + i * 1.75, DZ + 1.3, i * 1.3, { radius: 0.44 + (i % 3) * 0.01, seed: 300 + i * 7 });
+for (const [x, z, size, seed] of [[DX - 9, DZ - 0.5, 2.6, 1], [DX + 7.5, DZ - 0.5, 2.8, 2], [DX - 10.5, DZ - 3, 2.2, 3], [DX + 9.5, DZ + 2, 2, 4], [DX + 4, DZ - 2.5, 1.6, 5]]) S.add(`Slide_Boulder_${seed}`, 'boulder', x, z, seed, { kind: 'crag', size, seed: 400 + seed });
+// The mill on the west bank, its wheel in the stream; the miller, the dockhand, the warden.
+S.add('Thornwick_Mill', 'timber_house', -44, -15, Math.PI / 2, { kind: 'house', cols: 4, depth: 3, rows: 2, seed: 12, owner: 'civilian' }, 6);
+S.add('Thornwick_Mill_Wheel', 'waterwheel', -33.5, -15, 0, { y: LEVEL + 1.6, radius: 2.2, width: 1, turning: true, owner: 'civilian' });
+S.add('Thornwick_Miller', 'npc', -40, -11, Math.PI / 2, { name: 'Hobb the miller', look: 'verdant_folk', role: 'idle', home: 'Thornwick_Mill' });
+S.add('Thornwick_Dockhand', 'npc', -19.5, 22, -Math.PI / 2, { name: 'Pell', look: 'verdant_folk', role: 'idle' });
+S.add('Doran', 'npc', -11, -33, -Math.PI / 2, { name: 'Doran of the Stonebound', look: 'stonebound', role: 'idle', showWhen: 'lesson1' });
+// Cael comes into the Reach with you (after the Gate), and goes on north when Thornwick's done.
+S.add('Cael', 'npc', -100, 2.5, Math.PI / 2, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'lesson1, !act1.mill' });
+S.add('Zone_Plaza', 'trigger', TW.x - 4, TW.z, 0, { width: 16, depth: 16, height: 4 });
+S.add('Zone_Hall', 'trigger', 18, -11, 0, { width: 9, depth: 9, height: 4 });
+S.add('Zone_Slide', 'trigger', DX + 10, DZ - 1, 0, { width: 10, depth: 16, height: 6 });
+
+const UP = 'River_1,River_2', DOWN = 'River_3,River_4,River_5,River_6', LOW = 2.6, HIGH = LEVEL + 0.6;
+const started = { flag: { name: 'thornwick.started' } }, mill = v => ({ flag: { name: 'thornwick.mill', is: v } });
+const ROUTES = {
+    arrive: '-80,2; -52,4; -40,4; -26,4; -12,4; 4,4',
+    hall: '12,-4; 15,-8',
+    up: '6,-2; -4,-12; -9,-22; -11,-27',
+    back: '-9,-22; -4,-12; 6,-4; 14,-7',
+    north: '30,-40; 46,-80; 60,-112',
+};
+const script = {
+    id: 'Thornwick', speaker: 'Cael', face: 'Cael', when: 'lesson1', flags: {},
+    reactions: [
+        { on: 'playerFire', count: 'fires', throttle: 18, lines: [['@Cael Not here. Not near the town.'], ['@Cael Fire again.'], ['@Cael Every roof in Thornwick is thatch. Think.']] },
+    ],
+    steps: [
+        // The slide holds: the water stands high above the throat, low below it; the wheel is still. (Remembered once cleared.)
+        { id: 'dam', do: [{ setFlag: { name: 'thornwick.started', value: 'true' } }, { water: { prefix: UP, level: HIGH, secs: 0 } }, { water: { prefix: DOWN, level: LOW, secs: 0 } }, { do: { obj: 'Thornwick_Mill_Wheel', action: 'stop' } }],
+          until: { time: 0 } },
+        { id: 'arrive', do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.arrive } }],
+          say: ['@Cael The Verdant Reach. Thornwick’s across the river.', '@Cael Look at the water. That river should be up to the bridge’s knees.', '@Cael It’s barely at its ankles.'],
+          objective: 'Follow Cael into Thornwick', mark: 'Cael', until: { signal: { obj: 'Zone_Plaza', name: 'entered' } } },
+        { id: 'hall', do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.hall } }],
+          say: ['@Cael The Lord-Warden keeps the Reach’s accounts. If something’s wrong with the river, he’s counting it.'],
+          objective: 'Speak with the Lord-Warden', mark: 'Maren', until: { signal: { obj: 'Zone_Hall', name: 'entered' } } },
+        { id: 'ask',
+          say: ['@Maren You’ll be the Wielder from the Gate. Word travels faster than people do.', '@Maren Three nights back the hills shook, and a slide came down above the throat. The river’s dammed.',
+                '@Maren The mill’s stopped. The boats are sitting in mud. The low fields are drying.', '@Maren I sent six men to shift it. Two came back carrying the third.'],
+          choices: [
+              { label: 'We’ll clear it.', flag: { name: 'thornwick.ask', value: 'earnest' }, say: ['@Maren Good. The throat’s up the river road, north. You can’t miss it. There’s no river.'] },
+              { label: 'What’s it worth to you?', flag: { name: 'thornwick.ask', value: 'paid' }, say: ['@Maren Bread for the winter. Mine, and yours.', '@Maren And I’ll remember it. I remember everything; it’s the job.'] },
+              { label: 'Why can’t your Wielders do it?', flag: { name: 'thornwick.ask', value: 'asked' }, say: ['@Maren The Stonebound keep ruins, not rivers.', '@Maren And their warden up there won’t let my men near the slide. Says it’s not his to move.'] },
+          ] },
+        { id: 'north', say: ['@Cael North, then. Up the river.'], do: [{ checkpoint: true }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.up } }],
+          objective: 'Go up the river to the rockslide', mark: 'Slide_Jam', until: { signal: { obj: 'Zone_Slide', name: 'entered' } } },
+        { id: 'doran',
+          say: ['@Doran That’s far enough.', '@Doran The stones came down on their own. The night the hills shook. I watched them walk.', '@Cael Stones don’t walk.', '@Doran These did.',
+                '@Doran A man in grey came up the river road the morning after. Paid me good silver to keep folk off it. Said the river would find its own way.', '@Cael What did he look like?', '@Doran Like nobody. That’s what I remember about him.'],
+          choices: [
+              { label: 'Step aside. Thornwick needs its river.', flag: { name: 'thornwick.doran', value: 'told' }, say: ['@Doran Then you clear it. I’ll not lift a hand to it.', '@Doran Or against you.'] },
+              { label: 'Who paid you?', flag: { name: 'thornwick.doran', value: 'asked' }, say: ['@Doran Grey cloak. Grey eyes. Silver with no face on it. Not the Empire’s coin.', '@Cael …Not the Empire’s.'] },
+              { label: 'Keep the silver. We’ll do this.', flag: { name: 'thornwick.doran', value: 'spared' }, say: ['@Doran Kind of you. It’s spent anyway.'] },
+          ],
+          then: { do: [{ npc: { id: 'Doran', role: 'walk', target: { x: DX + 13, z: DZ - 9 } } }] } },
+        { id: 'slide', do: [{ npc: { id: 'Cael', role: 'walk', target: { x: DX + 10, z: DZ + 4 } } }],
+          say: ['@Cael Rock on top of timber. The rocks hold the timber down; the timber holds the river back.', '@Cael Lift the rocks off and the river will do the rest.', '@Cael Or break it. Then you’ll find out what breaking costs, downstream.'],
+          objective: 'Open the river', mark: 'Slide_Rock_3',
+          waiting: [{ when: { time: 45 }, say: ['@Cael The rocks. Lift them off the timber and set them on the bank. One at a time.'] }],
+          ends: [
+              { when: { burned: { obj: 'Slide_Jam', min: 3 } }, outcome: 'burned', next: 'back',
+                say: ['@Cael Fire. Of course it was fire.', '@Cael It’s open. And the hillside’s smoking. They’ll see that from the square.'],
+                do: [{ water: { prefix: UP, level: LEVEL, secs: 15 } }, { water: { prefix: DOWN, level: LEVEL, secs: 20 } }, { do: { obj: 'Thornwick_Mill_Wheel', action: 'start' } },
+                     { ledger: { tally: 'excess', add: 1 } }, { setFlag: { name: 'thornwick.mill', value: 'burned' } }, { flag: { name: 'caelTrust', add: -1 } }, { checkpoint: true }] },
+              { when: { any: [{ signal: { obj: 'Slide_Jam', name: 'broken' } }, { broken: { obj: 'Slide_Jam', min: 4 } }] }, outcome: 'loud', next: 'surge',
+                say: ['@Cael Down!', '@Cael …Listen. That’s the river. All of it at once.'],
+                do: [{ water: { prefix: UP, level: LEVEL, secs: 5 } }, { water: { prefix: DOWN, level: LEVEL + 1, secs: 4, settle: { level: LEVEL, secs: 25 } } },
+                     { ledger: { tally: 'excess', add: 1 } }, { setFlag: { name: 'thornwick.mill', value: 'loud' } }, { flag: { name: 'caelTrust', add: -1 } }] },
+              { when: { many: { prefix: 'Slide_Rock_', type: 'rock', signal: 'moved', min: 5 } }, outcome: 'quiet', next: 'back',
+                say: ['@Cael Feel that? The river took it from there.', '@Cael You moved a hillside and broke nothing. Thornwick will never know how close it came.'],
+                do: [{ do: { obj: 'Slide_Jam', action: 'sink' } }, { water: { prefix: UP, level: LEVEL, secs: 20 } }, { water: { prefix: DOWN, level: LEVEL, secs: 25 } },
+                     { do: { obj: 'Thornwick_Mill_Wheel', action: 'start' } }, { ledger: { tally: 'care', add: 3 } }, { grant: { el: 'earth', track: 'control', amount: 0.2 } },
+                     { setFlag: { name: 'thornwick.mill', value: 'quiet' } }, { flag: { name: 'caelTrust', add: 1 } }, { checkpoint: true }] },
+          ] },
+        // The surge reaches town: the dock, and the mill's wheel, go with it.
+        { id: 'surge', until: { time: 3 }, then: { do: [{ do: { obj: 'Thornwick_Dock', action: 'wreck' } }, { do: { obj: 'Thornwick_Mill_Wheel', action: 'wreck' } }, { checkpoint: true }],
+          say: ['@Cael And that was the dock. And something else, by the sound of it. The mill.'] } },
+        { id: 'back', do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.back } }], objective: 'Go back to the Lord-Warden', mark: 'Maren', until: { signal: { obj: 'Zone_Hall', name: 'inside' } } },
+        { id: 'reckoning', ends: [
+            { when: mill('quiet'), say: ['@Maren The wheel’s turning. Hobb came running up the hill to tell me himself; I’ve never seen him run.', '@Maren The Reach owes you. I keep its accounts. You’re in them now, on the right side.'] },
+            { when: mill('loud'), say: ['@Maren The river’s back. So is half the dock, in pieces, two miles down.', '@Maren Hobb’s wheel is kindling. He’ll mend it by spring. Maybe.', '@Maren I’ll pay for the dock. I don’t know yet what you’ll pay.'] },
+            { when: mill('burned'), say: ['@Maren We saw the smoke from the square. Half the town thought the hills were on fire.', '@Maren Half the hills were. The river’s running, though. Through ash, but running.'] },
+            { when: { time: 0 }, say: ['@Maren Well?'] } ] },
+        { id: 'onward', do: [{ setFlag: { name: 'act1.mill', value: 'done' } }],
+          say: ['@Cael There’s an Oruun ruin north of here, past the fields.', '@Cael Doran’s stones didn’t walk on their own. And his man in grey didn’t pay in Empire silver.',
+                '@Cael I’m going to look at it. Come when you’re ready. The road north, past the fields.'],
+          until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }] } },
+        { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }] } },
+    ],
+    card: null,
+};
+// What Thornwick says while the river's dammed, and after (story/Talk.js): once the story has begun.
+const folk = [
+    { when: { all: [started, mill('quiet')] }, say: [['The wheel’s turning again! Did you hear it from the square?'], ['They say you lifted the slide off with your mind. Stone by stone.'], ['Bread tomorrow. Real bread.']] },
+    { when: { all: [started, mill('loud')] }, say: [['The dock’s gone. Pell’s taking it hard.'], ['The river’s back. Too much of it, all at once.'], ['They say it came down like a wall. Took the mill wheel clean off.']] },
+    { when: { all: [started, mill('burned')] }, say: [['The hillside’s black. You can smell it from here.'], ['The river’s running. Through ash.']] },
+    { when: started, say: [['The mill’s been quiet three days. You don’t know how loud quiet is till the wheel stops.'], ['River’s so low you can walk the ford and not wet your knees.'], ['The Lord-Warden’s men came back from the throat with a broken arm between them.']] },
+];
+script.talk = {
+    Cael: [
+        { when: mill('quiet'), say: [['The wheel. Listen to it. That’s what not breaking things sounds like.']] },
+        { when: mill('loud'), say: [['You opened the river. The river opened the dock. That’s how it goes.']] },
+        { when: mill('burned'), say: [['I can still smell it. So can they.']] },
+        { when: started, say: [['Keep up. The Reach doesn’t wait.'], ['Look at the bank. The water line’s a hand above the river. Three days, maybe four.']] },
+    ],
+    Maren: [
+        { when: mill('quiet'), say: [['You’re in my accounts now. On the right side.'], ['Hobb hasn’t stopped talking about you. Hobb doesn’t talk.']] },
+        { when: mill('loud'), say: [['I’ll pay for the dock. Mind the next one.']] },
+        { when: mill('burned'), say: [['Half the town thought the hills were burning. Half of them were.']] },
+        { when: started, say: [['The throat’s up the river road, north.'], ['My accounts say bread for nine days. The river says six.']] },
+    ],
+    Thornwick_Miller: [
+        { when: mill('quiet'), say: [['Listen to her! Listen to that wheel!'], ['Flour by morning. Come for the first loaf.']] },
+        { when: mill('loud'), say: [['My wheel. My wheel’s in the river.'], ['Thirty years she turned. Thirty years.']] },
+        { when: mill('burned'), say: [['Flour’s grey with ash. Still flour.']] },
+        { when: started, say: [['Three days without grinding. The bread’ll run out before the rain comes.'], ['Look at her. A wheel’s not meant to stand still.']] },
+    ],
+    Thornwick_Dockhand: [
+        { when: mill('loud'), say: [['Twenty years I kept that dock. Twenty years.'], ['Don’t. Just don’t.']] },
+        { when: { any: [mill('quiet'), mill('burned')] }, say: [['Water’s back under her. Boats floating again.']] },
+        { when: started, say: [['Dock’s standing in mud. Boats on their bellies.'], ['Never seen the river this low. Not in a dry summer.']] },
+    ],
+    Doran: [
+        { when: { flag: { name: 'thornwick.mill' } }, say: [['I took his silver. I’ll not take it twice.'], ['The stones didn’t walk back. You moved them.']] },
+        { when: started, say: [['That’s far enough.'], ['Stonebound keep ruins. Not rivers.']] },
+    ],
+};
+for (let i = 1; i <= 6; i++) script.talk[`Thornwick_Folk_${i}`] = folk;
+const out = scene('verdant', 'The Verdant Reach · Thornwick', L, S, { region: 'verdant' });
+out.script = script;
+fs.writeFileSync('scenes/verdant.json', JSON.stringify(out, null, 1) + '\n');
 console.log('verdant:', S.objects.length, 'objects');

@@ -16,7 +16,8 @@
 //             fire in someone's house and throws it (the Veyra fire)
 //   cower     keeps away from creatures
 //   patrol    walks its route (scene prop `route`: "x,z; x,z; …"), pausing at each point
-//   follow    walks with the player (Cael on the road): keeps a step or two away
+//   follow    walks with the player: keeps a step or two to their side
+//   lead      walks a route ahead of the player (Cael showing the way): waits when they fall behind
 //
 // Anyone caught in one of the player's surges flinches away (startle()).
 //
@@ -155,9 +156,10 @@ export class Npc {
     /** Stop and face the player for `secs` (they're being talked to). */
     hold(secs) { this.held = secs; }
 
-    setRole(role, target = null) {
+    setRole(role, target = null, route = null) {
         this.role = role;
         this.target = target ? new THREE.Vector3(target.x, 0, target.z) : null;
+        if (route) { this.route = parseRoute(route); this.leg = 0; this.waiting = false; }
         this.task = null;
         this.t = 0;
     }
@@ -169,12 +171,27 @@ export class Npc {
         if (d < 0.6) { this.speed = 0; return true; }
         const step = Math.min(d, v * dt);
         r.x += dx / d * step; r.z += dz / d * step;
-        r.y = Ground.height(r.x, r.z);
+        r.y = this._floor(r.x, r.z, r.y);
         this.entry.body.position.set(r.x, r.y + 0.45, r.z);
         this.entry.body.aabbNeedsUpdate = true;
         this.speed = v;
         this._turn(Math.atan2(dx, dz), dt, 8);
         return false;
+    }
+
+    // Lead the player along the route: walk ahead; stop and look back when they fall behind, go on when they come;
+    // hurry when they're ahead. At the route's end, wait there facing them.
+    _lead(hero, dt) {
+        const pts = this.route || [];
+        this.leg ??= 0;
+        if (this.leg >= pts.length) return;
+        const p = this.position, next = pts[this.leg], d = Math.hypot(hero.x - p.x, hero.z - p.z);
+        if (d > LEAD.wait) this.waiting = true;
+        else if (d < LEAD.resume) this.waiting = false;
+        if (this.waiting) return;
+        // How far the player is ahead of us along the way we're going.
+        const nx = next.x - p.x, nz = next.z - p.z, nl = Math.hypot(nx, nz) || 1, ahead = ((hero.x - p.x) * nx + (hero.z - p.z) * nz) / nl;
+        if (this._walk(next, dt, ahead > 1 ? 6.4 : LEAD.pace)) this.leg++;
     }
 
     // Walk with the player: beside them (not behind, where the camera looks from), on whichever side they're on.
@@ -194,6 +211,13 @@ export class Npc {
         if (d > FOLLOW.lost) { this._walk(at, 1, 1e6); return; }
         this.following = d > FOLLOW.far || (this.following && d > FOLLOW.near);
         if (this.following) this._walk(at, dt, d > FOLLOW.run ? 7 : 3.6);
+    }
+
+    // What they stand on at (x, z): the ground, or a deck or floor up to a step above where they are (a bridge, a dock).
+    _floor(x, z, y) {
+        const g = Ground.height(x, z), top = Math.max(g, y) + 1;
+        const hit = Physics.rayFirst({ x, y: top, z }, { x, y: g - 0.1, z }, e => !e || e === this.entry || e.data?.npc || e.data?.creature || e.tier === TIER.DEBRIS || e.tier === TIER.INTERACTIVE);
+        return hit && hit.normal.y > 0.7 ? Math.max(g, hit.point.y) : g;
     }
 
     _turn(want, dt, k = 3) {
@@ -280,6 +304,7 @@ export class Npc {
         else if (this.role === 'cower') this._cower(dt);
         else if (this.role === 'walk' && this.target) { if (this._walk(this.target, dt)) this.role = 'idle'; }
         else if (this.role === 'follow' && hero) this._follow(hero, dt);
+        else if (this.role === 'lead' && hero) this._lead(hero, dt);
         else if (this.role === 'patrol' && this.route?.length) {
             // Walk the route, point to point, pausing a moment at each.
             this.leg ??= 0;
@@ -315,6 +340,15 @@ export class Npc {
 }
 
 /** People further than `far` from the hero go still (baked); they come alive again inside `near`. */
+/** "x,z; x,z; …" (or [{x, z}] / [[x, z]]) → [{ x, z }]. */
+export function parseRoute(r) {
+    if (!r) return [];
+    if (Array.isArray(r)) return r.map(p => Array.isArray(p) ? { x: +p[0], z: +p[1] } : { x: +p.x, z: +p.z });
+    return String(r).split(';').map(s => s.split(',').map(Number)).filter(a => a.length === 2 && a.every(Number.isFinite)).map(([x, z]) => ({ x, z }));
+}
+
 export const NPC_LOD = { far: 28, near: 24 };
 /** follow: keep `beside` m to one side of the player; walk when `far` from there, stop at `near`, run past `run`; past `lost`, catch up at once. */
+/** lead: walk at `pace`; stop to wait when the player is `wait` m away, go on once they're within `resume`. */
+export const LEAD = { pace: 3.6, wait: 9, resume: 5 };
 export const FOLLOW = { beside: 1.8, near: 1, far: 3, run: 5, lost: 40 };

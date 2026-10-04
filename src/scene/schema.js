@@ -60,6 +60,13 @@ export const TYPES = {
         label: 'Archway', group: 'Ruins',
         props: { width: num('Opening', 5, 1.5, 12, 0.1), height: num('Height', 4.2, 2, 10, 0.1), hidden: HIDDEN },
     },
+    waterwheel: {
+        label: 'Waterwheel', group: 'Buildings',
+        props: { y: num('Axle height (absolute)', 6, -10, 60, 0.1), radius: num('Radius', 2.2, 0.8, 5, 0.1), width: num('Width', 1, 0.4, 3, 0.1), turning: bool('Turning', true), owner: select('Belongs to', 'civilian', ['none', 'civilian', 'empire']) },
+        signals: ['turning', 'stopped', 'wrecked'],
+        actions: ['start', 'stop', 'wreck'],
+        note: 'Its y is the axle\'s height, not a height above the ground: set it so the paddles dip in the water.',
+    },
     standing_stone: {
         label: 'Standing stone', group: 'Ruins',
         props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), seed: SEED, hidden: HIDDEN },
@@ -76,7 +83,8 @@ export const TYPES = {
     rock: {
         label: 'Rock', group: 'Nature',
         props: { radius: num('Radius', 0.5, 0.2, 1.5, 0.05), seed: SEED, hidden: HIDDEN },
-        note: 'Earth lifts it if its mass (40 × radius³) is within the player\'s Earth Power: 4 at the start, 25 at full.',
+        signals: ['moved', 'visible'],
+        note: 'Moved: carried more than 2.5 m from where it lay. Earth lifts it if its mass (40 × radius³) is within the player\'s Earth Power: 4 at the start, 25 at full.',
     },
     tree: {
         label: 'Tree', group: 'Nature',
@@ -117,8 +125,8 @@ export const TYPES = {
             regenAfter: num('Rebuilds after (s, 0 = never)', 0, 0, 600, 5),
             hidden: HIDDEN,
         },
-        signals: ['intact', 'damaged', 'broken', 'collapsed', 'burned', 'raised'],
-        actions: ['raise', 'rebuild'],
+        signals: ['intact', 'damaged', 'broken', 'collapsed', 'burned', 'raised', 'sunk'],
+        actions: ['raise', 'sink', 'rebuild'],
     },
     gate: {
         label: 'Portcullis gate', group: 'Puzzle',
@@ -168,7 +176,7 @@ export const TYPES = {
     },
     npc: {
         label: 'Character', group: 'Characters',
-        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth', ...CHARACTER_NAMES]), role: select('Does', 'idle', ['idle', 'brigade', 'cower', 'patrol', 'follow']), route: text('Patrol route (x,z; x,z; …)', ''), home: ref('Lives in (else the nearest house)', ['timber_house', 'prefab', 'tent']), hidden: HIDDEN },
+        props: { name: text('Name', 'Cael'), look: select('Look', 'cael', ['cael', 'villager', 'elder', 'guard', 'smith', 'baker', 'youth', ...CHARACTER_NAMES]), role: select('Does', 'idle', ['idle', 'brigade', 'cower', 'patrol', 'follow', 'lead']), route: text('Patrol route (x,z; x,z; …)', ''), home: ref('Lives in (else the nearest house)', ['timber_house', 'prefab', 'tent']), hidden: HIDDEN },
         note: 'The script\'s lines are spoken by the character named as its speaker. Tap a character in play to talk: they answer from what the world remembers (data/talk.js), or from the script\'s talk lines for them.',
     },
 
@@ -230,6 +238,8 @@ export const TYPES = {
     dock: {
         label: 'Dock', group: 'Buildings',
         props: { length: num('Length', 10, 2, 40, 0.5), width: num('Width', 3, 1, 8, 0.1), height: num('Deck height', 1.2, 0.3, 8, 0.1), seed: SEED, hidden: HIDDEN },
+        signals: ['intact', 'damaged', 'burning', 'burned', 'collapsed', 'visible'],
+        actions: ['wreck'],
     },
     town_wall: {
         label: 'Town wall', group: 'Buildings',
@@ -340,7 +350,8 @@ export const ACTIONS = {
     mood:     { label: 'Change the light', arg: { name: 'mood', secs: 'number' } },
     douseAll: { label: 'Put out every fire', arg: { by: 'text' } },
     hint:     { label: 'Show a tip', arg: 'text' },
-    npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role' } },
+    npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role', route: 'text' } },
+    water:    { label: 'Change a water level', arg: { prefix: 'text', level: 'number', secs: 'number' } },
     protect:  { label: 'Protect the player (health floor)', arg: 'number' },
     flameSpill: { label: 'The flame spills onto…', arg: { target: 'ref', radius: 'number', after: 'number' } },
     surge:    { label: 'A surge of wild power', arg: { el: 'element', target: 'ref', cause: 'text' } },

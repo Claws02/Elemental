@@ -33,7 +33,7 @@ import { Wires } from './Wires.js';
 import { PropReset } from './PropReset.js';
 import { whenHolds } from './when.js';
 import { EventBus, EV } from '../core/EventBus.js';
-import { STATE } from '../world/Destructible.js';
+import { STATE, SINK } from '../world/Destructible.js';
 
 /** Every object, prefabs replaced by their pieces. */
 export function flatObjects(data) {
@@ -149,12 +149,13 @@ export function rememberScene(world, session) {
         else if (inst.destructible) {
             if (s === STATE.BURNED || s === STATE.COLLAPSED) inst.destructible.collapseNow(s === STATE.BURNED);
             else if (s === 'Raised') inst.destructible.raiseNow();
+            else if (s === 'Sunk') { inst.destructible.raiseNow(-SINK); inst.destructible.sunk = true; }
         } else if (s === 'burned' && inst.prop?.thing) world.sys.fire.markBurned(inst.prop.thing);
         else if (s === 'revealed' && inst.hidden) _revealNow(world, inst);
         else if (s === 'open') inst.openNow?.();
     }
     const off = [
-        EventBus.on(EV.STRUCTURE_STATE, e => { if (['Raised', STATE.COLLAPSED, STATE.BURNED].includes(e.to)) set(e.id, e.to); else if (e.cause === 'rebuilt') set(e.id, null); }),
+        EventBus.on(EV.STRUCTURE_STATE, e => { if (['Raised', 'Sunk', STATE.COLLAPSED, STATE.BURNED].includes(e.to)) set(e.id, e.to); else if (e.cause === 'rebuilt') set(e.id, null); }),
         EventBus.on(EV.FIRE_OUT, e => { if (e.burnedOut) set(e.id, 'burned'); }),
     ];
     world.onReveal = id => set(id, 'revealed');

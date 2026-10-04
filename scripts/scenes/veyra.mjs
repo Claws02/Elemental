@@ -176,9 +176,9 @@ const script = {
             '@Cael I came here following the stones. I didn\'t expect to find a person.', '@Cael Fire is the loudest thing in you. I\'ll teach you something quieter first.'],
       do: [{ setElement: { el: 'earth', state: 'trained' } }, { setFlag: { name: 'prologue', value: 'done' } }],
       until: { talking: false },
-      then: { say: ['@Cael It\'s nearly light. Walk with me.'], do: [{ mood: { name: 'day', secs: 20 } }, { npc: { id: 'Cael', role: 'follow' } }, { reveal: ['Exit_gate'] }], next: 'road' } },
-    // Dawn: out of the valley on foot, Cael beside you. The east road leads to the Oruun Gate (scenes/gate.json).
-    { id: 'road', objective: 'Take the east road with Cael', mark: 'Exit_gate', until: { signal: { obj: 'Zone_Road', name: 'entered' } } },
+      then: { say: ['@Cael It\'s nearly light. Walk with me.'], do: [{ mood: { name: 'day', secs: 20 } }, { npc: { id: 'Cael', role: 'lead', route: '8,14; 18,5; 34,5; 60,2; 86,1; 104,0' } }, { reveal: ['Exit_gate'] }], next: 'road' } },
+    // Dawn: out of the valley on foot, Cael leading the way. The east road leads to the Oruun Gate (scenes/gate.json).
+    { id: 'road', objective: 'Follow Cael up the east road', mark: 'Cael', until: { signal: { obj: 'Zone_Road', name: 'entered' } } },
   ],
   card: null,
 };

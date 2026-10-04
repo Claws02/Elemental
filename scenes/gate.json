@@ -2115,12 +2115,13 @@
      {
       "npc": {
        "id": "Cael",
-       "role": "follow"
+       "role": "lead",
+       "route": "-80,2; -60,2; -40,1; -26,0; -14,0"
       }
      }
     ],
-    "objective": "Walk up the pass with Cael",
-    "mark": "Zone_Court",
+    "objective": "Follow Cael up the pass",
+    "mark": "Cael",
     "say": [
      "The road climbs for an hour, then drops into the Reach.",
      "There’s an Oruun ruin across the pass. Older than Veyra. Older than the Empire.",
@@ -2526,7 +2527,8 @@
       {
        "npc": {
         "id": "Cael",
-        "role": "follow"
+        "role": "lead",
+        "route": "10,0; 20,0; 32,0; 50,-1; 70,-2; 92,-1; 106,0"
        }
       }
      ],
@@ -2535,8 +2537,8 @@
    },
    {
     "id": "onward",
-    "objective": "Walk on into the Verdant Reach",
-    "mark": "Exit_verdant",
+    "objective": "Follow Cael on into the Verdant Reach",
+    "mark": "Cael",
     "until": {
      "signal": {
       "obj": "Zone_East",

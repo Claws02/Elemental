@@ -32,7 +32,7 @@ import { Destructible, STATE } from '../world/Destructible.js';
 import { Plate } from '../world/Plates.js';
 import { Building, buildingModel } from '../world/Building.js';
 import { Structure, kitPieces, STRUCTURAL } from '../world/Structure.js';
-import { Npc, npcModel } from '../story/Npc.js';
+import { Npc, npcModel, parseRoute } from '../story/Npc.js';
 import { buildHero } from '../art/HeroModel.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { waterSheet } from '../world/WaterBodies.js';
@@ -84,10 +84,8 @@ function _static(ctx, it, { group, boxes }, opts = {}) {
     return { mesh: group, entries };
 }
 
-/** A patrol route as written in the scene: "x,z; x,z; …" → [{ x, z }, …]. */
-export function parseRoute(s) {
-    return String(s || '').split(';').map(p => p.split(',').map(Number)).filter(p => p.length === 2 && p.every(isFinite)).map(([x, z]) => ({ x, z }));
-}
+/** A patrol route as written in the scene: "x,z; x,z; …" → [{ x, z }, …] (story/Npc.js). */
+export { parseRoute };
 
 function _toWorld(it, local) {
     return local.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), it.rotY || 0).add(new THREE.Vector3(it.x || 0, it.y || 0, it.z || 0));
@@ -156,6 +154,26 @@ function _sealedDoor(w, h) {
 }
 
 // A standing stone: a rough monolith with an Earth rune. Cracked, light shows through it.
+// A mill's waterwheel, its axle across the stream (local x): the turning wheel, and the fixed posts and axle.
+function _waterwheel(it) {
+    const R = it.radius, W = it.width, wheel = new Kit(), frame = new Kit();
+    const T = i => WORLD.timber[i % 3];
+    for (const sx of [-1, 1]) {
+        for (let i = 0; i < 16; i++) {
+            const a = (i / 16) * Math.PI * 2;
+            wheel.box('body', 0.12, 0.16, 2 * R * Math.sin(Math.PI / 16) + 0.06, at(sx * W / 2, R * Math.cos(a), R * Math.sin(a), a, 0, 0), T(i));
+        }
+        for (let k = 0; k < 4; k++) wheel.box('body', 0.1, 2 * R, 0.12, at(sx * W / 2, 0, 0, k * Math.PI / 4, 0, 0), WORLD.timberDark);
+    }
+    for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        wheel.box('body', W, 0.62, 0.08, at(0, (R - 0.28) * Math.cos(a), (R - 0.28) * Math.sin(a), a, 0, 0), T(i + 1));
+    }
+    frame.cyl('body', 0.17, 0.17, W + 1.4, 10, at(0, 0, 0, 0, 0, Math.PI / 2), WORLD.timberDark);
+    for (const sx of [-1, 1]) frame.box('body', 0.32, 3.4, 0.32, at(sx * (W / 2 + 0.55), -1.6, 0), WORLD.timber[0], { ch: 0.03 });
+    return { wheel: wheel.build(), frame: frame.build() };
+}
+
 function _standingStone(it, cracked) {
     const k = new Kit(), H = it.height;
     k.box('body', 1.6, 0.35, 1.3, at(0, 0.17, 0), WORLD.stoneDark, { ch: 0.08 });
@@ -233,6 +251,7 @@ const WOODEN = new Set(['b_fence', 'stall', 'dock', 'tent', 'plant']);
 // ---- the catalog -----------------------------------------------------------------------
 
 const BZ_PANEL = { pw: 1.0, ph: 0.95, pd: 0.16 };
+const ROCK_MOVED = 2.5;
 const POST_H = 3.1;
 
 export const CATALOG = {
@@ -255,8 +274,11 @@ export const CATALOG = {
             ctx.scene.add(m.group);
             const entry = Physics.add({ body: b, mesh: m.group, tier: TIER.INTERACTIVE, id: it.id, data: { radius: m.radius } });
             ctx.world.rocks.push(entry);
+            const home = b.position.clone();
             return {
                 mesh: m.group, entries: [entry], rises: true,
+                // Moved: carried well away from where it lay (a nudge isn't moving it).
+                signal: name => name === 'moved' && entry.body.position.distanceTo(home) > ROCK_MOVED,
                 wire(sys) { sys.fire.addHeatable(sys.interactables.add({ id: it.id, mesh: m.group, entry, material: 'stone' })); },
                 top: () => entry.body.position.y + m.radius,
             };
@@ -380,11 +402,12 @@ export const CATALOG = {
                     case 'broken': return [STATE.CRITICAL, STATE.COLLAPSED, STATE.BURNED].includes(d.state);
                     case 'collapsed': return d.state === STATE.COLLAPSED || d.state === STATE.BURNED;
                     case 'burned': return d.state === STATE.BURNED;
-                    case 'raised': return !!d.raised;
+                    case 'raised': return !!d.raised && !d.sunk;
+                    case 'sunk': return !!d.sunk;
                     }
                     return false;
                 },
-                act(name) { if (name === 'raise') d.raise(); if (name === 'rebuild') d.rebuild(); },
+                act(name) { if (name === 'raise') d.raise(); if (name === 'sink') d.sink(); if (name === 'rebuild') d.rebuild(); },
                 count: what => d.summary()[what] || 0,
                 anchor: from => posts.slice().sort((a, b) => a.distanceTo(from) - b.distanceTo(from))[0] || _toWorld(it, new THREE.Vector3(0, POST_H, 0)),
             };
@@ -495,6 +518,35 @@ export const CATALOG = {
                     else if (!inside) armed = true;
                     else if (armed && it.to) { gone = true; ctx.world.onExit?.(it.to, it.at || 'start', it); }
                 },
+            };
+        },
+    },
+
+    waterwheel: {
+        absolute: true,             // y is the axle's height
+        model(it) { const w = _waterwheel(it), g = new THREE.Group(); g.add(w.frame, w.wheel); return g; },
+        spawn(ctx, it) {
+            const w = _waterwheel(it), root = _place(new THREE.Group(), it);
+            root.add(w.frame, w.wheel);
+            ctx.scene.add(root);
+            const entries = _boxes(ctx, it, [{ x: 0, y: 0, z: 0, w: it.width, h: it.radius * 2, d: it.radius * 2 }], { mat: 'wood', solid: root });
+            let state = it.turning ? 'turning' : 'stopped', speed = state === 'turning' ? 1 : 0;
+            const set = s => { if (state === 'wrecked') return; state = s; ctx.world.onGate?.(it.id, s); };
+            const wreckNow = () => { state = 'wrecked'; speed = 0; w.wheel.rotation.z = 0.35; w.wheel.position.y = -0.7; w.wheel.position.z = 0.6; };
+            return {
+                mesh: root, entries,
+                // It eases up to speed and runs down: a wheel has weight.
+                update(dt) {
+                    const want = state === 'turning' ? 1 : 0;
+                    speed += (want - speed) * Math.min(1, dt * 0.6);
+                    if (state !== 'wrecked') w.wheel.rotation.x -= speed * 0.9 * dt;
+                },
+                signal: n => n === state,
+                act(n) {
+                    if (n === 'start') set('turning'); else if (n === 'stop') set('stopped');
+                    else if (n === 'wreck' && state !== 'wrecked') { wreckNow(); ctx.world.onGate?.(it.id, 'wrecked'); EventBus.emit(EV.STRUCTURE_STATE, { id: it.id, from: 'Intact', to: 'Wrecked', cause: 'player', name: 'Waterwheel', owner: it.owner }); }
+                },
+                restoreState(s) { if (s === 'wrecked') wreckNow(); else if (s === 'turning' || s === 'stopped') { state = s; speed = s === 'turning' ? 1 : 0; } },
             };
         },
     },
@@ -643,6 +695,21 @@ export const CATALOG = {
             ctx.scene.add(m);
             const body = ctx.world.waters.add(it, m);
             const inst = { mesh: m, entries: [], water: body };
+            // Its level can change (a river dammed, then freed): eased over `secs`, then on to `settle`, if given. Remembered.
+            let to = null;
+            inst.setLevel = (level, secs = 0, settle = null) => {
+                to = { from: body.level, level, secs: Math.max(0.001, secs), t: 0, settle };
+                ctx.world.onGate?.(it.id, `level:${(settle?.level ?? level).toFixed(2)}`);
+            };
+            inst.update = dt => {
+                if (!to) return;
+                to.t = Math.min(to.secs, to.t + dt);
+                const k = to.t / to.secs, e = k * k * (3 - 2 * k);
+                body.level = to.from + (to.level - to.from) * e;
+                m.position.y = body.level;
+                if (to.t >= to.secs) to = to.settle ? { from: body.level, level: to.settle.level, secs: Math.max(0.001, to.settle.secs || 0), t: 0 } : null;
+            };
+            inst.restoreState = s => { const l = /^level:(-?[\d.]+)$/.exec(s); if (l) { body.level = +l[1]; m.position.y = body.level; } };
             inst.wire = sys => {
                 if (it.kind === 'lava') return;          // lava is no source: it burns (WaterBodies.burn)
                 const thing = sys.interactables.add({ id: it.id, mesh: m, material: 'water' });
@@ -682,6 +749,7 @@ function _structure(ctx, it, parts, mat) {
     return {
         mesh: st.frame, entries: st.entries, structure: st,
         wire: sys => st.wire(sys), update: dt => st.update(dt), signal: n => st.signal(n),
+        act: n => { if (n === 'wreck') st.wreck('player'); },
         restoreState: s => st.restoreState(s), dispose: () => st.dispose(),
     };
 }

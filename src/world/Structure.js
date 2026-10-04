@@ -277,6 +277,15 @@ export class Structure {
         return piece.entry;
     }
 
+    /** Torn apart all at once (a flood surge): every piece breaks and falls, on `cause`'s account. */
+    wreck(cause = 'environment', push = new THREE.Vector3(0, 0, 4)) {
+        for (const p of this.pieces) if (!p.broken) this._damage(p, p.hp + 1, cause, push.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3)), true);
+        this._settle(cause);
+        this._state(cause);
+        this.awake = 2;
+        this.skin.update();
+    }
+
     /** What a touched shape of this structure's body is (Interactables.forEntry). */
     thingForShape(shape) { const p = this.shapePiece.get(shape); return (p && this.things?.get(p)) || null; }
 

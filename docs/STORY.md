@@ -27,7 +27,7 @@ People answer from this when the player taps them: first the scene's own lines, 
 
 **Wynn.** Veyra's elder and keeper of the stone. Half-remembers the verse. The first to see the stone answer you.
 
-**Isolde Marr.** A Lantern Office officer (badge, braid). Assigned to watch you in Act III; becomes the only person in Halcyra who listens. ❓ *Is she the Architect's hand, a true friend, or both?* (Recommendation: a true friend who was recruited to watch you and chooses you; the betrayal is elsewhere.)
+**Isolde Marr.** A Lantern Office officer (badge, braid). Assigned to watch you in Act III; becomes the only person in Halcyra who listens. **Decided: a true friend.** Recruited to watch you, she chooses you; the betrayal is elsewhere.
 
 **Kestrel.** A Skyreach glider-girl who wants to fly more than anything. Teaches Air by example (Act II). Comic heart, high stakes: she is the person your Firestorm can hurt.
 
@@ -42,9 +42,9 @@ People answer from this when the player taps them: first the scene's own lines, 
 | The Glass Expanse | Matriarch Yessa Keth | Sarn | Water, wells, the shrinking oasis | (riders; no Wielder order) |
 | Halcyra (capital) | Empress Ilvane IV | Halcyra | The Empire's shape | Lantern Office (High Lantern Corvane) |
 
-**High Lantern Corvane.** Runs the Lantern Office, which registers and polices Wielders. Hard, honest by his own lights, the obvious suspect. ❓ Not the Architect (recommended): he is what the Architect hides behind.
+**High Lantern Corvane.** Runs the Lantern Office, which registers and polices Wielders. Hard, honest by his own lights, the obvious suspect. **Decided: a red herring.** Not the Architect: he is what the Architect hides behind, and may stand with you at the end.
 
-**The Architect.** Wants the elements under one hand: a world where no Wielder acts unregistered and no Conduit acts at all. Has been nudging monsters, provoking Wielder orders, and spreading the story of the player's destruction (some of it true). ❓ *Who?* Options: (a) **Empress Ilvane**: the ruler who "hears very little" hears everything; (b) **an Oruun scholar Cael once studied under**, who taught him the verse and wants the Conduit as a lever; (c) **someone unseen until Act V**. (Recommendation: **b**, *Master Thessaly*, so Cael's death and the Architect are personally tied, and the Empire's institutions stay morally grey rather than evil.)
+**The Architect.** Wants the elements under one hand: a world where no Wielder acts unregistered and no Conduit acts at all. Has been nudging monsters, provoking Wielder orders, and spreading the story of the player's destruction (some of it true). **Decided: Master Thessaly**, the Oruun scholar Cael studied under, who taught him to read the stones and taught him the verse. Thessaly wants the Conduit as a lever. Grey-cloaked, grey-eyed, paying in silver with no face on it (Doran's "man in grey" in Thornwick, Act I). Cael's death and the Architect are personally tied; the Empire's institutions stay morally grey rather than evil.
 
 **The Oruun.** The vanished civilisation that learned to hold the elements in balance. Their stones stand all over Aerath; their ruins can't be destroyed. The standing stones are the balance's nails; one cracked in Veyra the night you woke.
 
@@ -57,23 +57,23 @@ People answer from this when the player taps them: first the scene's own lines, 
 5. The stone cracks; all four elements wake wild in you. Fire from your hands drives off the birds and spills onto your own roof.
 6. Cael arrives, puts out every fire, and stills you. Wynn tells him the stone answered your hand; he answers what you told her.
 7. The night is counted: what burned, Bram's barn, who Veyra blames. The charm (wear it or not). Help clear the ashes, hunt the birds, or say nothing. The verse.
-8. **Dawn: the road out.** You walk out of Veyra with Cael beside you, up the east road. No teleport.
+8. **Dawn: the road out.** Cael leads you out of Veyra up the east road (he waits if you fall behind). No teleport.
 
 ## Act I: The Road and the Reach
 
-**The Oruun Gate** (the pass between Veyra and the Verdant Reach; Lesson I, *The Quiet Element*). An Oruun ruin across the road with a sealed passage. Cael teaches Earth: lift, hold still, set down on the plate. Then the trial: the passage is the way through. Break it (loud), burn it (if you didn't wear the charm), or find the counterweight and open it standing (quiet). Cael remembers how you did it. You walk on into the Reach together.
+**The Oruun Gate** (the pass between Veyra and the Verdant Reach; Lesson I, *The Quiet Element*). An Oruun ruin across the road with a sealed passage. Cael teaches Earth: lift, hold still, set down on the plate. Then the trial: the passage is the way through. Break it (loud), burn it (if you didn't wear the charm), or find the counterweight and open it standing (quiet). Cael remembers how you did it, and leads you on into the Reach. *(Built: `scenes/gate.json`.)*
 
-**Thornwick: The Dry Mill** (the Reach's town story; next build).
+**Thornwick: The Dry Mill** *(built: `scripts/scenes/verdant.mjs`, `qa/thornwick.js`)*. Cael leads you over the bridge into town.
 - *Before you arrive:* since the night the stone cracked, a rockslide has dammed the river in the hills above town. The river is low enough to ford; the mill has stopped; the lower fields are drying. Maren's men can't move the stones. Folk mention it when you talk to them.
 - *The problem:* reach the slide and open the river.
 - *Approaches:*
-  - Lift the dam apart stone by stone with Earth (slow, quiet; Cael approves).
-  - Smash it (fast; the surge tears out the dock and floods the low field).
-  - Burn or blast it (if fire is free: the slide's timber catches, the hillside forest with it).
-  - Leave it (the mill stays stopped; Thornwick remembers that too).
-- *At the slide:* the first Wielder you meet, a Stonebound warden who says the stones *moved on their own* the night of the crack and that a stranger in grey paid him to keep people away. First hint of the Architect.
+  - Lift the six rocks off the timber jam with Earth: the river carries the jam away (quiet; care; Cael approves; Earth control grows).
+  - Break the jam: the river comes all at once; the dock and the mill's wheel go with it (loud; harm and excess, on your account).
+  - Burn the jam (if fire is free): it opens, and the hillside smokes (burned; excess).
+  - Leave it: the river stays low, the mill still; Thornwick talks about it.
+- *At the slide:* the first Wielder you meet, Doran of the Stonebound, who says the stones *moved on their own* the night of the crack and that a stranger in grey paid him to keep people away. First hint of the Architect.
 - *Consequences:* the river and mill state persist, and so do the dock and the field. Maren's standing moves. Folk lines change.
-- *Return visit:* the mill turning (or not), the dockhand who lost the dock, Maren's accounts.
+- *Return visit:* the mill turning (or wrecked), Pell the dockhand who lost the dock, Hobb the miller, Maren's accounts. Cael has gone on north to the ruin; the next build is there.
 
 **The first Wielder fight** (end of Act I): the Stonebound at an Oruun ruin north of Thornwick. Cael wins it without breaking a stone.
 
@@ -116,5 +116,5 @@ Cael's belongings: maps, notes, his record of every disturbance, his notes on yo
 
 1. ✅ The stone, and talk-to-anyone.
 2. ✅ **The road out:** the Oruun Gate between Veyra and the Reach (`scenes/gate.json`); Lesson I in it; Cael walks with you; no teleport, no card.
-3. **Thornwick: The Dry Mill**, with the river and mill states, the Stonebound warden, the return visit.
-4. Then Act I's Wielder fight, and Act II's roads, one at a time.
+3. ✅ **Thornwick: The Dry Mill**, with the river and mill states, Doran of the Stonebound, the return visit. Cael leads the way throughout (character role `lead`).
+4. **Next:** Act I's Wielder fight at the Oruun ruin north of Thornwick, where Thessaly's work is first seen; then Act II's roads, one at a time.

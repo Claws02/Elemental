@@ -8,7 +8,7 @@
 // walk up the pass before it and the road on after it. A valley comes up
 // from Veyra, widens into the ruin's court, and pinches into a gorge the
 // ruin's passage fills: the barricade is the way through. Cael walks it with
-// you. Over the walls is another way; Cael notices.
+// you, leading the way. Over the walls is another way; Cael notices.
 // ============================================================
 import fs from 'fs';
 import { Land, Dresser, fbm, ridge, smooth, exits, grow, scene } from './lib/region.mjs';
@@ -70,13 +70,13 @@ trial.ends.push({ when: { signal: { obj: 'Zone_Beyond', name: 'entered' } }, out
     say: ['Over the wall. That’s one way through.', 'Not the one I’d have picked. But you’re through.'] });
 s.id = 'Gate';
 s.steps = [
-    { id: 'road', do: [{ npc: { id: 'Cael', role: 'follow' } }], objective: 'Walk up the pass with Cael', mark: 'Zone_Court',
+    { id: 'road', do: [{ npc: { id: 'Cael', role: 'lead', route: '-80,2; -60,2; -40,1; -26,0; -14,0' } }], objective: 'Follow Cael up the pass', mark: 'Cael',
       say: ['The road climbs for an hour, then drops into the Reach.', 'There’s an Oruun ruin across the pass. Older than Veyra. Older than the Empire.', 'Nobody’s opened its passage in a long time. You will.'],
       until: { signal: { obj: 'Zone_Court', name: 'entered' } },
       then: { do: [{ npc: { id: 'Cael', role: 'walk', target: { x: -2.6, z: -0.4 } } }] } },
     ...s.steps.filter(st => st.id !== 'close'),
-    { id: 'close', until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'follow' } }], next: 'onward' } },
-    { id: 'onward', objective: 'Walk on into the Verdant Reach', mark: 'Exit_verdant', until: { signal: { obj: 'Zone_East', name: 'entered' } } },
+    { id: 'close', until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: '10,0; 20,0; 32,0; 50,-1; 70,-2; 92,-1; 106,0' } }], next: 'onward' } },
+    { id: 'onward', objective: 'Follow Cael on into the Verdant Reach', mark: 'Cael', until: { signal: { obj: 'Zone_East', name: 'entered' } } },
 ];
 s.card = null;
 

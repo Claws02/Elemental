@@ -25,6 +25,8 @@ export const CHARACTER_LOOKS = {
     bram: look({ scale: 1.08, skin: 0xc49070, hair: 0x6a4020, tunic: 0x4a6a4a, trim: 0xb8a070, cloak: 0x7a5030, trouser: 0x4a4038, extras: ['apron'] }),                        // Bram Holloway
     isolde: look({ scale: 1.0, skin: 0xe0c0a4, hair: 0x2a2224, tunic: 0x3e4e66, trim: 0xc8a85a, cloak: 0x2e3e56, trouser: 0x2e3440, bracer: 0x6a6e76, extras: ['badge', 'tail'] }),   // Isolde Marr
     kestrel: look({ scale: 0.9, skin: 0xd4a888, hair: 0xd88a3a, tunic: 0xd8e4ec, trim: 0x7aa8c8, cloak: 0x7aa8c8, trouser: 0x8a9aa8, extras: ['goggles', 'scarf'] }),          // Kestrel
+    // ---- the Wielder orders ----
+    stonebound: look({ scale: 1.05, skin: 0xb4865f, hair: 0x5a4632, tunic: 0x6b5a42, trim: 0xb39a64, cloak: 0x544a3a, trouser: 0x4a4234, bracer: 0x7a6a4a, extras: ['hood', 'robe', 'staff', 'beard'] }),   // a Stonebound warden (Earth; they keep the Oruun ruins)
     // ---- each kingdom's people ----
     verdant_folk: look({ skin: 0xd0a07a, hair: 0x5a3a22, tunic: 0x6a7a44, trim: 0xc9b98a, cloak: 0x6a5a3a, trouser: 0x5a4a38 }),
     verdant_guard: look({ scale: 1.04, skin: 0xb88a66, hair: 0x2a2018, tunic: 0x3e5a34, trim: 0x9aa2aa, cloak: 0x4a6a3a, trouser: 0x3a3a34, bracer: 0x6a6e76, extras: ['helm', 'spear'] }),

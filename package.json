@@ -20,6 +20,7 @@
     "swim": "node qa/swim.js",
     "talk": "node qa/talk.js",
     "gate": "node qa/gate.js",
+    "thornwick": "node qa/thornwick.js",
     "buildings": "node qa/buildings.js",
     "bench": "node qa/bench.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",

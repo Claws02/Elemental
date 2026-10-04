@@ -1,7 +1,7 @@
 // ============================================================
 // GATE — Lesson I on the road: the Oruun Gate (scenes/gate.json)
 //
-//   1. arriving from Veyra, Cael walks up the pass beside you
+//   1. arriving from Veyra, Cael leads the way up the pass, waiting when you stop
 //   2. in the ruin's court the lesson begins
 //   3. the gorge leaves no way east but the ruin's passage
 //   4. raise the barricade: the quiet way; Cael walks on with you, and the
@@ -49,12 +49,16 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     const road = await ev(async () => {
         const B = __EL.player.body, c = __EL.world.objects.get('Cael').npc;
         const step = __EL.story.step, role = c.role;
+        // Stand still: he goes ahead, then stops and waits for you.
+        await __W(5000);
+        const waited = { ahead: +(c.position.x - B.position.x).toFixed(1), waiting: !!c.waiting };
+        // Walk on: he leads, staying ahead of you up the pass.
         await __east(6000);
-        await __W(4000);                                   // a moment to come alongside (the headless game runs at half speed)
-        const p = c.position;
-        return { step, role, walked: +(B.position.x + 100).toFixed(1), gap: +Math.hypot(p.x - B.position.x, p.z - B.position.z).toFixed(1) };
+        await __W(1000);
+        return { step, role, waited, walked: +(B.position.x + 100).toFixed(1), ahead: +(c.position.x - B.position.x).toFixed(1) };
     });
-    check(road.step === 'road' && road.role === 'follow' && road.walked > 8 && road.gap < 4.5, `arriving from Veyra, Cael walks up the pass beside you (${JSON.stringify(road)})`);
+    check(road.step === 'road' && road.role === 'lead' && road.waited.waiting && road.waited.ahead > 4 && road.waited.ahead < 11 && road.walked > 8 && road.ahead > 0 && road.ahead < 12,
+        `arriving from Veyra, Cael leads the way up the pass: ahead of you, waiting when you stop (${JSON.stringify(road)})`);
 
     const court = await ev(async () => { __at(-16, 0); await __W(2500); return __EL.story.step; });
     check(['intro', 'lift'].includes(court), `in the ruin's court, the lesson begins (${court})`);
@@ -79,8 +83,8 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         await __W(800);
         return { step, outcome, role, x: +__EL.player.body.position.x.toFixed(1), end: __EL.story.step };
     });
-    check(quiet.step === 'onward' && quiet.outcome === 'quiet' && quiet.role === 'follow' && quiet.x > 60 && quiet.end === 'done',
-        `the barricade raised: the quiet way; Cael walks on with you, and through the gorge the story's told (${JSON.stringify(quiet)})`);
+    check(quiet.step === 'onward' && quiet.outcome === 'quiet' && quiet.role === 'lead' && quiet.x > 60 && quiet.end === 'done',
+        `the barricade raised: the quiet way; Cael leads on, and through the gorge the story's told (${JSON.stringify(quiet)})`);
 
     await open();
     const over = await ev(async () => {

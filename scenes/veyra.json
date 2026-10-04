@@ -3638,7 +3638,8 @@
       {
        "npc": {
         "id": "Cael",
-        "role": "follow"
+        "role": "lead",
+        "route": "8,14; 18,5; 34,5; 60,2; 86,1; 104,0"
        }
       },
       {
@@ -3652,8 +3653,8 @@
    },
    {
     "id": "road",
-    "objective": "Take the east road with Cael",
-    "mark": "Exit_gate",
+    "objective": "Follow Cael up the east road",
+    "mark": "Cael",
     "until": {
      "signal": {
       "obj": "Zone_Road",

@@ -186,8 +186,8 @@ const SHOTS = path.join(__dirname, 'shots');
     const road = await walkOut();
     const lesson = await until(() => __EL.mode === 'gate' && __EL.story?.step, 60000);
     const carried = await ev(() => ({ mode: __EL.mode, fire: __EL.prog.state('fire'), earth: __EL.prog.state('earth'), water: __EL.prog.state('water'), charm: __EL.prog.flags.charm, canFire: __EL.prog.has('fire'), canEarth: __EL.prog.has('earth'), surges: __EL.surges.active, after: __EL.prog.flags['veyra.after'], prologue: __EL.prog.flags.prologue, saved: JSON.parse(localStorage.getItem('elemental.save.1')).meta.scene, name: __EL.session.work.custom.name }));
-    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'wild' && carried.charm === 'worn' && !carried.canFire && carried.canEarth && !carried.surges && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'gate' && carried.name === 'Rowan' && road.step === 'road' && road.cael === 'follow' && road.exit,
-        `dawn, and out on the east road with Cael beside you, on foot to the Oruun Gate (Lesson I) wearing the charm: what's wild is still, Earth (Cael's to teach) answers, nothing surges; the night is remembered and saved (${JSON.stringify(carried)})`);
+    check(lesson && carried.fire === 'wild' && carried.earth === 'trained' && carried.water === 'wild' && carried.charm === 'worn' && !carried.canFire && carried.canEarth && !carried.surges && carried.after === 'help' && carried.prologue === 'done' && carried.saved === 'gate' && carried.name === 'Rowan' && road.step === 'road' && road.cael === 'lead' && road.exit,
+        `dawn, and out on the east road with Cael leading the way, on foot to the Oruun Gate (Lesson I) wearing the charm: what's wild is still, Earth (Cael's to teach) answers, nothing surges; the night is remembered and saved (${JSON.stringify(carried)})`);
 
     // ---- 2. Recklessly ----------------------------------------------------------------------------------
     await toTheFire('Wren');

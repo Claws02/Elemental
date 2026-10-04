@@ -23,6 +23,7 @@ export const GROUPS = {
     salt_folk: ['saltmere', 'folk'], salt_guard: ['saltmere', 'guard'],
     sky_folk: ['skyreach', 'folk'], sky_guard: ['skyreach', 'guard'],
     glass_folk: ['glass', 'folk'], glass_guard: ['glass', 'guard'],
+    stonebound: ['verdant', 'guard'],
     halcyra_folk: ['capital', 'folk'], imperial_guard: ['capital', 'guard'], lantern: ['capital', 'guard'],
 };
 

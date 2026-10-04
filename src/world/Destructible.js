@@ -37,6 +37,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 export const STATE = { INTACT: 'Intact', DAMAGED: 'Damaged', CRITICAL: 'Critical', COLLAPSED: 'Collapsed', BURNED: 'Burned' };
 
 const PIECE_HP = 100;
+export const SINK = 3.6;
 const MIN_IMPACT = 3.0;          // m/s along the normal; below this a touch is not a hit
 const DAMAGE_PER = 1.2;          // damage = impact speed × mass × this
 const SPLASH = 0.35;             // share of a hit felt by each neighbour
@@ -211,11 +212,15 @@ export class Destructible {
      * Lift every standing piece `dy` metres over `dur` seconds (a counterweight
      * gate). Broken pieces stay where they fell.
      */
-    raise(dy = 3.4, dur = 2.5) {
+    raise(dy = 3.4, dur = 2.5, to = 'Raised', cause = 'counterweight') {
         if (this.raising || this.raised) return;
         this.raising = { t: 0, dy, dur, from: this.pieces.filter(p => !p.broken).map(p => ({ p, y: p.entry.body.position.y })) };
-        EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from: this.state, to: 'Raised', cause: 'counterweight' });
+        if (to === 'Sunk') this.sunk = true;
+        EventBus.emit(EV.STRUCTURE_STATE, { id: this.id, from: this.state, to, cause });
     }
+
+    /** Settle down and away (a jam the river carries off once what pinned it is lifted): `SINK` m over `dur` s. */
+    sink(dur = 4, cause = 'player') { this.raise(-SINK, dur, 'Sunk', cause); }
 
     _raise(dt) {
         const r = this.raising;

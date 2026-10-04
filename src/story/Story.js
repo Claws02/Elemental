@@ -198,7 +198,12 @@ export class Story {
         case 'mood': this.hooks.mood?.(v.name, v.secs ?? 0); break;
         case 'douseAll': this.hooks.douseAll?.(v); break;
         case 'hint': this.hud.hint?.(this.fill(String(v))); break;
-        case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target); break;
+        case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target, v.route); break;
+        case 'water': {                 // every water whose id starts with one of `prefix` (comma-separated)
+            const pre = String(v.prefix || '').split(',').map(x => x.trim()).filter(Boolean);
+            for (const [id, o] of this.world.objects) if (o.type === 'water' && pre.some(x => id.startsWith(x))) o.setLevel?.(v.level, v.secs ?? 0, v.settle);
+            break;
+        }
         case 'protect': this.hooks.protect?.(+v || 0); break;
         case 'flameSpill': this.hooks.flameSpill?.(v); break;
         case 'surge': this.hooks.surge?.(v.el, { cause: v.cause || 'awakening', target: v.target || null }); break;
