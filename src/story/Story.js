@@ -34,6 +34,7 @@ const EVENTS = {
     playerBreak: [[EV.PIECE_BROKEN, e => e.cause === 'player']],
     playerThrow: [[EV.OBJECT_THROWN, () => true]],
     playerSurge: [[EV.SURGE, e => e.cause === 'surge']],
+    targetDown:  [[EV.TARGET_DOWN, e => e.cause === 'player']],
 };
 
 export class Story {
@@ -198,7 +199,7 @@ export class Story {
         case 'mood': this.hooks.mood?.(v.name, v.secs ?? 0); break;
         case 'douseAll': this.hooks.douseAll?.(v); break;
         case 'hint': this.hud.hint?.(this.fill(String(v))); break;
-        case 'npc': this.world.objects.get(v.id)?.npc?.setRole(v.role, v.target, v.route); break;
+        case 'npc': { const n = this.world.objects.get(v.id)?.npc; if (v.at) n?.placeAt(v.at.x, v.at.z); n?.setRole(v.role, v.target, v.route); break; }
         case 'water': {                 // every water whose id starts with one of `prefix` (comma-separated)
             const pre = String(v.prefix || '').split(',').map(x => x.trim()).filter(Boolean);
             for (const [id, o] of this.world.objects) if (o.type === 'water' && pre.some(x => id.startsWith(x))) o.setLevel?.(v.level, v.secs ?? 0, v.settle);

@@ -22,6 +22,7 @@
     "gate": "node qa/gate.js",
     "thornwick": "node qa/thornwick.js",
     "ruin": "node qa/ruin.js",
+    "yard": "node qa/yard.js",
     "buildings": "node qa/buildings.js",
     "bench": "node qa/bench.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",

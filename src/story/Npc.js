@@ -153,6 +153,14 @@ export class Npc {
         this.speed = 0;
     }
 
+    /** Stand at (x, z) at once (the story puts them where the scene needs them, e.g. coming back to a checkpoint). */
+    placeAt(x, z) {
+        const r = this.rig.root.position;
+        r.set(x, Ground.height(x, z), z);
+        this.entry.body.position.set(x, r.y + 0.45, z);
+        this.entry.body.aabbNeedsUpdate = true;
+    }
+
     /** Stop and face the player for `secs` (they're being talked to). */
     hold(secs) { this.held = secs; }
 

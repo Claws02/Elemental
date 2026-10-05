@@ -29,6 +29,7 @@ export class Hud {
             </div>
             <div class="hud-log" id="hud-log"></div>
             <div class="hud-debug" id="hud-debug"></div>
+            <div class="hud-compass" id="hud-compass" aria-hidden="true"><div class="ticks"></div><div class="mark"><i></i><span></span></div><div class="centre"></div></div>
             <div class="hud-objective" id="hud-objective"><span class="text"></span><span class="bar"><i></i></span></div>
             <div class="hud-say" id="hud-say"><b class="who"></b><span class="line"></span></div>
             <div class="hud-card" id="hud-card"></div>
@@ -126,6 +127,43 @@ export class Hud {
         el.querySelector('.who').textContent = who;
         el.querySelector('.line').textContent = line;
         el.classList.add('on');
+    }
+
+    /**
+     * The compass strip: the half of the horizon you face (`heading`, radians clockwise from north), its letters
+     * sliding as you turn; and the objective, a diamond at its bearing with how far it is (pinned to an edge,
+     * pointing, when it's behind you). `mark` = { bearing, dist } or null.
+     */
+    compass(heading, mark = null) {
+        const el = this.el('hud-compass');
+        if (!this._ticks) {
+            const box = el.querySelector('.ticks');
+            this._ticks = [];
+            for (let d = 0; d < 360; d += 15) {
+                const t = document.createElement('b'), name = { 0: 'N', 90: 'E', 180: 'S', 270: 'W', 45: 'NE', 135: 'SE', 225: 'SW', 315: 'NW' }[d];
+                t.className = name ? (name.length === 1 ? 'card' : 'inter') : 'tick';
+                t.textContent = name || '';
+                box.appendChild(t);
+                this._ticks.push({ t, a: d * Math.PI / 180 });
+            }
+        }
+        const wrap = a => Math.atan2(Math.sin(a), Math.cos(a)), HALF = Math.PI / 2;
+        const h = Math.round(heading * 180 / Math.PI), m = mark ? `${Math.round(mark.bearing * 90)}:${Math.round(mark.dist)}` : '-';
+        if (h === this._h && m === this._m) return;
+        this._h = h; this._m = m;
+        for (const { t, a } of this._ticks) {
+            const r = wrap(a - heading);
+            t.style.display = Math.abs(r) > HALF ? 'none' : '';
+            t.style.left = (50 + r / HALF * 50).toFixed(2) + '%';
+        }
+        const mk = el.querySelector('.mark');
+        mk.style.display = mark ? '' : 'none';
+        if (!mark) return;
+        const r = wrap(mark.bearing - heading), edge = Math.abs(r) > HALF;
+        mk.style.left = (50 + Math.max(-1, Math.min(1, r / HALF)) * 50).toFixed(2) + '%';
+        mk.classList.toggle('behind', edge);
+        mk.classList.toggle('left', edge && r < 0);
+        mk.querySelector('span').textContent = mark.dist < 1000 ? `${Math.round(mark.dist)} m` : '';
     }
 
     /** The current objective, with an optional 0..1 progress bar. `null` clears it. */

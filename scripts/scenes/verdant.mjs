@@ -123,7 +123,17 @@ S.add('Thornwick_Miller', 'npc', -40, -11, Math.PI / 2, { name: 'Hobb the miller
 S.add('Thornwick_Dockhand', 'npc', -19.5, 22, -Math.PI / 2, { name: 'Pell', look: 'verdant_folk', role: 'idle' });
 S.add('Doran', 'npc', -11, -33, -Math.PI / 2, { name: 'Doran of the Stonebound', look: 'stonebound', role: 'idle', showWhen: 'lesson1' });
 // Cael comes into the Reach with you (after the Gate), and goes on north when Thornwick's done.
-S.add('Cael', 'npc', -100, 2.5, Math.PI / 2, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'lesson1, !act1.mill' });
+S.add('Cael', 'npc', -100, 2.5, Math.PI / 2, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'lesson1, !act1.yard' });
+// The Lord-Warden's training yard east of the hall: straw men, a pile of stones that never runs out, a sergeant.
+const YARD = { x: 30, z: -38 };
+L.flatten(YARD.x, YARD.z, 13, 7.7, 0.75);
+L.paintCircle(YARD.x, YARD.z, 10, 'dirt');
+S.add('Yard_Pile', 'rock_pile', YARD.x - 6, YARD.z, 0, { count: 4, radius: 0.42, seed: 610 }, 2);
+for (let i = 0; i < 4; i++) S.add(`Yard_Dummy_${i + 1}`, 'dummy', YARD.x + 5 + (i % 2) * 1.5, YARD.z - 6 + i * 4, -Math.PI / 2, { seed: 70 + i, practice: true }, 1);
+S.add('Yard_Fence_N', 'b_fence', YARD.x, YARD.z - 10, 0, { length: 18, height: 1.1, seed: 7 }, 1);
+S.add('Yard_Fence_S', 'b_fence', YARD.x, YARD.z + 10, 0, { length: 18, height: 1.1, seed: 8 }, 1);
+S.add('Brask', 'npc', YARD.x - 7, YARD.z - 4, Math.PI / 2, { name: 'Sergeant Brask', look: 'verdant_guard', role: 'idle' });
+
 // The Watchstone: an Oruun ruin north of the fields, its stone cracked on purpose; the Stonebound who keep it.
 const WATCH = { x: 34, z: -100 };
 L.flatten(WATCH.x, WATCH.z, 18, null, 0.8);
@@ -148,11 +158,13 @@ const ROUTES = {
     hall: '12,-4; 15,-8',
     up: '6,-2; -4,-12; -9,-22; -11,-27',
     back: '-9,-22; -4,-12; 6,-4; 14,-7',
-    north: '30,-40; 34,-80; 31,-92',
+    yard: '20,-20; 24,-32',
+    north: '30,-48; 34,-80; 31,-92',
 };
 const script = {
     id: 'Thornwick', speaker: 'Cael', face: 'Cael', when: 'lesson1', flags: {},
     reactions: [
+        { on: 'targetDown', count: 'yardHits', lines: [['@Cael One.'], ['@Cael Two. Again.'], ['@Cael Three.'], ['@Brask Good arm.']], cycle: false },
         { on: 'playerFire', count: 'fires', throttle: 18, lines: [['@Cael Not here. Not near the town.'], ['@Cael Fire again.'], ['@Cael Every roof in Thornwick is thatch. Think.']] },
     ],
     steps: [
@@ -161,7 +173,7 @@ const script = {
           until: { time: 0 } },
         { id: 'arrive', do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.arrive } }],
           say: ['@Cael The Verdant Reach. Thornwick’s across the river.', '@Cael Look at the water. That river should be up to the bridge’s knees.', '@Cael It’s barely at its ankles.'],
-          objective: 'Follow Cael into Thornwick', mark: 'Cael', until: { signal: { obj: 'Zone_Plaza', name: 'entered' } } },
+          objective: 'Follow Cael east into Thornwick', mark: 'Cael', until: { signal: { obj: 'Zone_Plaza', name: 'entered' } } },
         { id: 'hall', do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.hall } }],
           say: ['@Cael The Lord-Warden keeps the Reach’s accounts. If something’s wrong with the river, he’s counting it.'],
           objective: 'Speak with the Lord-Warden', mark: 'Maren', until: { signal: { obj: 'Zone_Hall', name: 'entered' } } },
@@ -174,7 +186,7 @@ const script = {
               { label: 'Why can’t your Wielders do it?', flag: { name: 'thornwick.ask', value: 'asked' }, say: ['@Maren The Stonebound keep ruins, not rivers.', '@Maren And their warden up there won’t let my men near the slide. Says it’s not his to move.'] },
           ] },
         { id: 'north', say: ['@Cael North, then. Up the river.'], do: [{ checkpoint: true }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.up } }],
-          objective: 'Go up the river to the rockslide', mark: 'Slide_Jam', until: { signal: { obj: 'Zone_Slide', name: 'entered' } } },
+          objective: 'Go north up the river to the rockslide', mark: 'Slide_Jam', until: { signal: { obj: 'Zone_Slide', name: 'entered' } } },
         { id: 'doran',
           say: ['@Doran That’s far enough.', '@Doran The stones came down on their own. The night the hills shook. I watched them walk.', '@Cael Stones don’t walk.', '@Doran These did.',
                 '@Doran A man in grey came up the river road the morning after. Paid me good silver to keep folk off it. Said the river would find its own way.', '@Cael What did he look like?', '@Doran Like nobody. That’s what I remember about him.'],
@@ -214,8 +226,18 @@ const script = {
             { when: { time: 0 }, say: ['@Maren Well?'] } ] },
         { id: 'onward', do: [{ setFlag: { name: 'act1.mill', value: 'done' } }],
           say: ['@Cael There’s an Oruun ruin north of here, past the fields.', '@Cael Doran’s stones didn’t walk on their own. And his man in grey didn’t pay in Empire silver.',
-                '@Cael I’m going to look at it. Come when you’re ready. The road north, past the fields.'],
-          until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }] } },
+                '@Cael Whoever we find up there won’t ask questions first. The Stonebound throw stone. So will you.',
+                '@Cael Maren’s guards keep a yard east of the hall. Come. Show me you can hit what you aim at.'],
+          until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: ROUTES.yard } }] } },
+        // Practice first: the yard's straw men and a pile of stones that never runs out.
+        { id: 'yard', do: [{ checkpoint: true }, { npc: { id: 'Cael', role: 'idle', at: { x: YARD.x - 7, z: YARD.z + 4 } } }, { hint: 'Touch a stone to lift it. Flick toward a straw man to throw: the faster the flick, the harder the throw.' }],
+          say: ['@Cael Lift a stone from the pile. Flick it at a straw man.', '@Cael Throw hard. A slow stone only bumps them.'],
+          objective: 'Knock down three of the straw men in the yard', mark: 'Yard_Pile',
+          waiting: [{ when: { time: 40 }, say: ['@Brask Aim at the chest, not the head. And put your arm into it.'] },
+                    { when: { time: 80 }, say: ['@Cael Closer, if you need to. Nobody\u2019s counting the distance. Yet.'] }],
+          until: { many: { prefix: 'Yard_Dummy_', type: 'dummy', signal: 'hit', min: 3 } },
+          then: { say: ['@Cael Good. Now imagine they throw back.', '@Cael They will. Watch their hands: when a stone goes up, move.', '@Cael I\u2019ll go ahead to the ruin. North, past the fields. Come when you\u2019re ready; the yard\u2019s here if you want more.'],
+                  do: [{ setFlag: { name: 'act1.yard', value: 'done' } }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }] } },
         // He goes on ahead to the ruin; there he waits (Cael_Ruin, revealed now and remembered).
         { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }, { reveal: ['Cael_Ruin'] }, { checkpoint: true }] } },
         // ---- Act I's end: the Watchstone, cracked on purpose; the Stonebound ----
@@ -266,6 +288,10 @@ const folk = [
     { when: started, say: [['The mill’s been quiet three days. You don’t know how loud quiet is till the wheel stops.'], ['River’s so low you can walk the ford and not wet your knees.'], ['The Lord-Warden’s men came back from the throat with a broken arm between them.']] },
 ];
 script.talk = {
+    Brask: [
+        { when: { flag: { name: 'act1.yard' } }, say: [['Come back any time. The straw men don\u2019t mind.'], ['Good arm. Better than my lads.']] },
+        { say: [['Lift from the pile, throw at the straw. The pile never runs dry; don\u2019t ask me how.'], ['Aim at the chest. A straw man falls from the middle.'], ['A slow throw bumps. A fast one drops them.']] },
+    ],
     Cael_Ruin: [
         { when: { flag: { name: 'act1.ruin' } }, say: [['South, when you\u2019re ready. The cistern won\u2019t teach itself.'], ['Varn will talk. Stonebound always talk, eventually. Mostly to stones.']] },
         { say: [['Look at the crack. Then tell me stones walk.']] },

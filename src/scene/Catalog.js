@@ -256,6 +256,9 @@ const WOODEN = new Set(['b_fence', 'stall', 'dock', 'tent', 'plant']);
 
 const BZ_PANEL = { pw: 1.0, ph: 0.95, pd: 0.16 };
 const ROCK_MOVED = 2.5;
+/** The practice yard: a knocked-down dummy stands up after `standUp` s; a thrown pile stone crumbles `crumble` s after
+ *  the throw (or once it lies `stray` m from its pile), and the pile restocks one every `refill` s. */
+export const PRACTICE = { standUp: 3, crumble: 5, stray: 25, refill: 1.2 };
 const POST_H = 3.1;
 
 export const CATALOG = {
@@ -350,7 +353,87 @@ export const CATALOG = {
         spawn(ctx, it) {
             const m = dummy(it.seed);
             m.userData.restY = 0.95;
-            return _dynamic(ctx, it, m, _dynBody(15, new CANNON.Box(new CANNON.Vec3(0.28, 0.95, 0.2))), 'wood', 15);
+            const inst = _dynamic(ctx, it, m, _dynBody(15, new CANNON.Box(new CANNON.Vec3(0.28, 0.95, 0.2))), 'wood', 15);
+            if (!it.practice) return inst;
+            // A practice dummy: knocked down by your throw, it counts ('hit', remembered for the scene) and stands back up.
+            const { prop } = inst, b = prop.entry.body;
+            let hitAt = -99, down = 0, hit = false, t = 0;
+            b.addEventListener('collide', e => { const o = e.body.userData; if (o?.data?.thrownBy === 'player') hitAt = t; });
+            const base = inst.signal;
+            inst.signal = (name, sys) => name === 'hit' ? hit : name === 'down' ? down > 0 : base(name, sys);
+            inst.update = dt => {
+                t += dt;
+                const up = new THREE.Vector3(0, 1, 0).applyQuaternion(b.quaternion).y;
+                const fallen = up < 0.6 || b.position.distanceTo(prop.home.p) > 0.8;
+                if (fallen && t - hitAt < 4 && !down) { down = t; if (!hit) { hit = true; EventBus.emit(EV.TARGET_DOWN, { id: it.id, cause: 'player' }); } }
+                if (!fallen && !down) return;
+                // Back on its feet a few seconds after it falls (still while nobody's hitting it).
+                if (fallen && !down) down = t;
+                if (t - down > PRACTICE.standUp && b.velocity.length() < 0.5) {
+                    Physics.restore(prop.entry, prop.home.p, prop.home.q, TIER.INTERACTIVE, prop.mass);
+                    delete prop.entry.data.thrownBy;
+                    down = 0;
+                }
+            };
+            return inst;
+        },
+    },
+
+    // A pile of stones that never runs out: a few loose ones on it to lift; a thrown one crumbles once it has landed,
+    // and a fresh one rises in the pile. Nothing to tidy up (a practice yard).
+    rock_pile: {
+        model(it) {
+            const g = new THREE.Group();
+            for (let i = 0; i < 7; i++) { const r = rock(it.seed + i, 0.35 + (i % 3) * 0.12).group, a = i * 2.4; r.position.set(Math.cos(a) * (i ? 0.7 : 0), 0.25, Math.sin(a) * (i ? 0.7 : 0)); g.add(r); }
+            return g;
+        },
+        spawn(ctx, it) {
+            const root = _place(this.model(it), it);
+            ctx.scene.add(root);
+            const entries = _boxes(ctx, it, [{ x: 0, y: 0.3, z: 0, w: 1.6, h: 0.6, d: 1.6 }], { solid: root });
+            const live = [];
+            let sys = null, n = 0, refill = 0;
+            const make = () => {
+                const r = it.radius, m = rock(it.seed + 100 + n, r), a = n * 2.1, id = `${it.id}_R${++n}`;
+                const b = new CANNON.Body({ mass: 40 * r ** 3, material: Physics.material('rock'), linearDamping: 0.02, angularDamping: 0.25, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+                b.addShape(new CANNON.Sphere(m.radius));
+                b.position.set(it.x + Math.cos(a) * 0.45, (it.y || 0) + 0.75 + m.radius, it.z + Math.sin(a) * 0.45);
+                m.group.position.copy(b.position);
+                m.group.scale.setScalar(0.01);
+                ctx.scene.add(m.group);
+                const entry = Physics.add({ body: b, mesh: m.group, tier: TIER.INTERACTIVE, id, data: { radius: m.radius, pile: it.id } });
+                ctx.world.rocks.push(entry);
+                const thing = sys.interactables.add({ id, mesh: m.group, entry, material: 'stone' });
+                live.push({ entry, thing, mesh: m.group, born: 0, thrown: null, gone: null });
+            };
+            const drop = s => {
+                Physics.remove(s.entry);
+                s.mesh.parent?.remove(s.mesh);
+                sys.interactables.remove(s.thing);
+                const i = ctx.world.rocks.indexOf(s.entry);
+                if (i >= 0) ctx.world.rocks.splice(i, 1);
+            };
+            return {
+                mesh: root, entries,
+                wire(s) { sys = s; for (let i = 0; i < it.count; i++) make(); },
+                update(dt) {
+                    if (!sys) return;
+                    for (const s of live) {
+                        s.born += dt;
+                        if (s.born < 0.5) { s.mesh.scale.setScalar(Math.max(0.01, s.born / 0.5)); continue; }     // rising into the pile
+                        const b = s.entry.body;
+                        if (s.thrown === null && s.entry.data.thrownBy === 'player' && sys.channel?.held?.entry !== s.entry) s.thrown = 0;
+                        if (s.thrown !== null) s.thrown += dt;
+                        const far = Math.hypot(b.position.x - it.x, b.position.z - it.z) > PRACTICE.stray && b.velocity.length() < 0.3;
+                        if (s.gone === null && ((s.thrown !== null && s.thrown > PRACTICE.crumble) || far || !b.world)) s.gone = 0;
+                        if (s.gone !== null) { s.gone += dt; s.mesh.scale.setScalar(Math.max(0.01, 1 - s.gone / 0.6)); }
+                    }
+                    for (const s of live.filter(s => s.gone !== null && s.gone >= 0.6)) { drop(s); live.splice(live.indexOf(s), 1); }
+                    // Keep the pile stocked: a new stone a moment after one goes.
+                    if (live.length < it.count) { refill += dt; if (refill > PRACTICE.refill) { refill = 0; make(); } } else refill = 0;
+                },
+                signal: name => name === 'stocked' && live.length >= it.count,
+            };
         },
     },
 

@@ -32,7 +32,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
     letter-spacing: .04em; transition: opacity .8s; }
 .hud-log div.fade { opacity: 0; }
 
-.hud-debug { position: absolute; right: 12px; top: calc(env(safe-area-inset-top) + 12px); white-space: pre;
+.hud-debug { position: absolute; right: 12px; top: calc(env(safe-area-inset-top) + 50px); white-space: pre;
     font: 11px/1.4 ui-monospace, Menlo, monospace; color: var(--ink-dim); text-align: right;
     background: rgba(0,0,0,.25); padding: 6px 8px; border-radius: 6px; }
 
@@ -54,8 +54,25 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .hold-ring.full { animation: ring-pulse .5s ease-in-out infinite alternate; }
 @keyframes ring-pulse { to { transform: scale(1.12); } }
 
+/* ---- compass: a strip across the top, the horizon you face; the objective a gold diamond ---- */
+.hud-compass { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translateX(-50%);
+    width: min(56vw, 340px); height: 30px; border-radius: 8px; background: var(--panel); overflow: hidden; pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent); }
+.hud-compass .ticks b { position: absolute; top: 0; transform: translateX(-50%); font-weight: 800; line-height: 1; }
+.hud-compass .ticks b.card { top: 7px; font-size: 14px; color: var(--ink, #f4ecdc); }
+.hud-compass .ticks b.card:first-child { color: #ffb347; }
+.hud-compass .ticks b.inter { top: 9px; font-size: 10px; opacity: .7; }
+.hud-compass .ticks b.tick { top: 20px; width: 1px; height: 6px; background: rgba(244,236,220,.45); }
+.hud-compass .centre { position: absolute; left: 50%; bottom: 0; width: 2px; height: 5px; margin-left: -1px; background: rgba(244,236,220,.8); }
+.hud-compass .mark { position: absolute; top: 2px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.hud-compass .mark i { width: 8px; height: 8px; background: #ffb347; transform: rotate(45deg); box-shadow: 0 0 6px rgba(255,179,71,.8); }
+.hud-compass .mark span { font-size: 9px; font-weight: 800; color: #ffd9a0; margin-top: 3px; }
+.hud-compass .mark.behind i { transform: rotate(45deg) scale(.8); opacity: .8; }
+.hud-compass .mark.behind:not(.left) { transform: translateX(-100%); }
+.hud-compass .mark.behind.left { transform: translateX(0); }
+
 /* ---- story: objective, subtitles, lesson card, title ---- */
-.hud-objective { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 58px); transform: translateX(-50%);
+.hud-objective { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 50px); transform: translateX(-50%);
     padding: 6px 14px; border-radius: 10px; background: var(--panel); font-size: 13px; font-weight: 800;
     letter-spacing: .03em; opacity: 0; transition: opacity .4s; text-align: center; min-width: 180px; }
 .hud-objective.on { opacity: 1; }

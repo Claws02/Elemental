@@ -80,6 +80,12 @@ export const TYPES = {
     },
 
     // ---- nature ---------------------------------------------------------------
+    rock_pile: {
+        label: 'Rock pile (refills)', group: 'Puzzle',
+        props: { count: int('Loose stones on it', 4, 1, 8), radius: num('Stone radius', 0.42, 0.25, 0.7, 0.01), seed: SEED },
+        signals: ['stocked'],
+        note: 'A practice pile: a thrown stone crumbles a few seconds after it lands, and a fresh one rises in the pile.',
+    },
     rock: {
         label: 'Rock', group: 'Nature',
         props: { radius: num('Radius', 0.5, 0.2, 1.5, 0.05), seed: SEED, hidden: HIDDEN },
@@ -110,7 +116,8 @@ export const TYPES = {
     // ---- props ------------------------------------------------------------------------
     crate: { label: 'Crate', group: 'Props', props: { size: num('Size', 0.9, 0.4, 2, 0.05), seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned', 'moved'] },
     barrel: { label: 'Oil barrel', group: 'Props', props: { seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned', 'moved'] },
-    dummy: { label: 'Training dummy', group: 'Props', props: { seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned', 'moved'] },
+    dummy: { label: 'Training dummy', group: 'Props', props: { seed: SEED, practice: bool('Practice: stands back up; counts hits', false), hidden: HIDDEN }, signals: ['burning', 'burned', 'moved', 'hit', 'down'],
+        note: 'A practice dummy stands back up a few seconds after it falls; "hit" = knocked down by your throw at least once.' },
     stall: {
         label: 'Market stall', group: 'Props',
         props: { width: num('Width', 2.4, 1.2, 5, 0.1), awning: select('Awning', 'red', ['red', 'blue', 'green', 'ochre']), seed: SEED, hidden: HIDDEN },
@@ -350,7 +357,7 @@ export const ACTIONS = {
     mood:     { label: 'Change the light', arg: { name: 'mood', secs: 'number' } },
     douseAll: { label: 'Put out every fire', arg: { by: 'text' } },
     hint:     { label: 'Show a tip', arg: 'text' },
-    npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role', route: 'text' } },
+    npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role', route: 'text', at: 'point' } },
     water:    { label: 'Change a water level', arg: { prefix: 'text', level: 'number', secs: 'number' } },
     protect:  { label: 'Protect the player (health floor)', arg: 'number' },
     flameSpill: { label: 'The flame spills onto…', arg: { target: 'ref', radius: 'number', after: 'number' } },
@@ -373,6 +380,7 @@ export const REACTION_EVENTS = {
     playerBreak: 'The player breaks a piece of something',
     playerThrow: 'The player throws something',
     playerSurge: 'The player\'s wild power goes off on its own',
+    targetDown: 'The player knocks down a practice dummy (the first time for each)',
 };
 
 /** A new object of `type` with every prop at its default. */

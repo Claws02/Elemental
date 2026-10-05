@@ -98,7 +98,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
     const works = new Earthworks({ scene, hero: player, camera });
-    wireScene(world, { interactables, fire, water });
+    wireScene(world, { interactables, fire, water, channel });
     const forget = rememberScene(world, session);
     // Whose is it: a piece of a building answers for the building (Veyra_House_02_W1_P03 → Veyra_House_02).
     const ownerOf = id => {
@@ -279,6 +279,11 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
+        // The compass: the way the camera looks (north is -z, east +x), and where the story's marker is.
+        {
+            const p = player.position, mk = story?.marker?.visible ? story.marker.position : null;
+            hud.compass(-cam.yaw, mk ? { bearing: Math.atan2(mk.x - p.x, -(mk.z - p.z)), dist: Math.hypot(mk.x - p.x, mk.z - p.z) } : null);
+        }
         Renderer.updateMood(dt);
         Renderer.followSun(player.position);
         const tr = performance.now();

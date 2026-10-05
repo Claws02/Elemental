@@ -75,6 +75,8 @@ People answer from this when the player taps them: first the scene's own lines, 
 - *Consequences:* the river and mill state persist, and so do the dock and the field. Maren's standing moves. Folk lines change.
 - *Return visit:* the mill turning (or wrecked), Pell the dockhand who lost the dock, Hobb the miller, Maren's accounts. Cael has gone on north to the ruin; the next build is there.
 
+**The training yard** *(built: `qa/yard.js`)*. Before the ruin, Cael takes you to the Lord-Warden's yard east of the hall: Sergeant Brask, four straw men that stand back up, and a pile of stones that never runs out (a thrown stone crumbles and a fresh one rises). Knock three down; Cael counts with you, then goes ahead north. The yard stays for practice.
+
 **The Watchstone** (end of Act I) *(built: `qa/ruin.js`)*. An Oruun ruin north of Thornwick's fields. Cael has gone ahead; he asks you to put your hand on its stone, cracked like Veyra's. Inside the crack: chisel marks, square and patient, and a scrap of grey cloth at its foot. Cael goes quiet: *"I know this hand."* (He won't say whose yet.) Then the Stonebound come, led by Varn, thinking you're the ones cracking their stones. The first Wielder fight: Cael holds one off; you make the other two yield. They keep their distance, lift a stone where you can see it and throw it; lift one yourself and they raise a slab. Wielders never die: beaten, they kneel and yield (spared). Cael ends it without breaking a stone. Let them go, send them to Maren, or ask who told them you'd come (a grey man at the Loom, "very sure" the Conduit would crack the next stone).
 
 > **PLAYER:** "Why are these people attacking us?" **CAEL:** "Because they think we're the problem." **PLAYER:** "Are we?" **CAEL:** "Not yet."
