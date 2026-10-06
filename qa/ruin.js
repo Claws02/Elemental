@@ -95,10 +95,10 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         await __skip(() => __EL.story.choosing);
         const at = __EL.story.step;
         __EL.story.choose(2);                                  // who told you we'd come?
-        await __skip(() => __EL.story.step === 'done');
+        await __skip(() => ['south', 'done'].includes(__EL.story.step));
         return { at, varn: __EL.prog.flags['act1.varn'], act: __EL.prog.flags['act1.ruin'], step: __EL.story.step };
     });
-    check(told.at === 'judgement' && told.varn === 'asked' && told.act === 'done' && told.step === 'done', `the judgement remembered; Act I is told (${JSON.stringify(told)})`);
+    check(told.at === 'judgement' && told.varn === 'asked' && told.act === 'done' && told.step === 'south', `the judgement remembered; Act I is told, and the road south is next (${JSON.stringify(told)})`);
 
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));
     await browser.close();
