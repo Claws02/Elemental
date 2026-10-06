@@ -117,6 +117,8 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **Reactions** answer the player at any point: `playerFire`, `tooHeavy`, `playerBreak`, `playerThrow`, `playerSurge` (their wild power went off on its own). Each can count (`count`), change a flag, say the nth of its `lines` (or cycle through them), wait `throttle` seconds before speaking again, and follow up later (`followUp`: after N seconds, if a condition holds).
 
+**Water and fire**: a water body signals `drawn` while a stream comes from it; a `waterwheel` with `driven` turns only while a stream plays on it and signals `spun` once it has turned its mechanism; the action `ignite` `{prefix}` sets things alight (not on the player's account). The Reach's south road leads to the Sunken Cistern (Lesson II) and on to Saltmere.
+
 **Practice**: a `rock_pile` keeps `count` loose stones on it (a thrown one crumbles a few seconds after it lands; a fresh one rises); a `dummy` with `practice` stands back up after it falls and signals `hit` once your throw has knocked it down (reaction `targetDown` each first time). The **compass** strip at the top shows the way you face and the current step's `mark`, with its distance: say north, south, east or west in objectives.
 
 **Talk** (`script.talk`): what each character says when the player taps them, by id: `{ "Hobb": [ { "when": cond, "say": [[lines], [lines]] } ] }`, the first entry whose `when` holds; each tap says the next list. Said before the character's own lines (`src/data/talk.js`).

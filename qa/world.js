@@ -18,7 +18,7 @@ try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = requ
 const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace(/\?.*$/, '');
 const SHOTS = path.join(__dirname, 'shots');
 const ROOT = path.join(__dirname, '..');
-const REGIONS = ['veyra', 'gate', 'verdant', 'emberwall', 'saltmere', 'skyreach', 'glass', 'halcyra'];
+const REGIONS = ['veyra', 'gate', 'verdant', 'cistern', 'emberwall', 'saltmere', 'skyreach', 'glass', 'halcyra'];
 const BUDGET = { calls: 400, triangles: 600000 };          // at the start point, looking along the start's facing
 
 (async () => {

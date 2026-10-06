@@ -436,30 +436,30 @@
    "colour": "green"
   },
   {
-   "id": "Exit_saltmere",
+   "id": "Exit_cistern",
    "type": "exit",
    "x": -27,
    "y": 0,
    "z": 113,
    "rotY": 0,
-   "to": "saltmere",
+   "to": "cistern",
    "at": "from_verdant",
-   "label": "Saltmere Coast",
+   "label": "The Sunken Cistern",
    "width": 10,
    "depth": 4,
    "height": 6
   },
   {
-   "id": "Start_from_saltmere",
+   "id": "Start_from_cistern",
    "type": "spawn",
    "x": -27,
    "y": 0,
    "z": 104,
    "rotY": 3.142,
-   "name": "from_saltmere"
+   "name": "from_cistern"
   },
   {
-   "id": "Waystone_saltmere",
+   "id": "Waystone_cistern",
    "type": "statue",
    "x": -21,
    "y": 0,
@@ -467,10 +467,10 @@
    "rotY": 3.142,
    "height": 4,
    "style": "stone",
-   "seed": 8
+   "seed": 7
   },
   {
-   "id": "Banner_saltmere_a",
+   "id": "Banner_cistern_a",
    "type": "banner",
    "x": -34.2,
    "y": 0,
@@ -7906,11 +7906,34 @@
      "talking": false
     },
     "then": {
+     "say": [
+      "@Cael Meet me on the south road, past the river. I’ll be waiting at the border."
+     ],
      "do": [
       {
        "hint": "Act I is told: The Road and the Reach. Act II begins on the road south."
       }
      ]
+    }
+   },
+   {
+    "id": "south",
+    "do": [
+     {
+      "checkpoint": true
+     },
+     {
+      "hide": [
+       "Cael_Ruin"
+      ]
+     }
+    ],
+    "objective": "Take the road south, past the river, toward Saltmere",
+    "mark": "Exit_cistern",
+    "until": {
+     "flag": {
+      "name": "lesson2"
+     }
     }
    }
   ],

@@ -83,6 +83,8 @@ People answer from this when the player taps them: first the scene's own lines, 
 
 ## Act II: The Apprentice
 
+**The Sunken Cistern** *(built: `scenes/cistern.json`, `qa/cistern.js`)*. The road south from the Reach. Bram has caught up at the border (Hollis said don't, so he came, with Mira's bread); he brings Veyra's news, and travels with you from here. Cael leads to an Oruun cistern, a sunken pool by the road, where a travellers' cart is burning. Lesson II: Water answers now (trained, charm or no); draw a stream from the pool and put the fire out before it reaches the tents (care). Then the sluice: the Oruun opened it with water, not hands; hold a stream on its wheel and the gate rises. *"Water doesn't push. It persuades."* On south to Saltmere.
+
 The road east and south. One lesson on each road, one town problem in each kingdom:
 
 | Road | Lesson | Kingdom | Town problem (sketch) |
@@ -120,4 +122,5 @@ Cael's belongings: maps, notes, his record of every disturbance, his notes on yo
 2. ✅ **The road out:** the Oruun Gate between Veyra and the Reach (`scenes/gate.json`); Lesson I in it; Cael walks with you; no teleport, no card.
 3. ✅ **Thornwick: The Dry Mill**, with the river and mill states, Doran of the Stonebound, the return visit. Cael leads the way throughout (character role `lead`).
 4. ✅ **The Watchstone:** the stone cracked on purpose (Thessaly's hand, which Cael knows), the first Wielder fight (the Stonebound: a new enemy that yields, never dies), Act I told.
-5. **Next:** Act II, the road south: Lesson II (Water) at the Oruun cistern on the way to Saltmere, and Saltmere's sea wall.
+5. ✅ **The road south:** the Sunken Cistern, Bram joins, Lesson II (Water: draw, aim, douse; drive a wheel).
+6. **Next:** Saltmere: the sea wall cracking at spring tide, Tide-Regent Oriel, the Tidekeepers.

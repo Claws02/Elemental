@@ -276,7 +276,8 @@ const script = {
         { id: 'act1', do: [{ setFlag: { name: 'act1.ruin', value: 'done' } }, { checkpoint: true }],
           say: ['@Cael_Ruin There are more stones like this between here and the sea. If someone’s cracking them, someone’s counting on the cracks.',
                 '@Cael_Ruin South, then. Saltmere. There’s an Oruun cistern on the way, and you’ve a great deal to learn about water.'],
-          until: { talking: false }, then: { do: [{ hint: 'Act I is told: The Road and the Reach. Act II begins on the road south.' }] } },
+          until: { talking: false }, then: { say: ['@Cael Meet me on the south road, past the river. I\u2019ll be waiting at the border.'], do: [{ hint: 'Act I is told: The Road and the Reach. Act II begins on the road south.' }] } },
+        { id: 'south', do: [{ checkpoint: true }, { hide: ['Cael_Ruin'] }], objective: 'Take the road south, past the river, toward Saltmere', mark: 'Exit_cistern', until: { flag: { name: 'lesson2' } } },
     ],
     card: null,
 };

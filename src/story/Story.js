@@ -200,6 +200,11 @@ export class Story {
         case 'douseAll': this.hooks.douseAll?.(v); break;
         case 'hint': this.hud.hint?.(this.fill(String(v))); break;
         case 'npc': { const n = this.world.objects.get(v.id)?.npc; if (v.at) n?.placeAt(v.at.x, v.at.z); n?.setRole(v.role, v.target, v.route); break; }
+        case 'ignite': {                // set alight everything whose id starts with one of `prefix`, not on the player's account
+            const pre = String(v.prefix || '').split(',').map(x => x.trim()).filter(Boolean);
+            for (const t of this.world.sys?.interactables?.things || []) if (pre.some(x => t.id.startsWith(x)) && !this.fire.isBurning(t)) this.fire.ignite(t, 'environment', { direct: true });
+            break;
+        }
         case 'water': {                 // every water whose id starts with one of `prefix` (comma-separated)
             const pre = String(v.prefix || '').split(',').map(x => x.trim()).filter(Boolean);
             for (const [id, o] of this.world.objects) if (o.type === 'water' && pre.some(x => id.startsWith(x))) o.setLevel?.(v.level, v.secs ?? 0, v.settle);

@@ -25,14 +25,15 @@ export const LINKS = {
     veyra:     [['E', 0, 'gate']],
     gate:      [['W', 0, 'veyra'], ['E', 0, 'verdant']],      // the Oruun Gate: Lesson I on the road
     lesson1:   [],
-    verdant:   [['W', 0, 'gate'], ['E', 0, 'halcyra'], ['N', -0.3, 'emberwall'], ['S', -0.3, 'saltmere']],
+    verdant:   [['W', 0, 'gate'], ['E', 0, 'halcyra'], ['N', -0.3, 'emberwall'], ['S', -0.3, 'cistern']],
+    cistern:   [['N', 0, 'verdant'], ['S', 0, 'saltmere']],     // the Sunken Cistern: Lesson II on the road south
     emberwall: [['S', -0.4, 'verdant'], ['S', 0.4, 'halcyra'], ['E', 0, 'skyreach']],
     skyreach:  [['W', 0, 'emberwall'], ['S', -0.4, 'halcyra'], ['S', 0.4, 'glass']],
     glass:     [['N', 0, 'skyreach'], ['W', -0.4, 'halcyra'], ['W', 0.4, 'saltmere']],
-    saltmere:  [['N', -0.3, 'verdant'], ['E', -0.4, 'halcyra'], ['E', 0.4, 'glass']],
+    saltmere:  [['N', -0.3, 'cistern'], ['E', -0.4, 'halcyra'], ['E', 0.4, 'glass']],
     halcyra:   [['W', 0, 'verdant'], ['N', -0.4, 'emberwall'], ['N', 0.4, 'skyreach'], ['E', 0, 'glass'], ['S', 0, 'saltmere']],
 };
-export const NAMES = { veyra: 'Veyra', gate: 'The Oruun Gate', verdant: 'Verdant Reach', emberwall: 'Emberwall Marches', saltmere: 'Saltmere Coast', skyreach: 'Skyreach Heights', glass: 'The Glass Expanse', halcyra: 'Halcyra' };
+export const NAMES = { veyra: 'Veyra', gate: 'The Oruun Gate', cistern: 'The Sunken Cistern', verdant: 'Verdant Reach', emberwall: 'Emberwall Marches', saltmere: 'Saltmere Coast', skyreach: 'Skyreach Heights', glass: 'The Glass Expanse', halcyra: 'Halcyra' };
 
 // A point on an edge, `inset` metres in, and the direction pointing into the scene.
 export function edgePoint(side, along, inset = 6) {

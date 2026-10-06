@@ -381,30 +381,30 @@
    "name": "start"
   },
   {
-   "id": "Exit_verdant",
+   "id": "Exit_cistern",
    "type": "exit",
    "x": -27,
    "y": 0,
    "z": -113,
    "rotY": 0,
-   "to": "verdant",
+   "to": "cistern",
    "at": "from_saltmere",
-   "label": "Verdant Reach",
+   "label": "The Sunken Cistern",
    "width": 10,
    "depth": 4,
    "height": 6
   },
   {
-   "id": "Start_from_verdant",
+   "id": "Start_from_cistern",
    "type": "spawn",
    "x": -27,
    "y": 0,
    "z": -104,
    "rotY": 0,
-   "name": "from_verdant"
+   "name": "from_cistern"
   },
   {
-   "id": "Waystone_verdant",
+   "id": "Waystone_cistern",
    "type": "statue",
    "x": -21,
    "y": 0,
@@ -415,7 +415,7 @@
    "seed": 7
   },
   {
-   "id": "Banner_verdant_a",
+   "id": "Banner_cistern_a",
    "type": "banner",
    "x": -34.2,
    "y": 0,

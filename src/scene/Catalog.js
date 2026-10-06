@@ -256,6 +256,7 @@ const WOODEN = new Set(['b_fence', 'stall', 'dock', 'tent', 'plant']);
 
 const BZ_PANEL = { pw: 1.0, ph: 0.95, pd: 0.16 };
 const ROCK_MOVED = 2.5;
+const WHEEL_SPIN = 2.5;          // seconds of stream on a driven waterwheel before it has turned the mechanism
 /** The practice yard: a knocked-down dummy stands up after `standUp` s; a thrown pile stone crumbles `crumble` s after
  *  the throw (or once it lies `stray` m from its pile), and the pile restocks one every `refill` s. */
 export const PRACTICE = { standUp: 3, crumble: 5, stray: 25, refill: 1.2 };
@@ -617,23 +618,32 @@ export const CATALOG = {
             root.add(w.frame, w.wheel);
             ctx.scene.add(root);
             const entries = _boxes(ctx, it, [{ x: 0, y: 0, z: 0, w: it.width, h: it.radius * 2, d: it.radius * 2 }], { mat: 'wood', solid: root });
-            let state = it.turning ? 'turning' : 'stopped', speed = state === 'turning' ? 1 : 0;
+            let state = it.turning ? 'turning' : 'stopped', speed = state === 'turning' ? 1 : 0, sys = null, drive = 0, spun = false;
+            const axle = new THREE.Vector3(it.x, it.y, it.z);
             const set = s => { if (state === 'wrecked') return; state = s; ctx.world.onGate?.(it.id, s); };
             const wreckNow = () => { state = 'wrecked'; speed = 0; w.wheel.rotation.z = 0.35; w.wheel.position.y = -0.7; w.wheel.position.z = 0.6; };
             return {
                 mesh: root, entries,
                 // It eases up to speed and runs down: a wheel has weight.
+                wire(s) { sys = s; },
                 update(dt) {
+                    // Driven: it turns while a stream plays on it, and runs down when the water stops.
+                    if (it.driven && state !== 'wrecked') {
+                        const end = sys?.water?.stream?.cur, on = !!end && end.distanceTo(axle) < it.radius + 1.2;
+                        drive = on ? drive + dt : Math.max(0, drive - dt * 0.5);
+                        if (on && drive > 0.3) state = 'turning'; else if (!on && drive <= 0) state = 'stopped';
+                        if (!spun && drive >= WHEEL_SPIN) { spun = true; ctx.world.onGate?.(it.id, 'spun'); EventBus.emit(EV.STRUCTURE_STATE, { id: it.id, from: 'Still', to: 'Spun', cause: 'player', name: 'Waterwheel' }); }
+                    }
                     const want = state === 'turning' ? 1 : 0;
                     speed += (want - speed) * Math.min(1, dt * 0.6);
                     if (state !== 'wrecked') w.wheel.rotation.x -= speed * 0.9 * dt;
                 },
-                signal: n => n === state,
+                signal: n => n === state || (n === 'spun' && spun),
                 act(n) {
                     if (n === 'start') set('turning'); else if (n === 'stop') set('stopped');
                     else if (n === 'wreck' && state !== 'wrecked') { wreckNow(); ctx.world.onGate?.(it.id, 'wrecked'); EventBus.emit(EV.STRUCTURE_STATE, { id: it.id, from: 'Intact', to: 'Wrecked', cause: 'player', name: 'Waterwheel', owner: it.owner }); }
                 },
-                restoreState(s) { if (s === 'wrecked') wreckNow(); else if (s === 'turning' || s === 'stopped') { state = s; speed = s === 'turning' ? 1 : 0; } },
+                restoreState(s) { if (s === 'spun') { spun = true; return; } if (s === 'wrecked') wreckNow(); else if (s === 'turning' || s === 'stopped') { state = s; speed = s === 'turning' ? 1 : 0; } },
             };
         },
     },
@@ -805,6 +815,8 @@ export const CATALOG = {
                 if (to.t >= to.secs) to = to.settle ? { from: body.level, level: to.settle.level, secs: Math.max(0.001, to.settle.secs || 0), t: 0 } : null;
             };
             inst.restoreState = s => { const l = /^level:(-?[\d.]+)$/.exec(s); if (l) { body.level = +l[1]; m.position.y = body.level; } };
+            // Drawn: a stream is coming from it now.
+            inst.signal = (name, sys) => name === 'drawn' && sys?.water?.stream?.source?.thing?.id === it.id;
             inst.wire = sys => {
                 if (it.kind === 'lava') return;          // lava is no source: it burns (WaterBodies.burn)
                 const thing = sys.interactables.add({ id: it.id, mesh: m, material: 'water' });

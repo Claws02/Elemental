@@ -62,8 +62,8 @@ export const TYPES = {
     },
     waterwheel: {
         label: 'Waterwheel', group: 'Buildings',
-        props: { y: num('Axle height (absolute)', 6, -10, 60, 0.1), radius: num('Radius', 2.2, 0.8, 5, 0.1), width: num('Width', 1, 0.4, 3, 0.1), turning: bool('Turning', true), owner: select('Belongs to', 'civilian', ['none', 'civilian', 'empire']) },
-        signals: ['turning', 'stopped', 'wrecked'],
+        props: { y: num('Axle height (absolute)', 6, -10, 60, 0.1), radius: num('Radius', 2.2, 0.8, 5, 0.1), width: num('Width', 1, 0.4, 3, 0.1), turning: bool('Turning', true), driven: bool('Driven: turns only while a stream plays on it', false), owner: select('Belongs to', 'civilian', ['none', 'civilian', 'empire']) },
+        signals: ['turning', 'stopped', 'wrecked', 'spun'],
         actions: ['start', 'stop', 'wreck'],
         note: 'Its y is the axle\'s height, not a height above the ground: set it so the paddles dip in the water.',
     },
@@ -121,6 +121,7 @@ export const TYPES = {
     stall: {
         label: 'Market stall', group: 'Props',
         props: { width: num('Width', 2.4, 1.2, 5, 0.1), awning: select('Awning', 'red', ['red', 'blue', 'green', 'ochre']), seed: SEED, hidden: HIDDEN },
+        signals: ['intact', 'damaged', 'burning', 'burned', 'collapsed', 'visible'],
     },
 
     // ---- puzzle -----------------------------------------------------------------------
@@ -259,6 +260,7 @@ export const TYPES = {
     tent: {
         label: 'Tent', group: 'Buildings',
         props: { size: num('Size', 4, 2, 12, 0.5), colour: select('Colour', 'red', ['red', 'blue', 'ochre', 'green']), seed: SEED, hidden: HIDDEN },
+        signals: ['intact', 'damaged', 'burning', 'burned', 'collapsed', 'visible'],
     },
     chimney: { label: 'Forge chimney', group: 'Buildings', props: { height: num('Height', 6, 1, 16, 0.5), seed: SEED, hidden: HIDDEN } },
     lamp: { label: 'Lamp post', group: 'Props', props: { height: num('Height', 3.2, 2, 6, 0.1), hidden: HIDDEN } },
@@ -285,7 +287,8 @@ export const TYPES = {
     water: {
         label: 'Water (lake, river, sea)', group: 'Ground',
         props: { kind: select('Kind', 'water', ['water', 'lava']), width: num('Width', 30, 2, 400, 1), depth: num('Depth', 20, 2, 400, 1), round: bool('Round (an ellipse)', false), level: num('Level (m)', 0, -40, 80, 0.1) },
-        note: 'A sheet of water at an absolute level: where the ground is lower, there is water. A stream draws from it; shallow water slows you, deep water stops you; a frozen stream leaves ice you can stand on.',
+        signals: ['drawn'],
+        note: 'A sheet of water at an absolute level: where the ground is lower, there is water. A stream draws from it ("drawn" while one does); shallow water slows you, deep water is swum; a frozen stream leaves ice you can stand on.',
     },
     patch: {
         label: 'Ground patch', group: 'Ground',
@@ -358,6 +361,7 @@ export const ACTIONS = {
     douseAll: { label: 'Put out every fire', arg: { by: 'text' } },
     hint:     { label: 'Show a tip', arg: 'text' },
     npc:      { label: 'Give a character a job', arg: { id: 'ref', role: 'role', route: 'text', at: 'point' } },
+    ignite:   { label: 'Set alight (whatever starts with prefix)', arg: { prefix: 'text' } },
     water:    { label: 'Change a water level', arg: { prefix: 'text', level: 'number', secs: 'number' } },
     protect:  { label: 'Protect the player (health floor)', arg: 'number' },
     flameSpill: { label: 'The flame spills onto…', arg: { target: 'ref', radius: 'number', after: 'number' } },
