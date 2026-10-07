@@ -111,7 +111,7 @@ const script = {
       // No powers yet, so no way to fight back: they can hurt, not kill (until Cael comes).
       do: [{ reveal: ['Flock'] }, { protect: 35 }, ...['Hollis', 'Tam', 'Mira', 'Wynn', 'Bram'].map(id => ({ npc: { id, role: 'cower' } }))],
       say: ['@Tam Emberwings! Get inside!'],
-      objective: 'Get away from them',
+      objective: 'Get away from them', fight: ['Flock'],          // the flock is the point: no truce for it
       until: { time: 8 } },
     { id: 'awaken',
       // Far off, the stone cracks and everything answers at once. The first time you turn Fire on the birds near
@@ -122,7 +122,7 @@ const script = {
            { npc: { id: 'Hollis', role: 'brigade' } }, { npc: { id: 'Tam', role: 'brigade' } }, { npc: { id: 'Bram', role: 'brigade' } },
            { hint: 'Something answers you. Touch a bird and hold: fire from your hands. Touch the well and drag: water.' }, { checkpoint: true }],
       say: ['@Tam The stone— did you hear the stone?'],
-      objective: 'Drive them off. Save what you can.',
+      objective: 'Drive them off. Save what you can.', fight: ['Flock'],
       waiting: [
         { when: { signal: { obj: 'Veyra_House_Home', name: 'burning' } }, say: ['@Tam Your roof! The fire— it came off you—', '@Hollis Buckets! To the well!'] },
         { when: { many: { prefix: 'Veyra_', type: 'timber_house', signal: 'burning', min: 2 } }, say: ['@Bram It\'s spreading! The roofs!'] },

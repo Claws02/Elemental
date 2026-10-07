@@ -63,21 +63,36 @@ export class WaterSystem {
         scene.add(this.drops.points);
     }
 
-    /** A source: its surface point, or for a lake a function giving the point nearest the hero (fixed when a stream starts). */
-    addSource(thing, surface, surfaceFor = null) { this.sources.push({ thing, surface, surfaceFor }); }
+    /**
+     * A source: its surface point, or for a lake a function giving the point nearest a point
+     * (fixed when a stream starts), and whether a point is open water of it (not dry ground over it).
+     */
+    addSource(thing, surface, surfaceFor = null, contains = null) { this.sources.push({ thing, surface, surfaceFor, contains }); }
+    /** How far the hero is from the nearest water of a source (a lake's centre may be far off while its shore is at your feet). */
+    reachOf(thing) {
+        const s = this.sources.find(q => q.thing === thing);
+        if (!s) return Infinity;
+        return (s.surfaceFor ? s.surfaceFor(this.hero.position) : s.surface).distanceTo(this.hero.position);
+    }
     isSource(thing) { return this.sources.some(s => s.thing === thing); }
 
     // ---- the stream --------------------------------------------------------
 
     /**
      * Draw a stream from a source. With a screen point (x, y), a lake or pool
-     * gives it up where the finger touched its surface (no further than
-     * WATER.draw from the hero); without one, from the point nearest the hero.
+     * gives it up where the finger touched its open water, if that is within
+     * WATER.draw of the hero; touched anywhere else (dry ground over hidden
+     * water, the far sea), it doesn't, and the touch is the camera's.
+     * Without a point, from the point nearest the hero.
      */
     beginStream(thing, x = null, y = null) {
         let source = this.sources.find(s => s.thing === thing);
         if (!source) return false;
-        if (source.surfaceFor) source = { ...source, surface: source.surfaceFor(this._touched(source, x, y) || this.hero.position) };
+        if (source.surfaceFor) {
+            const at = x == null ? this.hero.position : this._touched(source, x, y);
+            if (!at) return false;
+            source = { ...source, surface: source.surfaceFor(at) };
+        }
         const start = source.surface.clone();
         this.stream = { source, want: start.clone().setY(start.y + 1.5), target: start.clone().setY(start.y + 1.5), cur: start.clone(), dir: new THREE.Vector3(0, 1, 0) };
         this.tube.visible = true;
@@ -86,18 +101,19 @@ export class WaterSystem {
         return true;
     }
 
-    /** Where the finger meets the source's surface (null if it doesn't), pulled in to WATER.draw of the hero. */
+    /** Where the finger meets the source's open water: null if ground is in the way, it isn't this water there, or it's beyond WATER.draw. */
     _touched(source, x, y) {
-        if (x == null || y == null) return null;
         _v2.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
         _ray.setFromCamera(_v2, this.camera);
-        const r = _ray.ray, lvl = source.surface.y;
+        const r = _ray.ray, lvl = source.surfaceFor(this.hero.position).y;
         if (Math.abs(r.direction.y) < 1e-4) return null;
         const t = (lvl - r.origin.y) / r.direction.y;
         if (t <= 0) return null;
         const p = r.at(t, new THREE.Vector3());
-        const h = this.hero.position, off = new THREE.Vector3(p.x - h.x, 0, p.z - h.z);
-        if (off.length() > WATER.draw) { off.setLength(WATER.draw); p.set(h.x + off.x, lvl, h.z + off.z); }
+        const g = Ground.raycast(r);
+        if (g && r.origin.distanceTo(g) < t - 0.05) return null;          // dry ground first
+        if (source.contains && !source.contains(p)) return null;
+        if (Math.hypot(p.x - this.hero.position.x, p.z - this.hero.position.z) > WATER.draw) return null;
         return p;
     }
 

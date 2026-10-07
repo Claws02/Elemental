@@ -28,7 +28,7 @@ import { TIER } from '../engine/Physics.js';
 import { seeded } from '../engine/Kit.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { SPECIES, ELITE, YOUNG, tierFor } from '../data/creatures.js';
-import { ICE, MUD } from '../data/elements.js';
+import { ICE, MUD, EARTH } from '../data/elements.js';
 import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { BEHAVIOURS } from './Behaviours.js';
 import { Ground } from '../world/Ground.js';
@@ -44,6 +44,7 @@ function personModel(look) {
 
 const G = 22;                 // the world's gravity (Physics.init)
 const FLEE_GONE = 32;         // metres from the hero at which a fleeing creature is gone
+const TRUCE = { room: 12 };       // during a story task: how far wild creatures keep from the hero
 const _v = new THREE.Vector3(), _d = new THREE.Vector3();
 
 export class Creatures {
@@ -87,6 +88,42 @@ export class Creatures {
             g.members.push(c);
             this.all.push(c);
         }
+    }
+
+    /** Stones thrown at the hero, still in the air: [{ s, c }] (a Stonebound's, Behaviours.js). */
+    _flying() {
+        const out = [];
+        for (const c of this.all) for (const s of c.stones || []) if (!s.hit && !s.caught && s.t < 3 && s.entry.body.world && s.entry.body.velocity.length() > 2) out.push({ s, c });
+        return out;
+    }
+
+    /** One in the air under the finger at (x, y), within `range` of the hero: detached from its thrower, or null. */
+    catchable(x, y, camera, range) {
+        const hero = this.player.position;
+        let best = null, bd = EARTH.catch.pickPx;
+        for (const f of this._flying()) {
+            const p = f.s.entry.body.position;
+            if (Math.hypot(p.x - hero.x, p.y - hero.y, p.z - hero.z) > range) continue;
+            const q = new THREE.Vector3(p.x, p.y, p.z).project(camera);
+            if (q.z > 1) continue;
+            const d = Math.hypot((q.x + 1) / 2 * innerWidth - x, (1 - q.y) / 2 * innerHeight - y);
+            if (d < bd) { bd = d; best = f; }
+        }
+        if (!best) return null;
+        best.s.caught = best.s.hit = true;          // no harm now
+        best.c.stones.splice(best.c.stones.indexOf(best.s), 1);
+        return best.s;
+    }
+
+    /** Is a stone flying at the hero, close? (Time slows for it: Game.) */
+    incoming() {
+        const h = this.player.position;
+        for (const { s } of this._flying()) {
+            const p = s.entry.body.position, v = s.entry.body.velocity;
+            const dx = h.x - p.x, dy = h.y + 0.9 - p.y, dz = h.z - p.z, d = Math.hypot(dx, dy, dz);
+            if (d < EARTH.catch.slowRange && (dx * v.x + dy * v.y + dz * v.z) > 0) return true;
+        }
+        return false;
     }
 
     update(dt) {
@@ -287,7 +324,11 @@ class Creature {
 
         _d.set(hero.x - b.position.x, 0, hero.z - b.position.z);
         const dist = _d.length();
-        if (dist < sp.sense && (this.engaged || this.group.item.aggressive)) this.group.engaged = true;
+        // A truce while the player is at a story task (Story.truce): the creatures it isn't
+        // about back off and go home; they take it up again once the task is done.
+        const truce = this.sys.truce, calm = !!truce && !truce.has(this.group.item.id) && this.state !== 'flee';
+        if (calm) { this.engaged = false; this.group.engaged = false; this.state = 'idle'; }
+        else if (dist < sp.sense && (this.engaged || this.group.item.aggressive)) this.group.engaged = true;
         if (this.group.engaged) this.engaged = true;
 
         // Leaving: hurt enough, frightened, alone, or a wet bird on the ground.
@@ -321,7 +362,8 @@ class Creature {
             break;
         }
         default:
-            if (this.B?.own) this.B.update(this, dt, move, speed, dist);
+            if (calm) this._keepOff(dt, move, speed, dist);
+            else if (this.B?.own) this.B.update(this, dt, move, speed, dist);
             else if (!this.engaged) this._wander(dt, move, speed);
             else if (this.B) this.B.update(this, dt, move, speed, dist);
             else if (sp.behaviour === 'charge') this._charge(dt, move, speed, dist);
@@ -330,6 +372,15 @@ class Creature {
         }
         if (Ground.above(b.position) < -20) this.gone = true;
         this._pose(dt);
+    }
+
+    /** The truce: give the hero room (TRUCE.room), then drift home. */
+    _keepOff(dt, move, speed, dist) {
+        if (dist < TRUCE.room) {
+            _v.set(this.pos.x - this.sys.player.position.x, 0, this.pos.z - this.sys.player.position.z).normalize();
+            move(_v, speed * 0.6, 3);
+            if (this.sp.behaviour === 'flyer' || this.sp.flies) this.body.velocity.y += (Math.max(this.home.y, this.pos.y) + 2 - this.pos.y) * dt;
+        } else this._wander(dt, move, speed);
     }
 
     _wander(dt, move, speed) {
@@ -453,6 +504,7 @@ class Creature {
     }
 
     _hitHero(dmg, dir, knock) {
+        if (this.sys.truce && !this.sys.truce.has(this.group.item.id)) return;      // a blow already falling when the truce began
         this.sys.vitals.hurt(dmg * this.dmgK, this.sp.name, this.id);
         const b = this.sys.player.body;
         b.velocity.x += dir.x * knock; b.velocity.z += dir.z * knock; b.velocity.y += knock * 0.3;

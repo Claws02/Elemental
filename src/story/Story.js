@@ -35,6 +35,10 @@ const EVENTS = {
     playerThrow: [[EV.OBJECT_THROWN, () => true]],
     playerSurge: [[EV.SURGE, e => e.cause === 'surge']],
     targetDown:  [[EV.TARGET_DOWN, e => e.cause === 'player']],
+    earthPulled: [[EV.EARTH_PULLED, e => e.cause === 'player']],
+    earthRaised: [[EV.EARTH_RAISED, e => e.cause === 'player']],
+    stoneCaught: [[EV.STONE_CAUGHT, () => true]],
+    pulledThrow: [[EV.OBJECT_THROWN, e => /^Pulled_|_stone_/.test(e.id || '')]],
 };
 
 export class Story {
@@ -220,6 +224,22 @@ export class Story {
     // ---- steps -------------------------------------------------------------------------------
 
     get current() { return this.steps.find(s => s.id === this.step) || null; }
+
+    /**
+     * The truce: while a step sets the player a task (an objective), wild creatures
+     * leave them to it. Returns the creature groups the step itself is about (its
+     * mark, what it waits on, its `fight` list), who fight on; null when there's no
+     * truce (no task, or the step says `truce: false`).
+     */
+    truce() {
+        const s = this.current;
+        if (!s?.objective || s.truce === false) return null;
+        const keep = new Set([].concat(s.fight || []));
+        if (s.mark) keep.add(s.mark);
+        const scan = c => { if (!c || typeof c !== 'object') return; if (typeof c.obj === 'string') keep.add(c.obj); for (const v of Object.values(c)) scan(v); };
+        scan(s.until); scan(s.ends);
+        return keep;
+    }
 
     go(id) {
         if (this.choosing) { this.choosing = null; this.hud.choices?.(null); }

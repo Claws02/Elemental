@@ -393,7 +393,7 @@ function _throwStone(c, mesh) {
     body.addShape(new CANNON.Sphere(STONE_R));
     body.position.set(from.x, from.y, from.z);
     body.velocity.set(dx / T, dy / T + 0.5 * G * T, dz / T);
-    const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id: `${c.id}_stone_${c.stones.length}`, data: { radius: STONE_R, thrownBy: 'stonebound', thrownAt: performance.now(), stonebound: true } });
+    const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id: `${c.id}_stone_${c.thrownN = (c.thrownN || 0) + 1}`, data: { radius: STONE_R, thrownBy: 'stonebound', thrownAt: performance.now(), stonebound: true } });
     const s = { entry, mesh, t: 0, hit: false };
     const player = c.sys.player.body;
     body.addEventListener('collide', e => {

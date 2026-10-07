@@ -64,6 +64,8 @@ export const EV = {
     WILD_BURST:         'WildBurst',
     SURGE:              'Surge',
     EARTH_RAISED:       'EarthRaised',
+    EARTH_PULLED:       'EarthPulled',
+    STONE_CAUGHT:       'StoneCaught',
     ICE:                'Ice',
     ICE_BROKEN:         'IceBroken',
     FROZEN:             'Frozen',

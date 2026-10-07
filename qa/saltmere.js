@@ -63,6 +63,51 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     check(wall.at === 'wall' && wall.offer === 'doubt' && wall.step === 'tide' && wall.dryFloor === 0,
         `at the wall: Oriel and the Tidekeepers; your answer remembered; Lowtown dry before the tide (${JSON.stringify(wall)})`);
 
+    // The camera: a drag on Lowtown's dry floor (its flood water hidden under it) or on
+    // the far sea turns the view; it doesn't start a stream.
+    const drag = async (yaw, pitch) => {
+        await ev(([yaw, pitch]) => { __EL.cam.yaw = yaw; __EL.cam.pitch = pitch; }, [yaw, pitch]); await page.waitForTimeout(500);
+        const y0 = await ev(() => __EL.cam.yaw);
+        await page.mouse.move(600, 260); await page.mouse.down(); await page.waitForTimeout(80);   // above the dialogue box
+        const took = await ev(() => __EL.intent.state);
+        for (let i = 1; i <= 8; i++) { await page.mouse.move(600 + i * 20, 260); await page.waitForTimeout(30); }
+        await page.mouse.up(); await page.waitForTimeout(300);
+        return ev(([y0, took]) => ({ took, turned: +Math.abs(__EL.cam.yaw - y0).toFixed(2), stream: !!__EL.water.stream }), [y0, took]);
+    };
+    // Lowtown's dry floor, pressed where nothing stands: no stream from the water hidden under it.
+    const floor = await ev(async () => {
+        __at(-56, -3); __EL.cam.yaw = Math.PI; __EL.cam.pitch = 0.38; await __W(800);
+        const I = __EL.intent, out = [];
+        for (const [x, z] of [[-66, 2], [-50, 3], [-60, 6], [-70, -4]]) {
+            const q = new __EL.THREE.Vector3(x, __EL.world.terrain.height(x, z), z).project(__EL.cam.cam);
+            if (q.z > 1 || Math.abs(q.x) > 0.95 || Math.abs(q.y) > 0.95) continue;
+            const sx = (q.x + 1) / 2 * innerWidth, sy = (1 - q.y) / 2 * innerHeight;
+            I.press(sx, sy); out.push(I.state); I._cancel?.(); __EL.water.collapse();
+        }
+        return { pressed: out.length, streams: out.filter(s => s === 'stream').length };
+    });
+    await ev(() => __at(-48, 10));
+    const sea = await drag(Math.PI, 0.2);                 // out over the wall to the sea
+    check(floor.pressed >= 2 && floor.streams === 0 && sea.turned > 0.1 && !sea.stream,
+        `pressing Lowtown's dry floor starts no stream from the water under it, and dragging on the far sea turns the camera (${JSON.stringify({ floor, sea })})`);
+
+    // The truce: at the wall, wild creatures leave you to it; brought right up to you, they back off and don't bite.
+    const truce = await ev(async () => {
+        __at(-56, -3);
+        // A hero strong enough for the coast's creatures (the save is a fresh one): let the waiting groups come.
+        __EL.creatures.tier = 4; for (const g of __EL.world.creatureGroups) if (g.waiting) { g.waiting = false; g.spawned = false; }
+        await __W(600);
+        const C = __EL.creatures.all.filter(c => c.state !== 'dead' && !c.gone);
+        const h = __EL.player.body.position;
+        C.forEach((c, i) => { c.body.position.set(h.x + 2 + i, h.y + 0.5, h.z + 1.5); c.body.velocity.set(0, 0, 0); c.engaged = true; c.group.engaged = true; });
+        const hp = __EL.vitals.health, d0 = C.map(c => Math.hypot(c.pos.x - h.x, c.pos.z - h.z));
+        const t0 = __EL.story.time; while (__EL.story.time - t0 < 6) await __W(250);
+        return { n: C.length, kinds: [...new Set(C.map(c => c.group.item.species))], hurt: +(hp - __EL.vitals.health).toFixed(1), engaged: C.filter(c => c.engaged).length,
+                 away: C.filter((c, i) => Math.hypot(c.pos.x - h.x, c.pos.z - h.z) > d0[i] + 1).length, truce: !!__EL.creatures.truce };
+    });
+    check(truce.n > 0 && truce.truce && truce.hurt === 0 && truce.engaged === 0 && truce.away >= Math.ceil(truce.n / 2),
+        `the truce: during the task, wild creatures brought right up to you back off and don't attack (${JSON.stringify(truce)})`);
+
     // Wait out the tide a while (in game time): the sea rises everywhere; Lowtown fills through the gap.
     const tide = await ev(async () => {
         __at(-48, 0); for (let i = 0; i < 600 && __EL.story.t < 62; i++) await __W(500);
@@ -95,6 +140,8 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         await __skip(() => __EL.story.step === 'done' || __EL.prog.flags['act2.saltmere'] === 'done');
         return { at, told: __EL.prog.flags['saltmere.told'], act: __EL.prog.flags['act2.saltmere'], away: __EL.prog.flags['saltmere.away'] };
     });
+    const after = await ev(() => ({ truce: __EL.creatures.truce }));
+    check(after.truce === null, `the task done, the truce is over (${JSON.stringify(after)})`);
     check(marks.at === 'marks' && marks.told === 'asked' && marks.act === 'done' && !marks.away,
         `the Tidestone was cut on purpose, the same hand; Nerys says who told her; the tide turns and Saltmere's chapter is told (${JSON.stringify(marks)})`);
 

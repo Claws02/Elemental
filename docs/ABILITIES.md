@@ -15,6 +15,8 @@ Lava is the exception. It is Fire held on Earth's stone for longer.
 | Ability | Elements | Gesture | Does |
 |---|---|---|---|
 | Raise stone | Earth | Touch **open ground** within 9 m and hold still for 0.8 s | A column of stone rises there and keeps rising while you hold, up to 1.6 m (Earth Power 0) or 3.2 m (Power 1). Standing on the spot lifts you. At most three stand at once; each sinks back after 25 s. |
+| Pull stone | Earth | Touch **open ground** within 9 m and hold still for 0.45 s | A stone tears up out of the ground into your hand; flick to throw it. It crumbles 5 s after it's thrown (25 s if left lying). At most four about at once. Keep holding still a further second and it sinks back as a **column** rises instead (Raise stone). Learned in Thornwick's yard. |
+| Catch | Earth | Touch a stone **thrown at you** while it's in the air | It's yours: it stops in your hand, harmless, and can be thrown back. While one flies at you within 9 m, time runs at 0.45× so a phone player can make the catch. |
 
 | Ice | Water + Air | While a stream runs (one finger on it), **touch the hero with a second finger** | The whole arc freezes into a solid ice arch, which is a barrier. Where it was landing, creatures are locked in ice for 5 s (a flyer drops, and a hard hit does 2.5× damage) and fires go out. It melts after 20 s, six times faster beside fire, and a hard-thrown rock breaks a segment. |
 | Lava | Earth + Fire | Hold a stone still in the grip: Fire heats it, then past glowing it goes **molten**. Throw it | It bursts where it hits into a 2.2 m pool. For 10 s everything that burns there catches, creatures and you burn, and timber wears through. Then it crusts over and the scorch stays. A stream quenches it five times faster. Every pool is **excess** in the ledger. |
@@ -23,13 +25,14 @@ Lava is the exception. It is Fire held on Earth's stone for longer.
 | Glide | Air | No gesture: step off anything high (a raised column, a wall) | Air holds the fall. You sink at most 1.6 m/s and move a third faster than on foot, steering with the stick, until you're near the ground. |
 | Thermals | Fire + Air | Glide over a fire | The heat rises and carries you up (up to 3.5 m/s). Burn a haystack under a wall and ride over it. |
 
-Tuning lives in `src/data/elements.js` (`EARTH.raise`, `ICE`, `LAVA`, `FIRESTORM`, `MUD`, `GLIDE`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`, `Firestorm.js`, `Mud.js`, `Glide.js`), and the gestures are Intent's states.
+Tuning lives in `src/data/elements.js` (`EARTH.raise`, `EARTH.pull`, `EARTH.catch`, `ICE`, `LAVA`, `FIRESTORM`, `MUD`, `GLIDE`). The code is in `src/elements/` (`Earthworks.js`, `Ice.js`, `Lava.js`, `Firestorm.js`, `Mud.js`, `Glide.js`), and the gestures are Intent's states.
 
 ## Raise stone
 
 - **Cover and barriers:** a charge or a bite stops against a column, and several make a wall across a lane.
 - **Climbing:** there is no jump, so stone is how the Conduit climbs. Stand where it will rise.
 - **Not through things:** stone won't rise through a wall, a house or another column. Loose things on the spot (rocks, crates, creatures, you) ride up with it.
+- **The ladder:** with Pull stone learned, the hold on open ground pulls a stone first (0.45 s); held still a further second, the stone goes back and the column rises. Without Pull, the column rises at 0.8 s as before. Both are learned in Thornwick's yard, before the Stonebound.
 - **Gesture conflicts:** a drag across the ground is still the camera. Ground right at the hero's feet belongs to Air, whose touch area is the hero.
 
 *Test: `qa/abilities.js`.*

@@ -3078,6 +3078,9 @@
      "@Tam Emberwings! Get inside!"
     ],
     "objective": "Get away from them",
+    "fight": [
+     "Flock"
+    ],
     "until": {
      "time": 8
     }
@@ -3157,6 +3160,9 @@
      "@Tam The stone— did you hear the stone?"
     ],
     "objective": "Drive them off. Save what you can.",
+    "fight": [
+     "Flock"
+    ],
     "waiting": [
      {
       "when": {

@@ -385,6 +385,10 @@ export const REACTION_EVENTS = {
     playerThrow: 'The player throws something',
     playerSurge: 'The player\'s wild power goes off on its own',
     targetDown: 'The player knocks down a practice dummy (the first time for each)',
+    earthPulled: 'The player pulls a stone up out of the ground',
+    earthRaised: 'The player raises a column of earth',
+    stoneCaught: 'The player catches a stone thrown at them',
+    pulledThrow: 'The player throws a stone they pulled from the ground, or caught',
 };
 
 /** A new object of `type` with every prop at its default. */

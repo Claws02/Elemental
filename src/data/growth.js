@@ -59,6 +59,7 @@ export const SURGE = {
 // them all). docs/ABILITIES.md.
 export const ABILITIES = {
     raise:     { name: 'Raise stone', needs: ['earth'] },
+    pull:      { name: 'Pull stone',  needs: ['earth'] },
     freeze:    { name: 'Ice',         needs: ['water', 'air'] },
     lava:      { name: 'Lava',        needs: ['earth', 'fire'] },
     firestorm: { name: 'Firestorm',   needs: ['fire', 'air'] },

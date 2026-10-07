@@ -68,6 +68,40 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     check(fight.step === 'fight' && fight.n === 3 && fight.held === 1 && fight.elite === 1 && fight.threw && fight.hurt > 0 && !fight.dead,
         `the Stonebound come: Cael holds one off; the others lift and throw stone, and it hurts (${JSON.stringify(fight)})`);
 
+    // A stone thrown at you, touched in the air: caught (time slows for it), then thrown back.
+    const caught = await ev(async () => {
+        let f = null, slowed = false;
+        const t0 = __EL.story.time;
+        while (!f && __EL.story.time - t0 < 20) {
+            await __W(30);
+            if (__EL.creatures.incoming()) slowed = true;
+            for (const c of __EL.creatures.all) for (const s of c.stones || []) {
+                const p = s.entry.body.position, h = __EL.player.body.position;
+                if (!s.hit && s.t < 2 && Math.hypot(p.x - h.x, p.z - h.z) < 6) f = s;
+            }
+        }
+        if (!f) return { found: false };
+        const p = f.entry.body.position, q = new __EL.THREE.Vector3(p.x, p.y, p.z).project(__EL.cam.cam);
+        const hp = __EL.vitals.health;
+        const took = __EL.intent.press((q.x + 1) / 2 * innerWidth, (1 - q.y) / 2 * innerHeight);
+        const held = __EL.channel.held?.entry;
+        const r = { found: true, slowed, took, state: __EL.intent.state, mine: held === f.entry, id: held?.id };
+        await __W(600);
+        r.hurt = +(hp - __EL.vitals.health).toFixed(1);
+        // Send it home: at a Stonebound Cael isn't holding.
+        const foe = __EL.creatures.all.find(c => c.id.startsWith('Stonebound') && c.state !== 'held' && c.state !== 'yield');
+        const hits = []; const off = __EL.EventBus.on('Creature', e => { if (e.id === foe.id) hits.push(e.to); });
+        const hp0 = foe.hp;
+        __EL.channel.let(); __EL.intent._cancel();
+        const fp = foe.body.position, b = held.body;
+        b.position.set(fp.x - 3, fp.y + 0.6, fp.z); b.velocity.set(0, 0, 0);
+        __EL.channel.throwEntry(held, new __EL.THREE.Vector3(1, 0.05, 0).normalize(), 18, 'earth');
+        await __W(1500); off();
+        return { ...r, back: +(hp0 - foe.hp).toFixed(1), caught: __EL.story.counters.caught };
+    });
+    check(caught.found && caught.slowed && caught.took && caught.state === 'holding' && caught.mine && caught.hurt <= 0.5 && caught.back > 0 && caught.caught >= 1,
+        `a stone thrown at you slows time as it comes; touched in the air it's caught, harmless, and thrown back it hurts them (${JSON.stringify(caught)})`);
+
     const slab = await ev(async () => {
         const hp = __EL.player.body.position;
         const rock = __EL.world.rocks.filter(e => e.body.world).sort((a, b) => a.body.position.distanceTo(hp) - b.body.position.distanceTo(hp))[0];

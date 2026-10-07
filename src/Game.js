@@ -46,6 +46,7 @@ import { rememberScene } from './scene/Loader.js';
 import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
+import { EARTH } from './data/elements.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
@@ -98,6 +99,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
     const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
     const works = new Earthworks({ scene, hero: player, camera });
+    works.things = interactables;            // pulled and caught stones are things to lift
+    works.rocks = world.rocks;
     wireScene(world, { interactables, fire, water, channel });
     const forget = rememberScene(world, session);
     // Whose is it: a piece of a building answers for the building (Veyra_House_02_W1_P03 → Veyra_House_02).
@@ -231,6 +234,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const perf = { frame: 16.7, update: 0, physics: 0, render: 0, frames: 0, onFrame: null };
     let lowPowerSaid = false, lowPowerT = 0;
     const ease = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
+    let slowK = 1;
     function frame(now) {
         if (!running) return;
         const t0 = performance.now();
@@ -238,7 +242,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         // a longer hitch is treated as a pause rather than a teleport. Never
         // negative: the first rAF timestamp can predate `last`.
         const raw = (now - last) / 1000;
-        const dt = Math.max(0, Math.min(0.1, raw));
+        // A stone flying at the hero (a Stonebound's): time slows, so it can be caught on a phone.
+        slowK += ((prog.has('earth') && creatures.incoming() ? EARTH.catch.slow : 1) - slowK) * Math.min(1, 10 * Math.min(0.1, raw));
+        const dt = Math.max(0, Math.min(0.1, raw)) * slowK;
         last = now;
         Renderer.adapt(raw);
         EventBus.tick(dt);
@@ -254,7 +260,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         const tp1 = performance.now();
         glide.after();
         world.waters.update(player);         // wading or swimming, where physics just put the hero (Vitals: water breaks a fall)
-        works.update(dt);
+        works.update(dt, channel.held?.entry || null);
         ice.update(dt);
         lava.update(dt);
         mud.update(dt);
@@ -262,6 +268,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         water.update(dt);
         air.update(dt);
         frameInfo.held = channel.held?.entry || null;
+        creatures.truce = story?.truce() || null;     // at a story task, wild creatures leave you to it
         creatures.update(dt);
         jet.update(dt);
         world.update(dt, frameInfo);

@@ -7,7 +7,10 @@
 //      diamond sits at its bearing, with how far it is
 //   3. a stone from the pile thrown hard knocks a straw man down; it counts,
 //      and Cael counts with you; three down and he goes ahead to the ruin
-//   4. a knocked-down straw man stands back up; a thrown stone crumbles and
+//   4. hold still on open ground: a stone tears up into your hand; throw it
+//   5. hold still longer: the stone sinks back and a column of earth rises;
+//      then Cael goes ahead to the ruin
+//   6. a knocked-down straw man stands back up; a thrown stone crumbles and
 //      the pile restocks: nothing to tidy, never runs out
 //
 // usage: QA_BASE=http://127.0.0.1:8140/index.html node qa/yard.js
@@ -38,6 +41,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     await ev(() => {
         window.__W = ms => new Promise(r => setTimeout(r, ms));
         window.__at = (x, z) => { const B = __EL.player.body, T = __EL.world.terrain; B.position.set(x, T.height(x, z) + 0.6, z); B.velocity.set(0, 0, 0); };
+        window.__skip = async until => { for (let i = 0; i < 160 && !until(); i++) { __EL.hud.skipLine = true; await __W(120); } };
         window.__pile = () => __EL.world.rocks.filter(e => e.data.pile === 'Yard_Pile' && e.body.world);
         __EL.story.go('yard');
     });
@@ -73,8 +77,55 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const said = document.querySelector('#hud-say .line')?.textContent;
         return { hits: out, count: __EL.story.counters.yardHits, step: __EL.story.step, flag: __EL.prog.flags['act1.yard'], said };
     });
-    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'gone' && throws.flag === 'done',
-        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Cael goes ahead to the ruin (${JSON.stringify(throws)})`);
+    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'ground' && !throws.flag,
+        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Cael moves on to the ground (${JSON.stringify(throws)})`);
+
+    // Pull a stone up out of the ground (hold still on open ground), and throw it.
+    const pull = await ev(async () => {
+        const I = __EL.intent, h = __EL.player.body.position, T = __EL.world.terrain;
+        await __skip(() => !__EL.story.talking);
+        __at(24, -40); __EL.cam.yaw = Math.PI / 2; await __W(600);
+        // A patch of open ground a few metres off, on screen.
+        let pt = null;
+        for (const [dx, dz] of [[-4, 0], [-4, 2], [-4, -2], [-5, 1], [-3, -3]]) {
+            const x = h.x + dx, z = h.z + dz, q = new __EL.THREE.Vector3(x, T.height(x, z), z).project(__EL.cam.cam);
+            if (q.z < 1 && Math.abs(q.x) < 0.9 && Math.abs(q.y) < 0.9) { const sx = (q.x + 1) / 2 * innerWidth, sy = (1 - q.y) / 2 * innerHeight; if (__EL.works.groundAt(sx, sy)) { pt = [sx, sy]; break; } }
+        }
+        if (!pt) return { pt };
+        const took = I.press(pt[0], pt[1]);
+        const t0 = __EL.story.time; while (I.state === 'ground' && __EL.story.time - t0 < 3) await __W(50);
+        const held = __EL.channel.held?.entry, id = held?.id;
+        const r = { took, state: I.state, id, mass: held && +held.body.mass.toFixed(2) };
+        // Flick it at a straw man.
+        const d = __EL.world.objects.get('Yard_Dummy_4').prop.entry.body.position;
+        __EL.channel.let(); I._cancel();
+        held.body.position.set(d.x - 4, d.y + 0.3, d.z); held.body.velocity.set(0, 0, 0);
+        __EL.channel.throwEntry(held, new __EL.THREE.Vector3(1, 0.05, 0).normalize(), 18, 'earth');
+        await __W(1500);
+        return { ...r, step: __EL.story.step, pulled: __EL.story.counters.pulled, flag: __EL.prog.flags['learned.pull'] };
+    });
+    check(pull.took && pull.state === 'holding' && /^Pulled_/.test(pull.id || '') && pull.pulled === 1 && pull.flag === 'yes' && pull.step === 'cover',
+        `hold still on open ground: a stone tears up into your hand; thrown, the lesson moves on to cover (${JSON.stringify(pull)})`);
+
+    // Hold on past the stone: it sinks back and the ground rises as a column.
+    const cover = await ev(async () => {
+        const I = __EL.intent, h = __EL.player.body.position, T = __EL.world.terrain;
+        await __skip(() => !__EL.story.talking);
+        const x = h.x - 4, z = h.z + 1, q = new __EL.THREE.Vector3(x, T.height(x, z), z).project(__EL.cam.cam);
+        const sx = (q.x + 1) / 2 * innerWidth, sy = (1 - q.y) / 2 * innerHeight;
+        const stones0 = __EL.works.stones.length;
+        I.press(sx, sy);
+        const seen = new Set(); const t0 = __EL.story.time;
+        while (I.state !== 'raising' && __EL.story.time - t0 < 4) { seen.add(I.state); await __W(50); }
+        const t1 = __EL.story.time; while (__EL.story.time - t1 < 1) await __W(100);
+        const col = __EL.works.columns[__EL.works.columns.length - 1];
+        const out = { seen: [...seen], state: I.state, columns: __EL.works.columns.length, top: col && +col.top.toFixed(2), stonesBack: __EL.works.stones.length === stones0 };
+        I.release?.({ vx: 0, vy: 0, speed: 0 }); I._cancel();
+        await __skip(() => __EL.story.step === 'gone');
+        return { ...out, step: __EL.story.step, flag: __EL.prog.flags['act1.yard'], raise: __EL.prog.flags['learned.raise'] };
+    });
+    check(cover.seen.includes('holding') && cover.state === 'raising' && cover.columns >= 1 && cover.top > 0.5 && cover.stonesBack && cover.step === 'gone' && cover.flag === 'done' && cover.raise === 'yes',
+        `held still past the stone, it sinks back and a column of earth rises; then Cael goes ahead to the ruin (${JSON.stringify(cover)})`);
 
     const reset = await ev(async () => {
         await __W(9000);

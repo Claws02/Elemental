@@ -23,6 +23,22 @@ export const EARTH = {
         last: 25,              // seconds before it sinks back
         most: 3,               // columns standing at once
     },
+    // Pulling a stone out of the ground (Earthworks.pull): a shorter hold on open ground
+    // tears one up into the hand; keep holding still and it sinks back as a column rises.
+    pull: {
+        hold: 0.45,            // seconds of stillness before a stone comes up
+        toColumn: 1.0,         // the stone held still this much longer: it becomes a column instead
+        radius: 0.36,          // the stone's size (mass 40 r³ ≈ 1.9: any Earth Power lifts it)
+        crumble: 5,            // seconds after it's thrown before it crumbles back to earth
+        idle: 25,              // left lying, unheld, it crumbles after this
+        most: 4,               // pulled stones about at once; the oldest crumbles first
+    },
+    // Catching a stone thrown at you (a Stonebound's): touch it in the air.
+    catch: {
+        pickPx: 90,            // how close on screen the finger must land to a flying stone
+        slow: 0.45,            // time runs at this while a stone flies at you (fair on a phone)
+        slowRange: 9,          // metres: a stone this close and coming slows time
+    },
 };
 
 // Ice: Water + Air (elements/Ice.js).

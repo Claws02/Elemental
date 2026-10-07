@@ -119,6 +119,10 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **Water and fire**: a water body signals `drawn` while a stream comes from it; a `waterwheel` with `driven` turns only while a stream plays on it and signals `spun` once it has turned its mechanism; the action `ignite` `{prefix}` sets things alight (not on the player's account). The Reach's south road leads to the Sunken Cistern (Lesson II) and on to Saltmere. A stream rises from where the finger touches the water (no further than `WATER.draw`, 12 m, from the hero), not from the edge nearest the hero.
 
+**The truce**: while a step sets an objective, wild creatures leave the player to it: those within 12 m back off, none attack, and they go home. Creature groups the step is about (its `mark`, any object its `until`/`ends` name, or a `fight: [ids]` list) fight on; `truce: false` turns it off for a step. `Story.truce()`; `Creatures` reads it each frame.
+
+**Earth story events**: reactions can count `earthPulled`, `earthRaised`, `stoneCaught` and `pulledThrow` (a pulled or caught stone thrown), as the yard does.
+
 **Tides**: the `water` action eases every water whose id starts with a prefix to a level (`Sea` lifts `Sea`, `Sea_West`, `Sea_Wall`). Water bodies are flat sheets over a rectangle, so ground meant to stay dry below the sea (Saltmere's Lowtown) sits outside every sea sheet, ringed by a berm higher than the tide, with its own water (`Lowtown_Flood`) hidden under its floor until the story raises it.
 
 **Practice**: a `rock_pile` keeps `count` loose stones on it (a thrown one crumbles a few seconds after it lands; a fresh one rises); a `dummy` with `practice` stands back up after it falls and signals `hit` once your throw has knocked it down (reaction `targetDown` each first time). The **compass** strip at the top shows the way you face and the current step's `mark`, with its distance: say north, south, east or west in objectives.

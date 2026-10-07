@@ -28,6 +28,7 @@ import { EventBus, EV } from '../core/EventBus.js';
 import { EARTH } from '../data/elements.js';
 import { WORLD } from '../art/Palette.js';
 import { Ground } from '../world/Ground.js';
+import { rock } from '../art/PropModels.js';
 
 const R = () => EARTH.raise;
 const _ray = new THREE.Raycaster(), _v2 = new THREE.Vector2(), _hit = new THREE.Vector3();
@@ -52,6 +53,77 @@ export class Earthworks {
         Object.assign(this, { scene, hero, camera });
         this.columns = [];
         this.n = 0;
+        this.stones = [];        // pulled from the ground, or caught: { entry, thing, mesh, age, thrown, gone }
+        this.things = null;      // set by the game: Interactables, and the world's rock list
+        this.rocks = null;
+    }
+
+    // ---- stones pulled from the ground, and caught ones ----------------------------------------
+
+    /** Tear a stone up out of the ground at p. Returns { entry, thing }. */
+    pull(p) {
+        const P = EARTH.pull, m = rock(900 + ++this.n, P.radius), id = `Pulled_${this.n}`;
+        const b = new CANNON.Body({ mass: 40 * P.radius ** 3, material: Physics.material('rock'), linearDamping: 0.02, angularDamping: 0.25, allowSleep: true, sleepSpeedLimit: 0.2, sleepTimeLimit: 0.5 });
+        b.addShape(new CANNON.Sphere(m.radius));
+        b.position.set(p.x, Ground.height(p.x, p.z) + m.radius + 0.05, p.z);
+        m.group.position.copy(b.position);
+        this.scene.add(m.group);
+        const entry = Physics.add({ body: b, mesh: m.group, tier: TIER.INTERACTIVE, id, data: { radius: m.radius, pulled: true } });
+        const s = this._keep(entry, m.group);
+        EventBus.emit(EV.EARTH_PULLED, { id, x: p.x, z: p.z, cause: 'player' });
+        return s;
+    }
+
+    /** A stone thrown at the hero, caught: theirs now (it crumbles like a pulled one). */
+    adopt(entry, mesh) {
+        entry.data.thrownBy = null;
+        entry.data.stonebound = false;
+        entry.data.caught = true;
+        entry.body.mass = 40 * EARTH.pull.radius ** 3;
+        entry.body.updateMassProperties();
+        entry.body.velocity.scale(0.1, entry.body.velocity);
+        const s = this._keep(entry, mesh);
+        EventBus.emit(EV.STONE_CAUGHT, { id: entry.id, cause: 'player' });
+        return s;
+    }
+
+    _keep(entry, mesh) {
+        const live = this.stones.filter(s => s.gone === null);
+        if (live.length >= EARTH.pull.most) live[0].gone = 0;
+        const thing = this.things?.add({ id: entry.id, mesh, entry, material: 'stone' }) || null;
+        this.rocks?.push(entry);
+        const s = { entry, thing, mesh, age: 0, thrown: null, gone: null };
+        this.stones.push(s);
+        return s;
+    }
+
+    /** A pulled stone back into the ground at once (it became a column). */
+    unpull(entry) { const s = this.stones.find(q => q.entry === entry); if (s) this._drop(s); }
+
+    _drop(s) {
+        Physics.remove(s.entry);
+        s.mesh.parent?.remove(s.mesh);
+        if (s.thing) this.things?.remove(s.thing);
+        const i = this.rocks?.indexOf(s.entry) ?? -1;
+        if (i >= 0) this.rocks.splice(i, 1);
+        this.stones.splice(this.stones.indexOf(s), 1);
+    }
+
+    _stones(dt, held) {
+        const P = EARTH.pull;
+        for (const s of this.stones.slice()) {
+            s.age += dt;
+            const inHand = held === s.entry;
+            if (inHand) { s.age = 0; continue; }
+            if (s.thrown === null && s.entry.data.thrownBy === 'player') s.thrown = 0;
+            if (s.thrown !== null) s.thrown += dt;
+            if (s.gone === null && ((s.thrown !== null && s.thrown > P.crumble) || s.age > P.idle || !s.entry.body.world)) s.gone = 0;
+            if (s.gone !== null) {
+                s.gone += dt;
+                s.mesh.scale.setScalar(Math.max(0.01, 1 - s.gone / 0.6));
+                if (s.gone >= 0.6) this._drop(s);
+            }
+        }
     }
 
     /** Where on open ground a touch at (x, y) lands, if it is in reach; else null. */
@@ -111,7 +183,8 @@ export class Earthworks {
 
     _sink(c) { if (c) { c.state = 'sinking'; c.want = 0; } }
 
-    update(dt) {
+    update(dt, held = null) {
+        this._stones(dt, held);
         const r = R();
         for (const c of this.columns.slice()) {
             c.age += dt;
@@ -135,5 +208,9 @@ export class Earthworks {
     /** The world's solids the camera avoids (standing columns). */
     get solids() { return this.columns.map(c => c.mesh); }
 
-    dispose() { for (const c of this.columns) { Physics.remove(c.entry); this.scene.remove(c.mesh); } this.columns = []; }
+    dispose() {
+        for (const c of this.columns) { Physics.remove(c.entry); this.scene.remove(c.mesh); }
+        this.columns = [];
+        for (const s of this.stones.slice()) this._drop(s);
+    }
 }

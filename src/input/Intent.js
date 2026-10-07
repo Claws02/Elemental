@@ -121,9 +121,28 @@ export class Intent {
 
     _usable(thing) {
         if (thing.mat.use) return thing.pos().distanceTo(this.hero.position) <= DOOR_RANGE;
+        if (thing.mat.source === 'water') return this.prog.has('water') && this.water.reachOf(thing) <= RANGE;
         if (!this._inRange(thing)) return false;
-        if (thing.mat.source === 'water') return this.prog.has('water');
         return !!this._moveElement(thing) || !!this._changeVerb(thing, this.fire.isBurning(thing));
+    }
+
+    // Open ground: hold still and Earth pulls a stone up out of it into the hand
+    // (EARTH.pull); hold on and the stone sinks back as a column rises (EARTH.raise).
+    // Not while swimming: no footing. Nothing there: the camera's.
+    _groundPress(x, y) {
+        const g = this.works && (this.prog.can('raise') || this.prog.can('pull')) && !this.hero.swimming ? this.works.groundAt(x, y) : null;
+        if (!g) return false;
+        Object.assign(this, { x, y, ax: x, ay: y, thing: null, t: 0, state: 'ground', ground: g, column: null, element: 'earth', pulled: null });
+        this.channel.aimAt(g, 'earth');
+        return true;
+    }
+
+    _column(at) {
+        this.thing = null;
+        this.column = this.works.raise(at, 'player');
+        this.state = 'raising';
+        this.element = 'earth';
+        this.hero.anim?.throw?.();
     }
 
     // ---- inputs from Gestures --------------------------------------------
@@ -134,6 +153,15 @@ export class Intent {
         // Priority: a touch exactly on a thing, then the hero (Air), then the
         // fat-finger assist. The hero's touch area is generous, and must not
         // steal a touch that lands squarely on a rock at their feet.
+        // A stone thrown at you, under the finger in the air: caught (Earth). First of all: it's coming.
+        const flying = this.prog.has('earth') && !this.hero.swimming && this.works ? this.creatures?.catchable?.(x, y, this.camera, RANGE) : null;
+        if (flying) {
+            const k = this.works.adopt(flying.entry, flying.mesh);
+            Object.assign(this, { x, y, ax: x, ay: y, thing: k.thing, t: 0, still: 0, state: 'holding', element: 'earth', pulled: null });
+            this.trail = [];
+            this.channel.grab(k.entry, 'earth', { lift: 0 });
+            return true;
+        }
         // A creature under the finger: Fire's jet, held on it (FlameJet). First, because it moves.
         const c = this.jet && this.prog.has('fire') && !this.hero.swimming ? this._pickCreature(x, y) : null;
         if (c) {
@@ -160,15 +188,7 @@ export class Intent {
             return true;
         }
         thing = thing || this.interactables.pick(x, y, this.camera, usable);
-        if (!thing) {
-            // Open ground: Earth can raise stone here, if the finger stays still.
-            // (Not while swimming: no footing to raise it from.)
-            const g = this.works && this.prog.can('raise') && !this.hero.swimming ? this.works.groundAt(x, y) : null;
-            if (!g) return false;
-            Object.assign(this, { x, y, ax: x, ay: y, thing: null, t: 0, state: 'ground', ground: g, column: null, element: 'earth' });
-            this.channel.aimAt(g, 'earth');
-            return true;
-        }
+        if (!thing) return this._groundPress(x, y);
         Object.assign(this, { x, y, ax: x, ay: y, thing, t: 0, still: 0 });
         this.trail = [];
         if (thing.mat.use) {
@@ -176,7 +196,10 @@ export class Intent {
             Object.assign(this, { state: 'done', doneT: 0 });
             return true;
         }
-        if (thing.mat.source === 'water' && this.water.beginStream(thing, x, y)) {
+        if (thing.mat.source === 'water') {
+            // Only open water the finger really touched, within reach; anything else (dry
+            // ground over a hidden flood, the far sea) leaves the touch to the camera.
+            if (!this.water.beginStream(thing, x, y)) { this.thing = null; return this._groundPress(x, y); }
             this.state = 'stream';
             this.element = 'water';
             this.channel.aimAt(this.water.stream.cur, 'water');
@@ -294,6 +317,7 @@ export class Intent {
         this.state = 'idle';
         this.thing = null;
         this.verb = null;
+        this.pulled = null;
     }
 
     // ---- per frame -------------------------------------------------------
@@ -318,6 +342,15 @@ export class Intent {
             if (!this.channel.held) { this._cancel(); break; }
             const cv = this._changeVerb(this.thing, false);
             this.still += dt;
+            // A stone just pulled, held still on: it goes back, and the ground rises as a column instead.
+            if (this.pulled && this.channel.held.entry === this.pulled.entry && this.still >= EARTH.pull.toColumn && this.prog.can('raise')) {
+                const at = this.pulled.at;
+                this.channel.let();
+                this.works.unpull(this.pulled.entry);
+                this.pulled = null;
+                this._column(at);
+                break;
+            }
             if (cv?.verb === 'heat' && this.still >= cv.hold) {
                 this.fire.heat(this.thing, dt, 'player');
                 this.element = cv.element;
@@ -328,11 +361,15 @@ export class Intent {
         }
         case 'ground':
             this.t += dt;
-            if (this.t >= EARTH.raise.hold) {
-                this.column = this.works.raise(this.ground, 'player');
-                this.state = 'raising';
-                this.hero.anim?.throw?.();
-            }
+            if (this.prog.can('pull')) {
+                if (this.t >= EARTH.pull.hold) {
+                    const k = this.works.pull(this.ground);
+                    Object.assign(this, { thing: k.thing, still: 0, state: 'holding', pulled: { entry: k.entry, at: this.ground.clone() } });
+                    this.trail = [];
+                    this.channel.grab(k.entry, 'earth', { lift: 1.0 });
+                    this.hero.anim?.throw?.();
+                }
+            } else if (this.t >= EARTH.raise.hold) this._column(this.ground);
             break;
         case 'raising':
             this.works.grow(this.column, dt, this.prog.power('earth'));
