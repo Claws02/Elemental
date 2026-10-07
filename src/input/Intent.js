@@ -176,7 +176,7 @@ export class Intent {
             Object.assign(this, { state: 'done', doneT: 0 });
             return true;
         }
-        if (thing.mat.source === 'water' && this.water.beginStream(thing)) {
+        if (thing.mat.source === 'water' && this.water.beginStream(thing, x, y)) {
             this.state = 'stream';
             this.element = 'water';
             this.channel.aimAt(this.water.stream.cur, 'water');

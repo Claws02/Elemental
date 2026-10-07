@@ -117,7 +117,9 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **Reactions** answer the player at any point: `playerFire`, `tooHeavy`, `playerBreak`, `playerThrow`, `playerSurge` (their wild power went off on its own). Each can count (`count`), change a flag, say the nth of its `lines` (or cycle through them), wait `throttle` seconds before speaking again, and follow up later (`followUp`: after N seconds, if a condition holds).
 
-**Water and fire**: a water body signals `drawn` while a stream comes from it; a `waterwheel` with `driven` turns only while a stream plays on it and signals `spun` once it has turned its mechanism; the action `ignite` `{prefix}` sets things alight (not on the player's account). The Reach's south road leads to the Sunken Cistern (Lesson II) and on to Saltmere.
+**Water and fire**: a water body signals `drawn` while a stream comes from it; a `waterwheel` with `driven` turns only while a stream plays on it and signals `spun` once it has turned its mechanism; the action `ignite` `{prefix}` sets things alight (not on the player's account). The Reach's south road leads to the Sunken Cistern (Lesson II) and on to Saltmere. A stream rises from where the finger touches the water (no further than `WATER.draw`, 12 m, from the hero), not from the edge nearest the hero.
+
+**Tides**: the `water` action eases every water whose id starts with a prefix to a level (`Sea` lifts `Sea`, `Sea_West`, `Sea_Wall`). Water bodies are flat sheets over a rectangle, so ground meant to stay dry below the sea (Saltmere's Lowtown) sits outside every sea sheet, ringed by a berm higher than the tide, with its own water (`Lowtown_Flood`) hidden under its floor until the story raises it.
 
 **Practice**: a `rock_pile` keeps `count` loose stones on it (a thrown one crumbles a few seconds after it lands; a fresh one rises); a `dummy` with `practice` stands back up after it falls and signals `hit` once your throw has knocked it down (reaction `targetDown` each first time). The **compass** strip at the top shows the way you face and the current step's `mark`, with its distance: say north, south, east or west in objectives.
 

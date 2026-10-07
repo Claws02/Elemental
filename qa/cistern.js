@@ -44,6 +44,14 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
   out.smoke = { step: E.story.step, burning: [...E.fire.flammables.values()].filter(f => f.burning).length, canWater: E.prog.has('water'), water: E.prog.state('water') };
   // Draw a stream and play it on the fires.
   const pool = [...E.interactables.things].find(t => t.id === 'Cistern_Pool');
+  // The stream rises where the finger touches the water, not at the near edge.
+  at(0, -7);
+  const lvl = E.water.sources.find(s => s.thing === pool).surface.y, far = new E.THREE.Vector3(1.5, lvl, 4.5);
+  let seen = null;
+  for (const yaw of [0, Math.PI, Math.PI / 2, -Math.PI / 2]) { E.cam.yaw = yaw; await W(400); const q = far.clone().project(E.cam.cam); if (q.z < 1 && Math.abs(q.x) < 0.9 && Math.abs(q.y) < 0.9) { seen = scr(far); break; } }
+  const near = E.water.sources.find(s => s.thing === pool).surfaceFor(E.player.position);
+  out.press = seen ? (E.water.beginStream(pool, seen.x, seen.y), { from: +E.water.stream.source.surface.distanceTo(far).toFixed(2), nearEdge: +near.distanceTo(far).toFixed(2) }) : 'unseen';
+  E.water.collapse();
   at(-8, -1); E.cam.yaw = Math.PI / 2 + 0.2; await W(800);
   const outs = []; E.EventBus.on('FireOut', e => outs.push((e.doused ? 'D:' : e.burnedOut ? 'B:' : 'O:') + e.id));
   out.began = E.water.beginStream(pool);
@@ -71,6 +79,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
 });
 
     check(r.start.step === 'bram' && r.start.bram && r.start.cael && !r.start.canWater, `arriving: Bram has caught up at the border; Water still stilled by the charm (${JSON.stringify(r.start)})`);
+    check(r.press.from < 0.6 && r.press.nearEdge > 4, `pressed on the far side of the pool, the stream rises there, not at the edge nearest you (${JSON.stringify(r.press)})`);
     check(r.road.cael === 'lead' && r.road.bram === 'follow', `Cael leads south to the cistern, Bram follows (${JSON.stringify(r.road)})`);
     check(r.smoke.step === 'smoke' && r.smoke.burning >= 1 && r.smoke.canWater && r.smoke.water === 'trained', `at the cistern the cart catches; Water answers now, trained (${JSON.stringify(r.smoke)})`);
     check(r.began && r.outs.some(o => o.startsWith('D:Camp_')) && r.camp.flag === 'saved' && r.camp.care > 0, `a stream drawn from the pool and aimed puts the fire out: the camp saved, and it's care (${JSON.stringify({ outs: r.outs, camp: r.camp })})`);

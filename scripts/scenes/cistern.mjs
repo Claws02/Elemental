@@ -15,7 +15,7 @@ import fs from 'fs';
 import { Land, Dresser, fbm, ridge, smooth, exits, grow, scene } from './lib/region.mjs';
 
 const SEED = 31, FLOOR = 3;
-const POOL = { x: 0, z: 2, w: 14, d: 14 }, LEVEL = FLOOR - 0.6;
+const POOL = { x: 0, z: 2, w: 9, d: 9 }, LEVEL = FLOOR - 0.6;
 const L = new Land(240, 2, SEED);
 L.shape((x, z) => {
     const ax = Math.abs(x);
@@ -41,10 +41,10 @@ L.paint((x, z) => Math.abs(x - POOL.x) < POOL.w / 2 + 3 && Math.abs(z - POOL.z) 
 S.add('Sluice_Gate', 'gate', 0, 20, 0, { width: 6.4, height: 4.6, open: false });
 S.add('Sluice_Wheel', 'waterwheel', 6, 13, 0, { y: FLOOR + 1.9, radius: 1.8, width: 0.9, turning: false, driven: true, owner: 'none' });
 // A travellers' camp by the pool: tents, a cart, hay. Someone left a fire.
-S.add('Camp_Tent_1', 'tent', -12, -1, 0.4, { size: 3.2, colour: 'ochre', seed: 3, owner: 'civilian' }, 2);
-S.add('Camp_Tent_2', 'tent', -12.5, 6.5, -0.3, { size: 3, colour: 'blue', seed: 4, owner: 'civilian' }, 2);
-S.add('Camp_Cart', 'stall', -10, 2.8, 1.3, { width: 2, awning: 'green', seed: 5, owner: 'civilian' }, 1);
-for (let i = 0; i < 3; i++) S.add(`Camp_Hay_${i + 1}`, 'hay', -10.5 + i * 1.1, -5.5 - (i % 2) * 0.8, 0, { seed: 90 + i, owner: 'civilian' }, 1);
+S.add('Camp_Tent_1', 'tent', -10, -1, 0.4, { size: 3.2, colour: 'ochre', seed: 3, owner: 'civilian' }, 2);
+S.add('Camp_Tent_2', 'tent', -10.5, 6, -0.3, { size: 3, colour: 'blue', seed: 4, owner: 'civilian' }, 2);
+S.add('Camp_Cart', 'stall', -8, 2.6, 1.3, { width: 2, awning: 'green', seed: 5, owner: 'civilian' }, 1);
+for (let i = 0; i < 3; i++) S.add(`Camp_Hay_${i + 1}`, 'hay', -8.5 + i * 1.1, -5 - (i % 2) * 0.8, 0, { seed: 90 + i, owner: 'civilian' }, 1);
 // Cael and Bram: Bram caught up with you at the border.
 S.add('Cael', 'npc', 2.5, -98, 0, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'act1.ruin, !lesson2' });
 S.add('Bram', 'npc', -2.5, -99, 0, { name: 'Bram', look: 'bram', role: 'idle', showWhen: 'act1.ruin' });

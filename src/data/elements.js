@@ -115,6 +115,7 @@ export const FIRE = {
 export const WATER = {
     reach: 8,             // metres from the source the stream can stretch
     range: 16,            // hero this far from the source: the stream lets go
+    draw: 12,             // a stream rises where you touch the water, up to this far from you
     spray: 1.1,           // radius of the stream's spray, metres
     push: 30,             // m/s² given to light things in the spray (heavier move less)
     wear: 12,             // damage/s to timber held in the spray (~8 s to break a plank)

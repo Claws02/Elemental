@@ -69,16 +69,36 @@ export class WaterSystem {
 
     // ---- the stream --------------------------------------------------------
 
-    beginStream(thing) {
+    /**
+     * Draw a stream from a source. With a screen point (x, y), a lake or pool
+     * gives it up where the finger touched its surface (no further than
+     * WATER.draw from the hero); without one, from the point nearest the hero.
+     */
+    beginStream(thing, x = null, y = null) {
         let source = this.sources.find(s => s.thing === thing);
         if (!source) return false;
-        if (source.surfaceFor) source = { ...source, surface: source.surfaceFor(this.hero.position) };
+        if (source.surfaceFor) source = { ...source, surface: source.surfaceFor(this._touched(source, x, y) || this.hero.position) };
         const start = source.surface.clone();
         this.stream = { source, want: start.clone().setY(start.y + 1.5), target: start.clone().setY(start.y + 1.5), cur: start.clone(), dir: new THREE.Vector3(0, 1, 0) };
         this.tube.visible = true;
         this.draws++;
         EventBus.emit(EV.WATER_DRAWN, { id: thing.id, cause: 'player' });
         return true;
+    }
+
+    /** Where the finger meets the source's surface (null if it doesn't), pulled in to WATER.draw of the hero. */
+    _touched(source, x, y) {
+        if (x == null || y == null) return null;
+        _v2.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
+        _ray.setFromCamera(_v2, this.camera);
+        const r = _ray.ray, lvl = source.surface.y;
+        if (Math.abs(r.direction.y) < 1e-4) return null;
+        const t = (lvl - r.origin.y) / r.direction.y;
+        if (t <= 0) return null;
+        const p = r.at(t, new THREE.Vector3());
+        const h = this.hero.position, off = new THREE.Vector3(p.x - h.x, 0, p.z - h.z);
+        if (off.length() > WATER.draw) { off.setLength(WATER.draw); p.set(h.x + off.x, lvl, h.z + off.z); }
+        return p;
     }
 
     /** Point the stream at whatever is under the finger. */

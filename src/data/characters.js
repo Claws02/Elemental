@@ -34,6 +34,7 @@ export const CHARACTER_LOOKS = {
     ember_guard: look({ scale: 1.06, skin: 0xa07050, hair: 0x1e1612, tunic: 0x4a2622, trim: 0x8a8a90, cloak: 0x7a2a20, trouser: 0x2a2626, bracer: 0x5a5e66, extras: ['helm', 'pauldrons', 'spear'] }),
     salt_folk: look({ skin: 0xd8aa86, hair: 0x8a6a3a, tunic: 0x6a8aa0, trim: 0xd8c8a0, cloak: 0x8aa8b8, trouser: 0x6a6a5a, extras: ['scarf'] }),
     salt_guard: look({ scale: 1.02, skin: 0xc49a7a, hair: 0x4a3a2a, tunic: 0x2e4a66, trim: 0xd8d0b8, cloak: 0x3a5a7a, trouser: 0x2e3a48, extras: ['helm', 'spear'] }),
+    tidekeeper: look({ skin: 0xc8a080, hair: 0x2a2a2a, tunic: 0x2a6a72, trim: 0xd8e0d0, cloak: 0x1e4e5a, trouser: 0x2a3a40, extras: ['robe', 'staff'] }),     // the Tidekeepers: Saltmere's water Wielders
     sky_folk: look({ skin: 0xdcb498, hair: 0x2a2a2a, tunic: 0xe4e6e8, trim: 0x7aa8c8, cloak: 0xb8ccd8, trouser: 0xa8b4bc, extras: ['hood'] }),
     sky_guard: look({ scale: 1.02, skin: 0xd0a888, hair: 0x2a2a2a, tunic: 0xdcdcdc, trim: 0x5a8ab0, cloak: 0x7aa8c8, trouser: 0x8a96a0, extras: ['hood', 'staff'] }),
     glass_folk: look({ skin: 0x9a6a48, hair: 0x1e1612, tunic: 0xc8a070, trim: 0x8a3a2a, cloak: 0xb8803a, trouser: 0x7a5a3a, extras: ['headwrap'] }),

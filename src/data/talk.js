@@ -20,7 +20,7 @@
 export const GROUPS = {
     verdant_folk: ['verdant', 'folk'], verdant_guard: ['verdant', 'guard'], youth: ['verdant', 'folk'], smith: ['verdant', 'folk'], baker: ['verdant', 'folk'], elder: ['verdant', 'folk'], villager: ['verdant', 'folk'],
     ember_folk: ['emberwall', 'folk'], ember_guard: ['emberwall', 'guard'],
-    salt_folk: ['saltmere', 'folk'], salt_guard: ['saltmere', 'guard'],
+    salt_folk: ['saltmere', 'folk'], salt_guard: ['saltmere', 'guard'], tidekeeper: ['saltmere', 'guard'],
     sky_folk: ['skyreach', 'folk'], sky_guard: ['skyreach', 'guard'],
     glass_folk: ['glass', 'folk'], glass_guard: ['glass', 'guard'],
     stonebound: ['verdant', 'guard'],

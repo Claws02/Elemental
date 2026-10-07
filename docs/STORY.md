@@ -85,6 +85,12 @@ People answer from this when the player taps them: first the scene's own lines, 
 
 **The Sunken Cistern** *(built: `scenes/cistern.json`, `qa/cistern.js`)*. The road south from the Reach. Bram has caught up at the border (Hollis said don't, so he came, with Mira's bread); he brings Veyra's news, and travels with you from here. Cael leads to an Oruun cistern, a sunken pool by the road, where a travellers' cart is burning. Lesson II: Water answers now (trained, charm or no); draw a stream from the pool and put the fire out before it reaches the tents (care). Then the sluice: the Oruun opened it with water, not hands; hold a stream on its wheel and the gate rises. *"Water doesn't push. It persuades."* On south to Saltmere.
 
+**Saltmere: The Sea Wall** *(built: `scenes/saltmere.json`, `qa/saltmere.js`)*. Cael leads you down to Lowtown, a quarter that has lived below the sea for eight hundred years behind an Oruun wall. Three nights ago the stone in the wall split and the wall opened; the Tidekeepers (Saltmere's water Wielders, captain Nerys) have held the water since, and the spring tide comes tonight. Tide-Regent Oriel Sand meets you at the wall (the Stonebound's letter about you came the day before Cael's). Answer her (*I'll close it* / *they think I did this* / let Bram answer).
+- *The tide:* the sea rises on the whole coast; Lowtown fills through the gap. The Oruun built the wall to close itself: lift the fallen wall stones (Earth) and set one on each of the three sockets in the gap, and the wall rises whole.
+- *Outcomes:* closed before the water tops the sill, Lowtown stays dry (*held*: care); late, it's wet to the knee (*wet*: less care). Folk and Oriel remember which.
+- *The Tidestone:* Cael asks you to touch the stone that split. Chisel marks again, the same hand as the Watchstone: *"Once is a grudge. Twice is a pattern."* Nerys: every stone that breaks, the Conduit's just been. Show her the marks, tell her it bothers you, or ask who told her (a grey coat at the fish market, silver with no face on it).
+- *After:* the tide turns; the Regent goes home to the council house; the wall stays closed on every later visit.
+
 The road east and south. One lesson on each road, one town problem in each kingdom:
 
 | Road | Lesson | Kingdom | Town problem (sketch) |
@@ -123,4 +129,5 @@ Cael's belongings: maps, notes, his record of every disturbance, his notes on yo
 3. ✅ **Thornwick: The Dry Mill**, with the river and mill states, Doran of the Stonebound, the return visit. Cael leads the way throughout (character role `lead`).
 4. ✅ **The Watchstone:** the stone cracked on purpose (Thessaly's hand, which Cael knows), the first Wielder fight (the Stonebound: a new enemy that yields, never dies), Act I told.
 5. ✅ **The road south:** the Sunken Cistern, Bram joins, Lesson II (Water: draw, aim, douse; drive a wheel).
-6. **Next:** Saltmere: the sea wall cracking at spring tide, Tide-Regent Oriel, the Tidekeepers.
+6. ✅ **Saltmere: the sea wall** at spring tide: Oriel, Nerys and the Tidekeepers; the wall's sockets; the second stone cut on purpose.
+7. **Next:** the road to Emberwall (Lesson III, *Fire, held*: a cold Oruun forge) and Cindrel's furnace fire.
