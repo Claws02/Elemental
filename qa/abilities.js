@@ -104,7 +104,7 @@ const SHOTS = path.join(__dirname, 'shots');
     // Three at most; then they sink back on their own.
     const most = await ev(() => { const W = __EL.works, h = __EL.player.position; for (let i = 0; i < 3; i++) W.raise(new __EL.THREE.Vector3(h.x + 6 + i * 2, 0, h.z + 6)); return W.columns.filter(c => c.state !== 'sinking').length; });
     await ev(() => { for (const c of __EL.works.columns) c.age = 99; });
-    const sank = await until(() => __EL.works.columns.length === 0, 30000);
+    const sank = await until(() => __EL.works.columns.length === 0, 90000);   // they last 25 s of game time, which runs slower than real time under software GL
     check(most === 3 && sank, `at most three stand at once, and they sink back after a while (${most} standing; sank: ${sank})`);
 
     // ---- Ice: Water + Air ------------------------------------------------------------------------------
