@@ -25,6 +25,7 @@
     "yard": "node qa/yard.js",
     "cistern": "node qa/cistern.js",
     "saltmere": "node qa/saltmere.js",
+    "resume": "node qa/resume.js",
     "buildings": "node qa/buildings.js",
     "bench": "node qa/bench.js",
     "unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON qa/unit.mjs",

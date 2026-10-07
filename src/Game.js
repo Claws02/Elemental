@@ -46,7 +46,6 @@ import { rememberScene } from './scene/Loader.js';
 import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
-import { EARTH } from './data/elements.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
@@ -126,9 +125,12 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     Renderer.warm([kitMaterials().body, kitMaterials().sheen, kitMaterials().glow, skinMaterial(), ice.mat, mud.mat, lava.hot, lava.crust, water.mat].filter(Boolean));
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
-    const checkpoint = () => {
+    // `story` is declared here and set below: a story resuming at a checkpointed step checkpoints
+    // from inside its own constructor, before `new Story` has returned (it passes its step).
+    let story = null;
+    const checkpoint = (step = story?.step) => {
         const p = player.body.position;
-        const where = { scene: data.id, spawn: { x: +p.x.toFixed(2), z: +p.z.toFixed(2), facing: +player.facing.toFixed(3) }, step: story?.step || null };
+        const where = { scene: data.id, spawn: { x: +p.x.toFixed(2), z: +p.z.toFixed(2), facing: +player.facing.toFixed(3) }, step: step || null };
         session.work.meta.scene = data.id;
         session.checkpoint(where);
         EventBus.emit(EV.CHECKPOINT, where);
@@ -150,7 +152,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     if (data.script) EventBus.on(EV.LESSON, e => { if (e.step === 'done') session.setState(toldKey, 'done'); });
     // A story can wait on the world: `script.when` (a showWhen expression, e.g. "lesson1") must hold for it to run.
     const storyOn = data.script && (!data.script.when || whenHolds(data.script.when, { flag: n => prog.flags[n], state: id => session.state(id) }));
-    const story = storyOn ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: told ? 'done' : step, hooks: { checkpoint: () => checkpoint(), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
+    story = storyOn ? new Story({ world, script: data.script, prog, channel, fire, hud, player, scene, startStep: told ? 'done' : step, hooks: { checkpoint: step => checkpoint(step), travel, ledger, session, mood: (n, secs) => Renderer.setMood(n, secs), douseAll: v => fire.douseAll(v?.by || 'environment'), surge: (el, o) => surges.surge(el, o),
         protect: v => { vitals.floor = v; }, flameSpill: v => { jet.spill = { target: v.target, radius: v.radius ?? 8, after: v.after || 0, cause: v.cause || 'awakening' }; } } }) : null;
     if (story) hud.story();
     // Anyone can be talked to: a tap on a person (story/Talk.js).
@@ -234,7 +236,6 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const perf = { frame: 16.7, update: 0, physics: 0, render: 0, frames: 0, onFrame: null };
     let lowPowerSaid = false, lowPowerT = 0;
     const ease = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
-    let slowK = 1;
     function frame(now) {
         if (!running) return;
         const t0 = performance.now();
@@ -242,9 +243,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         // a longer hitch is treated as a pause rather than a teleport. Never
         // negative: the first rAF timestamp can predate `last`.
         const raw = (now - last) / 1000;
-        // A stone flying at the hero (a Stonebound's): time slows, so it can be caught on a phone.
-        slowK += ((prog.has('earth') && creatures.incoming() ? EARTH.catch.slow : 1) - slowK) * Math.min(1, 10 * Math.min(0.1, raw));
-        const dt = Math.max(0, Math.min(0.1, raw)) * slowK;
+        const dt = Math.max(0, Math.min(0.1, raw));
         last = now;
         Renderer.adapt(raw);
         EventBus.tick(dt);

@@ -115,17 +115,6 @@ export class Creatures {
         return best.s;
     }
 
-    /** Is a stone flying at the hero, close? (Time slows for it: Game.) */
-    incoming() {
-        const h = this.player.position;
-        for (const { s } of this._flying()) {
-            const p = s.entry.body.position, v = s.entry.body.velocity;
-            const dx = h.x - p.x, dy = h.y + 0.9 - p.y, dz = h.z - p.z, d = Math.hypot(dx, dy, dz);
-            if (d < EARTH.catch.slowRange && (dx * v.x + dy * v.y + dz * v.z) > 0) return true;
-        }
-        return false;
-    }
-
     update(dt) {
         this.time += dt;
         for (const g of this.world.creatureGroups) if (!g.spawned && !g.inst.hidden) this._spawnGroup(g);

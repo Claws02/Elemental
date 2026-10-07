@@ -192,9 +192,9 @@ export class Story {
         case 'grant': this.prog.grant(v.el, v.track, v.amount, `${this.id}:${this.step}`); break;
         case 'flag': this.prog.flags[v.name] = (this.prog.flags[v.name] || 0) + v.add; break;
         case 'count': this.counters[v.name] = (this.counters[v.name] || 0) + (v.add ?? 1); break;
-        case 'saveFlag': this.prog.flags[v] = { outcome: this.outcome, ...this.counters }; this.prog._save(); this.hooks.checkpoint?.(); break;
+        case 'saveFlag': this.prog.flags[v] = { outcome: this.outcome, ...this.counters }; this.prog._save(); this.hooks.checkpoint?.(this.step); break;
         case 'card': if (v) this._card(); break;
-        case 'checkpoint': if (v) this.hooks.checkpoint?.(); break;
+        case 'checkpoint': if (v) this.hooks.checkpoint?.(this.step); break;     // its own step: it may be resuming, mid-construction
         case 'travel': this.hooks.travel?.(v.scene, v.at || 'start'); break;
         case 'setFlag': this.prog.flags[v.name] = v.value === 'true' ? true : v.value === 'false' ? false : isNaN(+v.value) || v.value === '' ? v.value : +v.value; break;
         case 'setState': this.hooks.session?.setState(v.id, v.value || null); break;

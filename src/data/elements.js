@@ -35,9 +35,7 @@ export const EARTH = {
     },
     // Catching a stone thrown at you (a Stonebound's): touch it in the air.
     catch: {
-        pickPx: 90,            // how close on screen the finger must land to a flying stone
-        slow: 0.45,            // time runs at this while a stone flies at you (fair on a phone)
-        slowRange: 9,          // metres: a stone this close and coming slows time
+        pickPx: 90,            // how close on screen the finger must land to a flying stone (no slow motion: it's reflexes)
     },
 };
 
