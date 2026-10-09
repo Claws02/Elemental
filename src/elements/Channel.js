@@ -218,15 +218,19 @@ export class Channel {
  */
 export function _impactOnce(body, element, cause) {
     const born = performance.now();
+    let done = false;
+    // Never remove a listener while cannon is dispatching to it (it walks the list by index): later.
+    const off = () => { done = true; queueMicrotask(() => body.removeEventListener('collide', on)); };
     const on = e => {
+        if (done) return;
         const v = Math.abs(e.contact.getImpactVelocityAlongNormal());
-        if (performance.now() - born > 4000) { body.removeEventListener('collide', on); return; }
+        if (performance.now() - born > 4000) { off(); return; }
         if (v < 3) return;
-        body.removeEventListener('collide', on);
+        off();
         const p = body.position, o = e.body;
         EventBus.emit(EV.IMPACT, { x: p.x, y: p.y, z: p.z, speed: v, mass: body.mass, element, cause, ground: o.mass === 0 && !o.userData?.data?.creature });
     };
-    if (body._impactOn) body.removeEventListener('collide', body._impactOn);
+    if (body._impactOn) { const prev = body._impactOn; queueMicrotask(() => body.removeEventListener('collide', prev)); }
     body._impactOn = on;
     body.addEventListener('collide', on);
 }
