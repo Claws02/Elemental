@@ -27,6 +27,7 @@ import { buildHero, HeroAnimator } from '../art/HeroModel.js';
 import { MUD, GLIDE } from '../data/elements.js';
 import { WADE, SWIM } from '../world/WaterBodies.js';
 import { Ground } from '../world/Ground.js';
+import { EventBus, EV } from '../core/EventBus.js';
 
 const RADIUS = 0.42;
 const WALK = 3.2, RUN = 6.8;
@@ -92,7 +93,17 @@ export class PlayerController {
     update(dt, move, camYaw, channel) {
         const b = this.body;
         if (this.climb) { this._climbing(dt); return; }
+        const was = this.grounded;
         this.grounded = Physics.supported(b) || b.position.y - RADIUS - Ground.height(b.position.x, b.position.z) < 0.08;
+        if (!was) this.fallV = Math.min(this.fallV || 0, b.velocity.y);
+        if (this.grounded && !was) {                                     // feet down: the knees take it
+            const v = -(this.fallV || 0);
+            if (!this.swimming && !this.water) {
+                this.anim.land(v);
+                if (v > 6) EventBus.emit(EV.LANDED, { x: b.position.x, y: Ground.height(b.position.x, b.position.z), z: b.position.z, v, k: Math.min(1, (v - 6) / 8) });
+            }
+            this.fallV = 0;
+        }
         this.sinceGround = this.grounded ? 0 : this.sinceGround + dt;
         // Camera-relative intent: stick up = away from the camera.
         const sin = Math.sin(camYaw), cos = Math.cos(camYaw);

@@ -24,6 +24,8 @@ The target is a steady 60 fps on an iPhone 15/16 Pro, through the heaviest momen
 | Flames: one pool, a budget shared by every fire, capped size near the lens | `art/FireFx.js`, `FireSystem` | Overdraw (the phone's real limit with particles) stays bounded |
 | Phones see a little less far (85%), the fog closing in to match | `quality.viewK` | Fewer things drawn and culled later |
 | Every shader compiled while loading | `Renderer.warm()` | No stall the first time fire, ice or lava appears |
+| Juice (flares, shockwaves, ground marks) as three instanced quad pools, aged on the GPU, drawn only while something in them is alive | `art/Juice.js` | Impact feel for at most three draw calls, none when idle; the CPU writes one slot per event |
+| The ladder sheds juice before frames: decals go at `fx` < 0.75, shockwaves at < 0.5, flares shrink | `Juice.decal/ring/flare` | The heaviest fights keep 60 |
 
 **Thinking (the CPU)**
 

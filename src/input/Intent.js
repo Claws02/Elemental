@@ -142,7 +142,7 @@ export class Intent {
         this.column = this.works.raise(at, 'player');
         this.state = 'raising';
         this.element = 'earth';
-        this.hero.anim?.throw?.();
+        this.hero.anim?.lift?.();
     }
 
     // ---- inputs from Gestures --------------------------------------------
@@ -367,7 +367,7 @@ export class Intent {
                     Object.assign(this, { thing: k.thing, still: 0, state: 'holding', pulled: { entry: k.entry, at: this.ground.clone() } });
                     this.trail = [];
                     this.channel.grab(k.entry, 'earth', { lift: 1.0 });
-                    this.hero.anim?.throw?.();
+                    this.hero.anim?.lift?.();
                 }
             } else if (this.t >= EARTH.raise.hold) this._column(this.ground);
             break;

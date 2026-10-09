@@ -189,10 +189,22 @@ export class HeroAnimator {
         this.climbT = -1;        // seconds into a climb (of climbDur)
         this.touchT = -1;        // seconds into a touch (of touchDur)
         this.climbDur = 1;
+        this.liftT = -1;         // seconds into a lift (stone pulled up, a column raised): both arms come up
+        this.flinchT = -1;       // seconds into a flinch (hurt)
+        this.landT = -1;         // seconds into a landing; landK how hard
+        this.landK = 0;
+        this.mode = null;        // what the hands are doing (Intent's state), and for how long
+        this.modeT = 0;
         this.p = {};             // current joint angles
     }
 
     throw() { this.throwT = 0; }
+    /** Both arms up from low: the ground answering (a stone pulled, a column raised). */
+    lift() { this.liftT = 0; }
+    /** Struck: knocked back a step, guard up. */
+    flinch() { this.flinchT = 0; }
+    /** Feet down after a fall at `v` m/s: the knees take it. */
+    land(v) { if (v < 3.5) return; this.landT = 0; this.landK = Math.min(1, (v - 3.5) / 8); }
     jump() { this.jumpT = 0; }
     climb(dur) { this.climbT = 0; this.climbDur = dur; }
     /** A hand laid on something in front, held there a moment (the standing stone). */
@@ -216,6 +228,7 @@ export class HeroAnimator {
             spineX: 0.04 + run * 0.22 + breath * 0.01,
             spineY: -s * 0.14 * moving,
             neckX: -run * 0.15,
+            neckY: 0,
             cloakX: 0.08 + run * 0.75 + moving * 0.12 + Math.sin(this.clock * 3 + this.phase) * 0.04 * (0.3 + moving),
             thighX: [s * 0.55 * moving * (0.7 + run * 0.4), -s * 0.55 * moving * (0.7 + run * 0.4)],
             kneeX: [Math.max(0, -c) * (0.4 + run * 0.9) * moving + 0.05, Math.max(0, c) * (0.4 + run * 0.9) * moving + 0.05],
@@ -239,9 +252,16 @@ export class HeroAnimator {
             T.cloakX = 0.35 + moving * 0.3;
         }
 
+        // What the hands are doing, and for how long (a stance eases in, a flow keeps time).
+        const mode = channel ? (channel.mode || 'holding') + ':' + (channel.element || '') : null;
+        if (mode !== this.mode) { this.mode = mode; this.modeT = 0; } else this.modeT += dt;
+        T.neckY = channel ? Math.max(-0.6, Math.min(0.6, channel.yaw * 0.5)) : 0;
+        let snap = 1;                                    // how sharply joints follow this frame (punches are quick)
+
         // Channelling: the lead arm reaches toward the held object, the other
-        // braces. Pitch 0 is level; positive pitch is up.
-        if (channel) {
+        // braces. Pitch 0 is level; positive pitch is up. Each element has its own stance.
+        if (channel && this._stance(T, channel, run)) { T.spineY += channel.yaw * 0.35; snap = channel.mode === 'jet' ? 2.6 : 1.3; }
+        else if (channel) {
             const reach = -(Math.PI / 2) - channel.pitch;
             T.shX[1] = reach;
             T.shZ[1] = 0.1;
@@ -289,21 +309,61 @@ export class HeroAnimator {
             T.spineX = _lerp(T.spineX, 0.12, k); T.neckX = _lerp(T.neckX, -0.1, k);
             if (u >= 1) this.touchT = -1;
         }
-        // Throwing: wind back, then whip the lead arm through and follow on.
+        // Throwing: a snap of wind-up, the lead arm whipped through with the body behind it,
+        // a step onto the front foot, and a follow-through that carries the arm across.
         if (this.throwT >= 0) {
             this.throwT += dt;
             const t = this.throwT;
-            if (t < 0.08) {
-                T.shX[1] = 0.6; T.elX[1] = -1.2; T.spineY = 0.45;
-            } else if (t < 0.32) {
-                const k = (t - 0.08) / 0.24;
-                T.shX[1] = _lerp(-2.4, -1.0, k); T.elX[1] = -0.1; T.spineY = _lerp(-0.4, -0.2, k); T.spineX = 0.25;
+            snap = Math.max(snap, 2.2);
+            if (t < 0.07) {
+                T.shX[1] = 0.9; T.elX[1] = -1.4; T.spineY = 0.55; T.spineX = -0.05; T.hipsY -= 0.05;
+                T.thighX = [-0.35, 0.2]; T.kneeX = [0.35, 0.3];
+            } else if (t < 0.24) {
+                const k = (t - 0.07) / 0.17;
+                T.shX[1] = _lerp(-2.6, -1.1, k); T.elX[1] = -0.05; T.shZ[1] = 0.15;
+                T.spineY = _lerp(-0.25, -0.55, k); T.spineX = 0.28; T.hipsRy = -0.25;
+                T.shX[0] = 0.4; T.elX[0] = -1.2;                         // the off arm pulls back for balance
+                T.thighX = [-0.55, 0.35]; T.kneeX = [0.45, 0.2]; T.hipsY -= 0.06;
+            } else if (t < 0.5) {
+                const k = (t - 0.24) / 0.26;                              // follow through, then ease back
+                T.shX[1] = _lerp(-0.7, T.shX[1], k); T.shZ[1] = _lerp(-0.35, T.shZ[1], k); T.elX[1] = _lerp(-0.3, T.elX[1], k);
+                T.spineX = _lerp(0.35, T.spineX, k); T.spineY = _lerp(-0.45, T.spineY, k);
+                T.thighX = [_lerp(-0.45, T.thighX[0], k), _lerp(0.3, T.thighX[1], k)];
             } else {
                 this.throwT = -1;
             }
         }
+        // Lifting: crouched low, palms up, then both arms drive up as the ground answers.
+        if (this.liftT >= 0) {
+            this.liftT += dt;
+            const t = this.liftT, k = Math.min(1, t / 0.18), back = Math.max(0, (t - 0.3) / 0.25);
+            snap = Math.max(snap, 2);
+            const up = _lerp(-2.5, T.shX[1], back);
+            T.shX = [_lerp(0.2, up, k), _lerp(0.2, up, k)]; T.shZ = [-0.3, 0.3]; T.elX = [-0.35, -0.35];
+            T.hipsY += _lerp(-0.12, 0.03, k) * (1 - back); T.kneeX = T.kneeX.map(v => v + _lerp(0.6, 0, k) * (1 - back));
+            T.spineX = _lerp(0.35, -0.12, k) * (1 - back) + T.spineX * back; T.neckX = -0.2 * (1 - back);
+            if (t > 0.55) this.liftT = -1;
+        }
+        // Flinching: knocked back, head snapped, the guard thrown up; it passes.
+        if (this.flinchT >= 0) {
+            this.flinchT += dt;
+            const t = this.flinchT, k = t < 0.06 ? t / 0.06 : Math.max(0, 1 - (t - 0.06) / 0.3);
+            snap = Math.max(snap, 2.4);
+            T.spineX = _lerp(T.spineX, -0.32, k); T.neckX = _lerp(T.neckX, 0.35, k); T.hipsY -= 0.05 * k;
+            T.shX = T.shX.map(v => _lerp(v, -1.3, k)); T.elX = T.elX.map(v => _lerp(v, -1.7, k)); T.shZ = [_lerp(T.shZ[0], -0.25, k), _lerp(T.shZ[1], 0.25, k)];
+            if (t > 0.36) this.flinchT = -1;
+        }
+        // Landing: the knees take it, deeper the harder the fall, and spring back.
+        if (this.landT >= 0) {
+            this.landT += dt;
+            const t = this.landT, k = (t < 0.05 ? t / 0.05 : Math.max(0, 1 - (t - 0.05) / 0.28)) * this.landK;
+            snap = Math.max(snap, 2.4);
+            T.hipsY -= 0.22 * k; T.kneeX = T.kneeX.map(v => v + 0.9 * k); T.thighX = T.thighX.map(v => v - 0.45 * k);
+            T.spineX += 0.3 * k; T.shZ = [T.shZ[0] - 0.35 * k, T.shZ[1] + 0.35 * k];
+            if (t > 0.33) this.landT = -1;
+        }
 
-        const k = 1 - Math.exp(-DAMP * dt);
+        const k = 1 - Math.exp(-DAMP * snap * dt);
         const P = this.p;
         const d = (key, v) => { P[key] = P[key] === undefined ? v : _lerp(P[key], v, k); return P[key]; };
         r.hips.position.y = d('hipsY', T.hipsY);
@@ -311,6 +371,7 @@ export class HeroAnimator {
         r.spine.rotation.x = d('spineX', T.spineX);
         r.spine.rotation.y = d('spineY', T.spineY);
         r.neck.rotation.x = d('neckX', T.neckX);
+        r.neck.rotation.y = d('neckY', T.neckY);
         r.cloak.rotation.x = d('cloakX', T.cloakX);
         for (let i = 0; i < 2; i++) {
             r.thigh[i].rotation.x = d('thX' + i, T.thighX[i]);
@@ -323,5 +384,74 @@ export class HeroAnimator {
         const pulse = 1 + Math.sin(this.clock * (channel ? 12 : 3)) * (channel ? 0.25 : 0.1);
         r.stone.scale.setScalar(pulse);
         r.stone.rotation.y += dt * 1.5;
+    }
+
+    /**
+     * An element's stance while channelling (channel: { pitch, yaw, element, mode }). Writes the
+     * targets T; returns false to leave it to the plain reach. `mode` is Intent's state:
+     * holding · stream · jet · wind · raising · ground (the hold before a stone comes up).
+     */
+    _stance(T, ch, run) {
+        const reach = -(Math.PI / 2) - ch.pitch, t = this.modeT, w = this.clock, low = 1 - run;
+        const ease = Math.min(1, t / 0.2);
+        const brace = (front, back, knee) => { T.thighX = [_lerp(T.thighX[0], front, low), _lerp(T.thighX[1], back, low)]; T.kneeX = T.kneeX.map(v => Math.max(v, knee * low)); };
+        switch (ch.mode) {
+        case 'ground': {                                 // bent to the ground, the lead hand down on it
+            T.shX[1] = _lerp(T.shX[1], -0.55, ease); T.elX[1] = -0.1; T.shZ[1] = 0.1;
+            T.shX[0] = -0.6; T.elX[0] = -1.2;
+            T.spineX = _lerp(T.spineX, 0.55, ease); T.neckX = -0.35; T.hipsY -= 0.14 * ease * low;
+            brace(-0.45, 0.25, 0.75);
+            return true;
+        }
+        case 'raising': {                                // both palms lifting the column, legs driving
+            const u = Math.min(1, t / 0.9);
+            T.shX = [_lerp(-0.5, -2.2, u) + Math.sin(w * 9) * 0.03, _lerp(-0.5, -2.2, u) + Math.sin(w * 9 + 1) * 0.03];
+            T.shZ = [-0.35, 0.35]; T.elX = [-0.5, -0.5];
+            T.spineX = _lerp(0.2, -0.1, u); T.hipsY -= _lerp(0.12, 0.02, u) * low; brace(-0.3, 0.3, _lerp(0.7, 0.2, u));
+            return true;
+        }
+        case 'jet': {                                    // fire: quick alternating punches, the body behind each
+            const p = w * 9, a = Math.max(0, Math.sin(p)), b = Math.max(0, -Math.sin(p));
+            const cocked = -0.5, lead = [b, a];
+            for (let i = 0; i < 2; i++) { T.shX[i] = _lerp(cocked, reach, lead[i]); T.elX[i] = _lerp(-1.8, -0.05, lead[i]); T.shZ[i] = i ? 0.12 : -0.12; }
+            T.spineY += (a - b) * 0.3; T.spineX = 0.18; T.hipsY -= 0.08 * low; brace(-0.5, 0.35, 0.4);
+            return true;
+        }
+        case 'stream': {                                 // water: both arms flow with the stream, the hips sway
+            const f = Math.sin(w * 2.4), g = Math.cos(w * 2.4);
+            T.shX = [reach + 0.25 * f, reach + 0.25 * f]; T.shZ = [-0.4 - 0.2 * g, 0.4 + 0.2 * g]; T.elX = [-0.35 + 0.15 * g, -0.35 + 0.15 * g];
+            T.hipsRy += 0.15 * f; T.spineY += 0.18 * f; T.spineX = 0.08; T.hipsY -= 0.05 * low; brace(-0.3, 0.25, 0.3);
+            return true;
+        }
+        case 'wind': {                                   // air: wide circles of the arms, light on the feet
+            const a = w * 4;
+            T.shX = [-1.2 + 0.6 * Math.sin(a), -1.2 + 0.6 * Math.sin(a + Math.PI)];
+            T.shZ = [-0.5 - 0.4 * Math.cos(a), 0.5 + 0.4 * Math.cos(a + Math.PI)]; T.elX = [-0.3, -0.3];
+            T.spineY += 0.3 * Math.sin(a); T.hipsY += 0.02 * Math.sin(a * 2); brace(-0.2, 0.2, 0.2);
+            return true;
+        }
+        case 'holding': {
+            if (ch.element === 'earth') {               // a weight: low and wide, both hands on it, straining
+                const quiver = Math.sin(w * 23) * 0.025;
+                T.shX = [reach + 0.15 + quiver, reach + quiver]; T.shZ = [-0.3, 0.25]; T.elX = [-0.45, -0.3];
+                T.spineX = -0.04; T.hipsY -= 0.09 * low; brace(-0.35, 0.3, 0.45);
+                return true;
+            }
+            if (ch.element === 'fire') {                // a fireball cupped up front, the other fist cocked back
+                T.shX[1] = reach; T.elX[1] = -0.35; T.shZ[1] = 0.15;
+                T.shX[0] = 0.35; T.elX[0] = -1.6; T.shZ[0] = -0.25;
+                T.spineY += 0.25; T.hipsY -= 0.05 * low; brace(-0.45, 0.3, 0.35);
+                return true;
+            }
+            if (ch.element === 'water' || ch.element === 'air') {   // both hands round it, turning
+                const f = Math.sin(w * 3);
+                T.shX = [reach + 0.1 * f, reach - 0.1 * f]; T.shZ = [-0.25, 0.25]; T.elX = [-0.55, -0.55];
+                T.hipsY -= 0.04 * low; brace(-0.25, 0.2, 0.25);
+                return true;
+            }
+            return false;
+        }
+        }
+        return false;
     }
 }

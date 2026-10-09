@@ -262,6 +262,7 @@ export class WaterSystem {
     /** A burst of water at `p` (an orb landing, a stream let go). */
     splash(p, strength = 1) {
         this._wet(p, WATER.splash * (0.5 + 0.5 * strength), strength);
+        EventBus.emit(EV.SPLASH, { x: p.x, y: p.y, z: p.z, strength });
         for (let i = 0; i < 40 * strength; i++) {
             const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 3;
             this.drops.spawn({ x: p.x, y: p.y + 0.1, z: p.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 3, vz: Math.sin(a) * v,

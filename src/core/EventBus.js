@@ -66,6 +66,9 @@ export const EV = {
     EARTH_RAISED:       'EarthRaised',
     EARTH_PULLED:       'EarthPulled',
     STONE_CAUGHT:       'StoneCaught',
+    IMPACT:             'Impact',          // { x, y, z, speed, mass, element, ground, cause }: a thrown thing's first hard landing
+    SPLASH:             'Splash',          // { x, y, z, strength }: water bursting (an orb, a stream let go)
+    LANDED:             'Landed',          // { x, y, z, v, k }: the hero's feet down after a fall (k: how hard, 0..1)
     ICE:                'Ice',
     ICE_BROKEN:         'IceBroken',
     FROZEN:             'Frozen',

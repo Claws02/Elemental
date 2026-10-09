@@ -85,3 +85,23 @@ Measured in headless Chromium (software GL, 844×390): **77 draw calls and 51k t
 **Recommendation:** stay procedural for the world (buildings, ruins, props, destruction) permanently. Plan a **hybrid pipeline** for hero characters and creatures from Phase 6 (the vertical slice): glTF models made in Blender, loaded with three.js's GLTFLoader (vendored like the engine, see `vendor/README.md`), skinned and animated with clips. **Agreed 2026-09-29:** character models move to Blender in Phase 6; until then the procedural hero stands in.
 
 **Engine version:** resolved. Elemental moved from r128 to r186 in Phase 1 (`TECH_ARCHITECTURE.md` §9), so modern three.js features (instancing, BatchedMesh, WebGPU later) are available without a rewrite.
+
+
+## Feel: animation and juice
+
+**The hero's stances** (`art/HeroModel.js` `HeroAnimator._stance`): what the hands are doing decides the body. Intent's state and the element come in with the channel pose.
+
+| Doing | Stance |
+|---|---|
+| Holding a stone (Earth) | Low and wide, both hands on it, a strain in the arms |
+| Holding a fireball | Cupped up front, the other fist cocked back, staggered feet |
+| Holding water or air | Both hands round it, turning |
+| The hold before a stone comes up | Bent to the ground, the lead hand flat on it |
+| Raising a column | Both palms driving up, legs extending as it rises |
+| Fire's jet | Quick alternating punches, the body twisting behind each |
+| Water's stream | Both arms flowing with it, hips swaying |
+| Air's wind | Wide circles of the arms |
+
+Plus a throw with a snap of wind-up, a step onto the front foot and a follow-through across the body; a lift (both arms up as the ground answers); a flinch when hurt; and a knee-dip landing that scales with the fall.
+
+**Juice** (`art/Juice.js`): camera shake (trauma², fading, falling off with distance), a screen flash (red edges when hurt, warm for a blast), additive flares where things land, shockwave rings on the ground, and marks left behind (scorch, wet, cracked earth) that fade over ~20 s. It listens to events (`IMPACT`, `EXPLOSION`, `SPLASH`, `EARTH_RAISED`, `EARTH_PULLED`, `HURT`, `LANDED`, ...) and never changes the rules. Ideas after achrefelouafi/AvatarCastingAbilitiesThreeJS (MIT), adapted for a phone. *Test: `qa/juice.js`.*

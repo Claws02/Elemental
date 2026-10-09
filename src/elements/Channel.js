@@ -114,6 +114,7 @@ export class Channel {
         b.angularVelocity.set((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
         entry.data.thrownBy = 'player';
         entry.data.thrownAt = performance.now();
+        _impactOnce(b, element, 'player');
         this.hero.anim.throw();
         this.throws++;
         EventBus.emit(EV.OBJECT_THROWN, { id: entry.id, element, speed: Math.round(speed), cause: 'player' });
@@ -134,7 +135,7 @@ export class Channel {
         const pitch = Math.atan2(t.y - (hp.y + 1.35), Math.max(0.3, Math.hypot(dx, dz)));
         let yaw = Math.atan2(dx, dz) - this.hero.facing;
         yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
-        return { pitch: Math.max(-0.8, Math.min(1.2, pitch)), yaw };
+        return { pitch: Math.max(-0.8, Math.min(1.2, pitch)), yaw, element: this.held?.element || this.aim?.element || null, mode: this.held ? 'holding' : null };
     }
 
     update(dt) {
@@ -209,4 +210,23 @@ export class Channel {
         }
         t.geometry.attributes.position.needsUpdate = true;
     }
+}
+
+/**
+ * A thrown body's first hard landing, told once (EV.IMPACT: Juice answers it with a flare,
+ * dust and a shake). The listener goes as soon as it has spoken, or after a few seconds.
+ */
+export function _impactOnce(body, element, cause) {
+    const born = performance.now();
+    const on = e => {
+        const v = Math.abs(e.contact.getImpactVelocityAlongNormal());
+        if (performance.now() - born > 4000) { body.removeEventListener('collide', on); return; }
+        if (v < 3) return;
+        body.removeEventListener('collide', on);
+        const p = body.position, o = e.body;
+        EventBus.emit(EV.IMPACT, { x: p.x, y: p.y, z: p.z, speed: v, mass: body.mass, element, cause, ground: o.mass === 0 && !o.userData?.data?.creature });
+    };
+    if (body._impactOn) body.removeEventListener('collide', body._impactOn);
+    body._impactOn = on;
+    body.addEventListener('collide', on);
 }

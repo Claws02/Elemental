@@ -30,6 +30,7 @@
 
 import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
+import { _impactOnce } from '../elements/Channel.js';
 import { OPPOSITE } from '../data/creatures.js';
 import { Ground } from '../world/Ground.js';
 import { CANNON } from '../engine/lib.js';
@@ -396,6 +397,7 @@ function _throwStone(c, mesh) {
     const entry = Physics.add({ body, mesh, tier: TIER.INTERACTIVE, id: `${c.id}_stone_${c.thrownN = (c.thrownN || 0) + 1}`, data: { radius: STONE_R, thrownBy: 'stonebound', thrownAt: performance.now(), stonebound: true } });
     const s = { entry, mesh, t: 0, hit: false };
     const player = c.sys.player.body;
+    _impactOnce(body, 'earth', 'stonebound');
     body.addEventListener('collide', e => {
         if (s.hit || e.body !== player) return;
         if (Math.abs(e.contact.getImpactVelocityAlongNormal()) < 5) return;

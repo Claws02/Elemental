@@ -46,6 +46,7 @@ import { rememberScene } from './scene/Loader.js';
 import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
+import { Juice } from './art/Juice.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
@@ -113,6 +114,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const ledger = new Ledger(session, st.region || 'verdant', ownerOf);
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel, prog });
+    const juice = new Juice({ scene, hero: player, cam });     // shake, flashes, flares, shockwaves, marks on the ground
     const ice = new Ice({ scene, fire, fx, creatures });
     Object.assign(creatures, { ice, water });          // the frostmaw's walls, the brinecoil's charged streams
     const storm = new Firestorm({ fire, fx, creatures });
@@ -252,7 +254,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         channel.update(dt);
         earth.update(dt);
         player.rig.setElement(intent.element);
-        player.update(dt, input.moveVector(), cam.moveYaw, channel.pose());
+        const pose = channel.pose();
+        if (pose && intent.state !== 'idle' && intent.state !== 'done') pose.mode = intent.state;    // the stance: holding, stream, jet, wind, ground, raising
+        player.update(dt, input.moveVector(), cam.moveYaw, pose);
         glide.update(dt);
         const tp = performance.now();
         Physics.step(dt);
@@ -285,6 +289,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         fx.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
+        juice.update(dt);
+        juice.apply(camera);              // shake, after the rig has placed the camera
         // The compass: the way the camera looks (north is -z, east +x), and where the story's marker is.
         {
             const p = player.position, mk = story?.marker?.visible ? story.marker.position : null;
@@ -315,7 +321,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     // QA handle: the tests drive the game through this, never through private state.
     const api = {
         ready: true,
-        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data,
+        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice,
         session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
@@ -337,6 +343,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         ledger.dispose();
         creatures.dispose();
         works.dispose();
+        juice.dispose();
         ice.dispose();
         lava.dispose();
         mud.dispose();

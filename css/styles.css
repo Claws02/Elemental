@@ -158,3 +158,6 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .hud-health.hit { animation: hp-hit .35s; }
 @keyframes hp-hit { 0% { box-shadow: 0 0 0 2px rgba(255,90,60,.9); } 100% { box-shadow: 0 0 0 0 rgba(255,90,60,0); } }
 @keyframes hp-pulse { from { opacity: 1; } to { opacity: .55; } }
+
+/* Juice (src/art/Juice.js): a screen flash: hurt at the edges, a blast all over. Never takes a touch. */
+#fx-flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 4; mix-blend-mode: screen; }
