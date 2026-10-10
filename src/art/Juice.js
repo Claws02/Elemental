@@ -26,6 +26,7 @@ import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Ground } from '../world/Ground.js';
 import * as Renderer from '../engine/Renderer.js';
+import { Particles } from './Particles.js';
 
 export const JUICE = {
     shake: { decay: 1.7, offset: 0.32, roll: 0.035, freq: 22, far: 28 },  // trauma per second; metres; radians; Hz; falloff
@@ -197,6 +198,12 @@ export class Juice {
         this.flares = new Quads(scene, JUICE.flares, flareMat());
         this.rings = new Quads(scene, JUICE.rings, ringMat());
         this.decals = new Quads(scene, JUICE.decals, decalMat());
+        // Debris on the GPU particle engine (art/Particles.js): rock chips, dust, sparks, smoke.
+        const P = Particles.current;
+        this.chips = P?.pool(140, 'chip');
+        this.dust = P?.pool(120, 'dust');
+        this.sparks = P?.pool(100, 'spark');
+        this.smoke = P?.pool(48, 'smoke');
         this.flashEl = document.getElementById('fx-flash') || Object.assign(document.body.appendChild(document.createElement('div')), { id: 'fx-flash' });
         this.flashT = 0;
         this.off = [
@@ -209,10 +216,10 @@ export class Juice {
             EventBus.on(EV.ICE, e => { const p = this._ground(e.x, e.z); this.flare(p, 'ice', 2.2); this.ring(p, 'ice', 2.5); }),
             EventBus.on(EV.MUD, e => this.decal(this._ground(e.x, e.z), 'wet', 2.6)),
             EventBus.on(EV.LAVA, e => { const p = this._ground(e.x, e.z); this.decal(p, 'scorch', 2.8); this.shake(0.3, p); }),
-            EventBus.on(EV.PIECE_BROKEN, e => { if (e.pos && e.cause !== 'environment') { this.shake(0.12, e.pos); this.flare(e.pos, 'dust', 1.2); } }),
+            EventBus.on(EV.PIECE_BROKEN, e => { if (e.pos && e.cause !== 'environment') { this.shake(0.12, e.pos); this.flare(e.pos, 'dust', 1.2); this.debris(e.pos, 0.6, e.burned ? 0x2a2420 : 0x8a6a48); } }),
             EventBus.on(EV.STONE_CAUGHT, () => { const p = this.hero.position; this.flare({ x: p.x, y: p.y + 1.4, z: p.z }, 'earth', 1.0); this.shake(0.12); }),
             EventBus.on(EV.HURT, e => this._hurt(e)),
-            EventBus.on(EV.LANDED, e => { const p = { x: e.x, y: e.y, z: e.z }; this.ring(p, 'dust', 1.6 + e.k * 1.5); this.shake(0.12 + e.k * 0.3, p); if (e.k > 0.5) this.decal(p, 'crack', 1.4); }),
+            EventBus.on(EV.LANDED, e => { const p = { x: e.x, y: e.y, z: e.z }; this.ring(p, 'dust', 1.6 + e.k * 1.5); this.shake(0.12 + e.k * 0.3, p); this.puff(p, 4 + e.k * 6, 1.6 + e.k * 2); if (e.k > 0.5) this.decal(p, 'crack', 1.4); }),
             EventBus.on(EV.LANDMARK, () => this.shake(1)),
         ];
     }
@@ -245,6 +252,46 @@ export class Juice {
         this.decals.put({ x: p.x, y: Ground.height(p.x, p.z), z: p.z }, this.t, JUICE.decalLife * (0.8 + Math.random() * 0.4), size, KIND[kind] ?? 0, _c.set(0), [_n.x, _n.y, _n.z, Math.random() * 6.28]);
     }
 
+    // ---- debris (GPU particles) ---------------------------------------------------------------
+
+    /** How many of something the ladder allows (it thins debris before frames go). */
+    _n(n) { return Math.round(n * Math.max(0.35, Renderer.quality.fx ?? 1)); }
+
+    /** Rock chips flung up and out of p, `k` 0..1 how hard, tinted `color`. */
+    debris(p, k = 0.5, color = 0x8a7a64) {
+        if (!this.chips) return;
+        _c.set(color);
+        for (let i = 0, n = this._n(4 + k * 12); i < n; i++) {
+            const a = Math.random() * 6.283, v = 2 + Math.random() * 4 * (0.5 + k), s = 0.12 + Math.random() * 0.18 * (0.6 + k);
+            this.chips.spawn({ x: p.x, y: p.y + 0.15, z: p.z, vx: Math.cos(a) * v, vy: 2.5 + Math.random() * 4 * (0.5 + k), vz: Math.sin(a) * v,
+                max: 0.7 + Math.random() * 0.5, s0: s, s1: s * 0.8, c0: _c.getHex(), c1: _c.clone().multiplyScalar(0.7).getHex() });
+        }
+    }
+
+    /** Dust rolling out along the ground from p. */
+    puff(p, n = 6, spread = 2) {
+        if (!this.dust) return;
+        const gy = Ground.height(p.x, p.z);
+        for (let i = 0, m = this._n(n); i < m; i++) {
+            const a = (i / m) * 6.283 + Math.random() * 0.6, v = spread * (0.8 + Math.random() * 0.6);
+            this.dust.spawn({ x: p.x + Math.cos(a) * 0.3, y: gy + 0.25, z: p.z + Math.sin(a) * 0.3, vx: Math.cos(a) * v, vy: 0.4 + Math.random() * 0.5, vz: Math.sin(a) * v,
+                max: 1.0 + Math.random() * 0.8, s0: 0.6, s1: 1.8 + Math.random() * 0.8 });
+        }
+    }
+
+    /** Hot sparks thrown out of p, then a little smoke. */
+    blastFx(p, k = 1) {
+        if (!this.sparks) return;
+        for (let i = 0, n = this._n(14 + k * 16); i < n; i++) {
+            const a = Math.random() * 6.283, u = Math.random() * 0.9 + 0.1, v = (5 + Math.random() * 7) * k;
+            this.sparks.spawn({ x: p.x, y: p.y + 0.3, z: p.z, vx: Math.cos(a) * v * (1 - u * 0.5), vy: v * u, vz: Math.sin(a) * v * (1 - u * 0.5), max: 0.5 + Math.random() * 0.5, s0: 0.12, s1: 0.05 });
+        }
+        for (let i = 0, n = this._n(5 + k * 4); i < n; i++) {
+            this.smoke.spawn({ x: p.x + (Math.random() - 0.5), y: p.y + 0.5, z: p.z + (Math.random() - 0.5), vx: (Math.random() - 0.5) * 1.5, vy: 1 + Math.random(), vz: (Math.random() - 0.5) * 1.5,
+                max: 1.6 + Math.random(), s0: 0.8, s1: 2.6 });
+        }
+    }
+
     /** A screen flash: `color` css, `peak` opacity, over `secs`. Hurt flashes the edges. */
     flash(color, peak = 0.35, secs = 0.35, edge = false) {
         const el = this.flashEl;
@@ -266,11 +313,14 @@ export class Juice {
         const p = { x: e.x, y: e.y, z: e.z }, tint = e.element === 'fire' ? 'fire' : e.element === 'water' ? 'water' : 'earth';
         this.flare(p, tint, 0.8 + energy * 2.2, 0.22 + energy * 0.2);
         if (energy > 0.25) this.ring({ x: e.x, y: Ground.height(e.x, e.z), z: e.z }, 'dust', 1 + energy * 2.5);
+        if (tint === 'earth') { this.debris(p, energy); if (e.ground) this.puff(p, 2 + energy * 6, 1 + energy * 2); }
+        else if (tint === 'fire') this.blastFx(p, 0.4 + energy * 0.4);
         if (energy > 0.45 && e.ground) this.decal(p, 'crack', 0.9 + energy * 1.4);
         this.shake(energy * 0.45, p);
     }
 
     _blast(p, k) {
+        this.blastFx(p, k);
         this.flare({ x: p.x, y: p.y + 0.5, z: p.z }, 'fire', 3.2 * k, 0.45);
         this.ring(this._ground(p.x, p.z), 'fire', 3.5 * k, 0.6);
         this.decal(p, 'scorch', 2.4 * k);
@@ -289,6 +339,8 @@ export class Juice {
     _earth(e, k) {
         const p = this._ground(e.x, e.z);
         if (e.cause && e.cause !== 'player') return;
+        this.debris(p, 0.3 + k * 0.4);
+        this.puff(p, 4 + k * 6, 1.2 + k * 1.6);
         this.ring(p, 'dust', 1.4 + k * 1.6, 0.5);
         this.decal(p, 'crack', 1 + k * 1.2);
         this.flare({ x: p.x, y: p.y + 0.3, z: p.z }, 'dust', 0.8 + k, 0.25);

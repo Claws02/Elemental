@@ -28,7 +28,7 @@ import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
-import { Pool } from '../art/FireFx.js';
+import { Particles } from '../art/Particles.js';
 import { AIR } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
 import { SWIM } from '../world/WaterBodies.js';
@@ -45,8 +45,8 @@ export class AirSystem {
         this.wind = null;          // { dir: Vector3, aim: Vector3 } while blowing
         this.time = 0;
         this.gusts = 0;
-        this.streaks = new Pool(220, true);
-        scene.add(this.streaks.points);
+        this.streaks = Particles.current.pool(220, 'streak');      // thin lines stretched along the wind (art/Particles.js)
+        this.motes = Particles.current.pool(60, 'mote');           // specks carried in it
     }
 
     /** The hero's chest: where Air comes from. */
@@ -175,8 +175,9 @@ export class AirSystem {
         this.streaks.spawn({
             x: o.x + j() * 0.5, y: o.y + j() * 0.5, z: o.z + j() * 0.5,
             vx: v.x + j() * speed * 0.35, vy: v.y + j() * speed * 0.2, vz: v.z + j() * speed * 0.35,
-            max: 0.35 + Math.random() * 0.3, s0: 0.16, s1: 0.04,
+            max: 0.35 + Math.random() * 0.3, s0: 0.3, s1: 0.12,
         });
+        if (Math.random() < 0.15) this.motes.spawn({ x: o.x + j(), y: o.y + j() * 0.5, z: o.z + j(), vx: v.x * 0.6, vy: v.y * 0.6 + 0.3, vz: v.z * 0.6, max: 0.9 + Math.random() * 0.6, s0: 0.06, s1: 0.03 });
     }
 
     update(dt) {
@@ -186,10 +187,6 @@ export class AirSystem {
             const o = this.origin();
             for (let i = 0; i < 90 * dt; i++) this._streak(o, this.wind.dir, 9, 0.6);
         }
-        this.streaks.update(dt, (k, tint, i) => {
-            tint[i * 3] = 0.78; tint[i * 3 + 1] = 0.95; tint[i * 3 + 2] = 0.88;
-            return Math.sin(k * Math.PI) * 0.55;
-        }, 0);
     }
 
     stats() { return { blowing: !!this.wind, gusts: this.gusts, streaks: this.streaks.alive }; }

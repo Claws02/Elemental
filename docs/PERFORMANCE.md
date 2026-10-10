@@ -21,7 +21,8 @@ The target is a steady 60 fps on an iPhone 15/16 Pro, through the heaviest momen
 | Every building one mesh, burning or not (`world/Skin.js`) | `Structure`, `Building` | A burning village costs what a quiet one does in draw calls |
 | Scenery batched into 40 m cells, culled by distance | `world/Batcher.js`, `Game.js` | Hundreds of trees in a handful of draw calls |
 | People far off are a baked still (one or two draws), not a 15-part rig | `story/Npc.js` `NPC_LOD` | A crowd stays cheap |
-| Flames: one pool, a budget shared by every fire, capped size near the lens | `art/FireFx.js`, `FireSystem` | Overdraw (the phone's real limit with particles) stays bounded |
+| Every particle in the game (flame, embers, smoke, steam, water drops, mist, wind streaks, rock chips, dust, sparks) on the GPU: two instanced meshes, written once at birth, aged in the vertex shader; only the slots born this frame are uploaded; not drawn while empty | `art/Particles.js` | The CPU no longer moves a single particle; four always-on point systems became two meshes that idle at zero |
+| Each pool still a budget (full: new emission skipped), and debris counts thin on the quality ladder; size capped near the lens | `art/Particles.js` `Pool`, `Juice._n` | Overdraw (the phone's real limit with particles) stays bounded |
 | Phones see a little less far (85%), the fog closing in to match | `quality.viewK` | Fewer things drawn and culled later |
 | Every shader compiled while loading | `Renderer.warm()` | No stall the first time fire, ice or lava appears |
 | Juice (flares, shockwaves, ground marks) as three instanced quad pools, aged on the GPU, drawn only while something in them is alive | `art/Juice.js` | Impact feel for at most three draw calls, none when idle; the CPU writes one slot per event |

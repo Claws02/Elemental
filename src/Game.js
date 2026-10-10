@@ -47,6 +47,7 @@ import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Juice } from './art/Juice.js';
+import { Particles } from './art/Particles.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
@@ -94,6 +95,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const channel = new Channel({ camera, hero: player, prog });
     scene.add(channel.tether);
     const earth = new EarthSystem({ hero: player, rocks: world.rocks, channel, prog });
+    const particles = new Particles(scene);                  // every particle in the game: two draw calls, aged on the GPU (art/Particles.js)
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player, prog });
     const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
@@ -286,7 +288,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         hud.health?.(vitals.health / 100);
         story?.update(dt);
         talk.update(dt);
-        fx.update(dt, renderer.getDrawingBufferSize(_size).y);
+        particles.update(dt, renderer.getDrawingBufferSize(_size).y);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
         juice.update(dt);
@@ -321,7 +323,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     // QA handle: the tests drive the game through this, never through private state.
     const api = {
         ready: true,
-        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice,
+        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles,
         session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
@@ -344,6 +346,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         creatures.dispose();
         works.dispose();
         juice.dispose();
+        particles.dispose();
         ice.dispose();
         lava.dispose();
         mud.dispose();

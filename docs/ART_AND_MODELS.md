@@ -105,3 +105,10 @@ Measured in headless Chromium (software GL, 844×390): **77 draw calls and 51k t
 Plus a throw with a snap of wind-up, a step onto the front foot and a follow-through across the body; a lift (both arms up as the ground answers); a flinch when hurt; and a knee-dip landing that scales with the fall.
 
 **Juice** (`art/Juice.js`): camera shake (trauma², fading, falling off with distance), a screen flash (red edges when hurt, warm for a blast), additive flares where things land, shockwave rings on the ground, and marks left behind (scorch, wet, cracked earth) that fade over ~20 s. It listens to events (`IMPACT`, `EXPLOSION`, `SPLASH`, `EARTH_RAISED`, `EARTH_PULLED`, `HURT`, `LANDED`, ...) and never changes the rules. Ideas after achrefelouafi/AvatarCastingAbilitiesThreeJS (MIT), adapted for a phone. *Test: `qa/juice.js`.*
+
+
+## Particles
+
+`art/Particles.js`: every particle is an instanced quad in one of two meshes (additive: flame, embers, sparks, motes; alpha: smoke, steam, drops, mist, chips, dust, wind streaks). A particle is written once when born (where, velocity, life, size, colours, shape) and the vertex shader works out the rest: drag, gravity, a little turbulence, size and colour over life; sparks and wind streaks stretch along their motion on screen; chips tumble. Shapes are drawn in the fragment shader, no textures: a flame with a white-hot core going orange to ember red, a three-lobed smoke puff darker underneath, a water bead with a glint, an angular faceted rock chip, a soft dust puff, a thin streak.
+
+Presets (`PRESETS`): flame, ember, spark, streak, mote, smoke, steam, drop, mist, chip, dust. A `Pool` is a preset over its own slice of a buffer, and its size is its budget. FireFx (flame, embers, smoke/steam), WaterSystem (drops, mist), AirSystem (streaks, motes) and Juice (chips, dust, sparks, smoke) each own pools. *Test: `qa/particles.js`.*

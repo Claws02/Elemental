@@ -32,7 +32,7 @@ import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
-import { Pool } from '../art/FireFx.js';
+import { Particles } from '../art/Particles.js';
 import { WATER } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
 import { SWIM } from '../world/WaterBodies.js';
@@ -59,8 +59,8 @@ export class WaterSystem {
             emissive: 0x0c3a5a, emissiveIntensity: 0.6, depthWrite: false, shininess: 60 });
         this.tube = this._makeTube();
         scene.add(this.tube);
-        this.drops = new Pool(260, false);
-        scene.add(this.drops.points);
+        this.drops = Particles.current.pool(260, 'drop');          // beads of water with a glint (art/Particles.js)
+        this.mist = Particles.current.pool(80, 'mist');            // the fine spray off a stream and a splash
     }
 
     /**
@@ -263,6 +263,10 @@ export class WaterSystem {
     splash(p, strength = 1) {
         this._wet(p, WATER.splash * (0.5 + 0.5 * strength), strength);
         EventBus.emit(EV.SPLASH, { x: p.x, y: p.y, z: p.z, strength });
+        for (let i = 0; i < 8 * strength; i++) {
+            const a = Math.random() * Math.PI * 2, v = 1 + Math.random() * 2;
+            this.mist.spawn({ x: p.x, y: p.y + 0.2, z: p.z, vx: Math.cos(a) * v, vy: 0.8 + Math.random(), vz: Math.sin(a) * v, max: 0.8 + Math.random() * 0.5, s0: 0.5, s1: 1.6 });
+        }
         for (let i = 0; i < 40 * strength; i++) {
             const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 3;
             this.drops.spawn({ x: p.x, y: p.y + 0.1, z: p.z, vx: Math.cos(a) * v, vy: 2 + Math.random() * 3, vz: Math.sin(a) * v,
@@ -299,10 +303,6 @@ export class WaterSystem {
             if (this.channel.held?.entry === e) { orb.born = this.time; continue; }
             if (this.time - orb.born > WATER.orbLife) this._burst(orb);
         }
-        this.drops.update(dt, (k, tint, i) => {
-            tint[i * 3] = 0.55; tint[i * 3 + 1] = 0.8; tint[i * 3 + 2] = 0.95;
-            return (1 - k) * 0.85;
-        }, -12);
     }
 
     _contacts() {
