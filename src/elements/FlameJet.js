@@ -19,6 +19,7 @@
 import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { FLAME } from '../data/elements.js';
+import { flameJetMaterial } from '../art/ElementFx.js';
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3();
 
@@ -29,9 +30,9 @@ export class FlameJet {
         const geo = new THREE.CylinderGeometry(1, 0.35, 1, 10, 1, true);
         geo.translate(0, 0.5, 0);
         geo.rotateX(Math.PI / 2);                      // along +z, from 0 to 1
-        this.beamMat = new THREE.MeshBasicMaterial({ color: 0xff7a24, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+        this.beamMat = flameJetMaterial();               // tongues of flame streaming along it (art/ElementFx.js)
         this.beam = new THREE.Mesh(geo, this.beamMat);
-        this.core = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }));
+        this.core = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }));
         this.beam.add(this.core);
         this.core.scale.set(0.45, 0.45, 1);
         this.beam.visible = false;
@@ -111,7 +112,7 @@ export class FlameJet {
         this.beam.position.copy(from);
         this.beam.lookAt(end);
         this.beam.scale.set(w, w, len0);
-        this.beamMat.opacity = 0.55 + Math.random() * 0.25;
+        this.beamMat.uniforms.uWild.value = wild ? 1 : 0;
         this.beam.visible = true;
         const n = Math.ceil(FLAME.particles * dt);
         _d.subVectors(end, from);

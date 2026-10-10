@@ -112,3 +112,18 @@ Plus a throw with a snap of wind-up, a step onto the front foot and a follow-thr
 `art/Particles.js`: every particle is an instanced quad in one of two meshes (additive: flame, embers, sparks, motes; alpha: smoke, steam, drops, mist, chips, dust, wind streaks). A particle is written once when born (where, velocity, life, size, colours, shape) and the vertex shader works out the rest: drag, gravity, a little turbulence, size and colour over life; sparks and wind streaks stretch along their motion on screen; chips tumble. Shapes are drawn in the fragment shader, no textures: a flame with a white-hot core going orange to ember red, a three-lobed smoke puff darker underneath, a water bead with a glint, an angular faceted rock chip, a soft dust puff, a thin streak.
 
 Presets (`PRESETS`): flame, ember, spark, streak, mote, smoke, steam, drop, mist, chip, dust. A `Pool` is a preset over its own slice of a buffer, and its size is its budget. FireFx (flame, embers, smoke/steam), WaterSystem (drops, mist), AirSystem (streaks, motes) and Juice (chips, dust, sparks, smoke) each own pools. *Test: `qa/particles.js`.*
+
+
+## The elements' materials
+
+`art/ElementFx.js`, one shared clock, every material compiled while loading (`Renderer.warm`):
+
+| What | How |
+|---|---|
+| Water stream | A shader surface on the tube (uv along it): ripples flowing source → head, a fresnel rim tinted by the sky, a sun glint, white foam at the head, the base and on bright streaks |
+| Fireball | A churning shell over the white-hot core: the surface boils (vertex noise), hot where it faces you, licking orange-red at the rim. One material shared by every fireball (never disposed with one) |
+| Flame jet | Tongues of flame streaming along the beam, white at the axis, ragged when Fire is wild |
+| Wind | Four translucent strands spiralling along a gust or the steady wind, a bright run travelling out along each; fade after; the ladder sheds them below `fx` 0.5 |
+| Earth | A raised column breaks the ground into a ring of eight stone plates (a pulled stone, five smaller) that lever up on their outer edge, hang a moment and sink back; one instanced draw call |
+
+Cheap on purpose: two or three octaves of value noise, no raymarching. *Test: `qa/elementfx.js`.*

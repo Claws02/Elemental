@@ -48,6 +48,7 @@ import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Juice } from './art/Juice.js';
 import { Particles } from './art/Particles.js';
+import { ElementFx, fireShellMaterial } from './art/ElementFx.js';
 import { Ice } from './elements/Ice.js';
 import { Lava } from './elements/Lava.js';
 import { Firestorm } from './elements/Firestorm.js';
@@ -95,6 +96,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const channel = new Channel({ camera, hero: player, prog });
     scene.add(channel.tether);
     const earth = new EarthSystem({ hero: player, rocks: world.rocks, channel, prog });
+    const elementFx = new ElementFx(scene);                  // the elements' materials' clock, wind ribbons, ground plates (art/ElementFx.js)
     const particles = new Particles(scene);                  // every particle in the game: two draw calls, aged on the GPU (art/Particles.js)
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player, prog });
@@ -126,7 +128,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const lava = new Lava({ scene, fire, fx, water, creatures, vitals, player });
     const surges = new Surges({ prog, player, fire, fx, water, world, creatures, vitals });
     // Compile every shader now, while loading: the first fire, ice or lava then doesn't stall a frame to build one.
-    Renderer.warm([kitMaterials().body, kitMaterials().sheen, kitMaterials().glow, skinMaterial(), ice.mat, mud.mat, lava.hot, lava.crust, water.mat].filter(Boolean));
+    Renderer.warm([kitMaterials().body, kitMaterials().sheen, kitMaterials().glow, skinMaterial(), ice.mat, mud.mat, lava.hot, lava.crust, water.mat, jet?.beamMat, (fire._shellMat ||= fireShellMaterial()), elementFx.ribbons.mat, elementFx.plates.mesh.material].filter(Boolean));
     let leaving = false;
     // A checkpoint: here, now, this step. Dying comes back to it; the save slot gets it.
     // `story` is declared here and set below: a story resuming at a checkpointed step checkpoints
@@ -289,6 +291,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         story?.update(dt);
         talk.update(dt);
         particles.update(dt, renderer.getDrawingBufferSize(_size).y);
+        elementFx.update(dt);
         const held = channel.held?.entry.mesh.position || channel.aim?.pos || null;
         cam.update(dt, player.position, held);
         juice.update(dt);
@@ -323,7 +326,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     // QA handle: the tests drive the game through this, never through private state.
     const api = {
         ready: true,
-        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles,
+        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles, elementFx,
         session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
@@ -347,6 +350,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         works.dispose();
         juice.dispose();
         particles.dispose();
+        elementFx.dispose();
         ice.dispose();
         lava.dispose();
         mud.dispose();

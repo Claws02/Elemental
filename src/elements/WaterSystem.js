@@ -33,6 +33,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Particles } from '../art/Particles.js';
+import { waterStreamMaterial } from '../art/ElementFx.js';
 import { WATER } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
 import { SWIM } from '../world/WaterBodies.js';
@@ -54,9 +55,7 @@ export class WaterSystem {
         this.time = 0;
         this.draws = 0;
 
-        this.mat = new THREE.MeshPhongMaterial({
-            color: 0x3aa0d8, transparent: true, opacity: 0.78,
-            emissive: 0x0c3a5a, emissiveIntensity: 0.6, depthWrite: false, shininess: 60 });
+        this.mat = waterStreamMaterial();                 // flowing ripples, a fresnel rim, foam at the head (art/ElementFx.js)
         this.tube = this._makeTube();
         scene.add(this.tube);
         this.drops = Particles.current.pool(260, 'drop');          // beads of water with a glint (art/Particles.js)
@@ -326,6 +325,9 @@ export class WaterSystem {
         const g = new THREE.BufferGeometry();
         g.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SEG + 1) * RAD * 3), 3));
         g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array((SEG + 1) * RAD * 3), 3));
+        const uv = new Float32Array((SEG + 1) * RAD * 2);                  // x along the stream (0 source → 1 head), y round it
+        for (let i = 0; i <= SEG; i++) for (let j = 0; j < RAD; j++) { uv[(i * RAD + j) * 2] = i / SEG; uv[(i * RAD + j) * 2 + 1] = j / RAD; }
+        g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
         const idx = [];
         for (let i = 0; i < SEG; i++) for (let j = 0; j < RAD; j++) {
             const a = i * RAD + j, b = i * RAD + (j + 1) % RAD, c = a + RAD, d = b + RAD;

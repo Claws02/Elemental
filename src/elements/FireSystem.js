@@ -37,6 +37,7 @@
 
 import { THREE, CANNON } from '../engine/lib.js';
 import * as Physics from '../engine/Physics.js';
+import { fireShellMaterial } from '../art/ElementFx.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { WILD } from '../data/growth.js';
@@ -308,8 +309,8 @@ export class FireSystem {
         const R = FIRE.fireballRadius;
         const grp = new THREE.Group();
         grp.add(new THREE.Mesh(new THREE.IcosahedronGeometry(R * 0.7, 1), new THREE.MeshBasicMaterial({ color: 0xffe08a })));
-        const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(R * 1.15, 1),
-            new THREE.MeshBasicMaterial({ color: 0xff6a1a, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false }));
+        this._shellMat ||= fireShellMaterial();          // churning flame round the core, shared (art/ElementFx.js)
+        const shell = new THREE.Mesh(new THREE.IcosahedronGeometry(R * 1.45, 3), this._shellMat);
         grp.add(shell);
         grp.position.copy(p);
         this.scene.add(grp);
@@ -335,7 +336,7 @@ export class FireSystem {
         fb.entry.data.gone = true;
         this.interactables.remove(fb.thing);
         Physics.remove(fb.entry);
-        fb.entry.mesh.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
+        fb.entry.mesh.traverse(o => { o.geometry?.dispose(); if (o.material !== this._shellMat) o.material?.dispose(); });   // the shell's material is shared: disposing it would recompile it for the next fireball
     }
 
     _held(entry) { return this.channel.held?.entry === entry; }

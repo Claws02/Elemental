@@ -29,6 +29,7 @@ import * as Physics from '../engine/Physics.js';
 import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Particles } from '../art/Particles.js';
+import { ElementFx } from '../art/ElementFx.js';
 import { AIR } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
 import { SWIM } from '../world/WaterBodies.js';
@@ -101,6 +102,7 @@ export class AirSystem {
         this.gusts++;
         this._blow(d, AIR.gustLen, AIR.gustAngle, 0, true);
         const o = this.origin();
+        ElementFx.current?.ribbons.show(o, d, AIR.gustLen, AIR.gustAngle);
         for (let i = 0; i < 60; i++) this._streak(o, d, 14, 0.5);
         EventBus.emit(EV.WIND, { kind: 'gust', cause: 'player' });
     }
@@ -186,6 +188,7 @@ export class AirSystem {
             this._blow(this.wind.dir, AIR.windLen, AIR.windAngle, dt, false);
             const o = this.origin();
             for (let i = 0; i < 90 * dt; i++) this._streak(o, this.wind.dir, 9, 0.6);
+            ElementFx.current?.ribbons.show(o, this.wind.dir, AIR.windLen, AIR.windAngle, 0.1);
         }
     }
 
