@@ -36,7 +36,7 @@ const o = S.objects;
 S.add('Cistern_Pool', 'water', POOL.x, POOL.z, 0, { kind: 'water', width: POOL.w, depth: POOL.d, level: LEVEL });
 for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) S.add(`Cistern_Pillar_${sx < 0 ? 'W' : 'E'}${sz < 0 ? 'N' : 'S'}`, 'pillar', POOL.x + sx * (POOL.w / 2 + 1), POOL.z + sz * (POOL.d / 2 + 1), 0, { height: 3.4 + (sx + sz + 2) * 0.3, broken: sx * sz > 0, seed: 70 + sx * 3 + sz }, 2);
 for (const sx of [-1, 1]) S.add(`Cistern_Rim_${sx < 0 ? 'W' : 'E'}`, 'ruin_wall', POOL.x + sx * (POOL.w / 2 + 1), POOL.z, Math.PI / 2, { length: POOL.d - 1, height: 0.7, runes: true, seed: 80 + sx }, 2);
-L.paint((x, z) => Math.abs(x - POOL.x) < POOL.w / 2 + 3 && Math.abs(z - POOL.z) < POOL.d / 2 + 3 ? 'flagstone' : null);
+L.paint((x, z) => Math.abs(x - POOL.x) < POOL.w / 2 + 3 && Math.abs(z - POOL.z) < POOL.d / 2 + 3 ? 'cobble' : null);
 // The sluice across the throat, and the wheel that works it.
 S.add('Sluice_Gate', 'gate', 0, 20, 0, { width: 6.4, height: 4.6, open: false });
 S.add('Sluice_Wheel', 'waterwheel', 6, 13, 0, { y: FLOOR + 1.9, radius: 1.8, width: 0.9, turning: false, driven: true, owner: 'none' });

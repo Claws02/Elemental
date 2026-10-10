@@ -161,3 +161,17 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 
 /* Juice (src/art/Juice.js): a screen flash: hurt at the edges, a blast all over. Never takes a touch. */
 #fx-flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 4; mix-blend-mode: screen; }
+
+/* The gauge (Hud.gauge): the forge's heat, its band to hold, and how long it's been held there. */
+.hud-gauge { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 112px); transform: translateX(-50%); width: min(300px, 70vw);
+    opacity: 0; transition: opacity .25s; pointer-events: none; text-align: center; }
+.hud-gauge.on { opacity: 1; }
+.hud-gauge .label { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #ffd9a0; }
+.hud-gauge .track { position: relative; height: 12px; margin-top: 4px; border-radius: 6px; background: rgba(14,12,10,.7); overflow: hidden; }
+.hud-gauge .band { position: absolute; top: 0; bottom: 0; background: rgba(255,200,90,.28); border-left: 1px solid #ffc75a; border-right: 1px solid #ffc75a; }
+.hud-gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #6a1a08, #d8501a, #ffb347); }
+.hud-gauge.over .fill { background: linear-gradient(90deg, #6a1a08, #ff3a1a, #fff0c0); }
+.hud-gauge .needle { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1.5px; background: #fff4dc; box-shadow: 0 0 6px #ffb347; }
+.hud-gauge .hold { height: 4px; margin: 5px auto 0; width: 60%; border-radius: 2px; background: rgba(14,12,10,.6); overflow: hidden; }
+.hud-gauge .hold i { display: block; height: 100%; width: 0; background: #ffe08a; }
+.hud-gauge.in .track { box-shadow: 0 0 10px rgba(255,200,90,.6); }

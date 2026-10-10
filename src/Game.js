@@ -47,6 +47,7 @@ import { Creatures } from './creatures/Creatures.js';
 import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Juice } from './art/Juice.js';
+import { nextHop, NAMES } from './data/world.js';
 import { Particles } from './art/Particles.js';
 import { ElementFx, fireShellMaterial } from './art/ElementFx.js';
 import { Ice } from './elements/Ice.js';
@@ -118,7 +119,17 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const ledger = new Ledger(session, st.region || 'verdant', ownerOf);
     const vitals = new Vitals({ player, fire });
     const creatures = new Creatures({ scene, world, player, vitals, fire, channel, prog });
-    const juice = new Juice({ scene, hero: player, cam });     // shake, flashes, flares, shockwaves, marks on the ground
+    const juice = new Juice({ scene, hero: player, cam });
+    const offGauge = EventBus.on(EV.GAUGE, g => hud.gauge?.(g.off ? null : g));
+    // The journey: where the story says you're bound (prog.flags.journey, a scene id). Where no story step
+    // names a goal, the compass points at the exit that leads that way (data/world.js), across scenes.
+    let journeyText = null;
+    const journey = () => {
+        const to = prog.flags.journey;
+        if (!to || to === data.id) return null;
+        const hop = nextHop(data.id, to), exit = hop && world.objects.get('Exit_' + hop);
+        return exit ? { to, at: exit.item, text: `Journey: ${NAMES[to] || to} (by way of ${NAMES[hop] || hop})`.replace(` (by way of ${NAMES[to] || to})`, '') } : null;
+    };     // shake, flashes, flares, shockwaves, marks on the ground
     const ice = new Ice({ scene, fire, fx, creatures });
     Object.assign(creatures, { ice, water });          // the frostmaw's walls, the brinecoil's charged streams
     const storm = new Firestorm({ fire, fx, creatures });
@@ -298,7 +309,14 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         juice.apply(camera);              // shake, after the rig has placed the camera
         // The compass: the way the camera looks (north is -z, east +x), and where the story's marker is.
         {
-            const p = player.position, mk = story?.marker?.visible ? story.marker.position : null;
+            const p = player.position;
+            let mk = story?.marker?.visible ? story.marker.position : null;
+            if (!story?.current?.objective) {                // no story goal here: the journey's, if any
+                const j = journey();
+                const text = j?.text || null;
+                if (text !== journeyText) { journeyText = text; hud.objective(text); }
+                if (j && !mk) mk = { x: j.at.x, z: j.at.z };
+            } else journeyText = null;
             hud.compass(-cam.yaw, mk ? { bearing: Math.atan2(mk.x - p.x, -(mk.z - p.z)), dist: Math.hypot(mk.x - p.x, mk.z - p.z) } : null);
         }
         Renderer.updateMood(dt);
@@ -349,6 +367,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         creatures.dispose();
         works.dispose();
         juice.dispose();
+        offGauge();
         particles.dispose();
         elementFx.dispose();
         ice.dispose();

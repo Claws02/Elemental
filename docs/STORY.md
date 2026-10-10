@@ -91,6 +91,8 @@ People answer from this when the player taps them: first the scene's own lines, 
 - *The Tidestone:* Cael asks you to touch the stone that split. Chisel marks again, the same hand as the Watchstone: *"Once is a grudge. Twice is a pattern."* Nerys: every stone that breaks, the Conduit's just been. Show her the marks, tell her it bothers you, or ask who told her (a grey coat at the fish market, silver with no face on it).
 - *After:* the tide turns; the Regent goes home to the council house; the wall stays closed on every later visit.
 
+**The Cold Forge** *(built: `scenes/forge.json`, `qa/forge.js`)*. After Saltmere the compass shows the way north (the journey marker: back through the cistern and the Reach, then up a pass toward the Marches). Halfway up, in a ruined court, stands an Oruun forge, cold a thousand years, and beyond it a door the Oruun closed across the pass. Lesson III, *Fire, held*: Fire answers now, trained; hold it on the forge's heart and its heat climbs, let go and it cools. Keep it in the gold band for six seconds and the forge is lit for good, and the door opens. Feed it more than it needs and its heart-stone cracks (the crack stays, and Cael says so: *"That's what fire does when you want too much from it."*). That night, a camp at the forge: *"You could become something incredible." "A hero?" "Something more important than that." "What's more important than being a hero?" "Knowing when not to be one."* (or say you just want to help, or say nothing; remembered). Cael on the stones: *"Two. If there's a third in the Marches, I won't be able to hope anymore."* In the morning, through the door to the Marches.
+
 The road east and south. One lesson on each road, one town problem in each kingdom:
 
 | Road | Lesson | Kingdom | Town problem (sketch) |
@@ -130,4 +132,5 @@ Cael's belongings: maps, notes, his record of every disturbance, his notes on yo
 4. ✅ **The Watchstone:** the stone cracked on purpose (Thessaly's hand, which Cael knows), the first Wielder fight (the Stonebound: a new enemy that yields, never dies), Act I told.
 5. ✅ **The road south:** the Sunken Cistern, Bram joins, Lesson II (Water: draw, aim, douse; drive a wheel).
 6. ✅ **Saltmere: the sea wall** at spring tide: Oriel, Nerys and the Tidekeepers; the wall's sockets; the second stone cut on purpose.
-7. **Next:** the road to Emberwall (Lesson III, *Fire, held*: a cold Oruun forge) and Cindrel's furnace fire.
+7. ✅ **The Cold Forge:** the journey marker north; Lesson III (hold the forge's heat in its band; overfeed and it cracks); the camp at the forge.
+8. **Next:** Cindrel, the Emberwall Marches: Forge-Queen Talia Vorn and a furnace fire the Ember Guard can't put out (several ways, all costly: smother it with earth, flood it from the hot springs, or draw it into yourself).

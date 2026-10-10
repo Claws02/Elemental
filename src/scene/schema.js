@@ -67,6 +67,12 @@ export const TYPES = {
         actions: ['start', 'stop', 'wreck'],
         note: 'Its y is the axle\'s height, not a height above the ground: set it so the paddles dip in the water.',
     },
+    forge: {
+        label: 'Oruun forge (Lesson III)', group: 'Ruins',
+        props: { hidden: HIDDEN },
+        signals: ['lit', 'cracked', 'hot'],
+        note: 'Fire held on its heart heats it; let go and it cools. Held in the band (Catalog FORGE.lo..hi) for FORGE.hold seconds: lit, for good. Past the top: its heart-stone cracks (counted) and the heat drops. A gauge shows while it is fed.',
+    },
     standing_stone: {
         label: 'Standing stone', group: 'Ruins',
         props: { height: num('Height', 3.2, 1.5, 6, 0.1), cracked: bool('Starts cracked', false), chiselled: bool('Cracked on purpose (chisel marks)', false), seed: SEED, hidden: HIDDEN },

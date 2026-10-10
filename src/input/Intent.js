@@ -332,7 +332,7 @@ export class Intent {
             const cv = this._changeVerb(this.thing, this.fire.isBurning(this.thing));
             if (!this._inRange(this.thing) || !cv || cv.verb !== this.verb.verb) { this._cancel(); break; }
             // Fire going in: the jet plays on it while the ring fills.
-            if (cv.verb === 'ignite' && this.jet && !this.jet.on) this.jet.atThing(this.thing);
+            if ((cv.verb === 'ignite' || cv.verb === 'feed') && this.jet && !this.jet.on) this.jet.atThing(this.thing);
             this.channel.aimAt(this.thing.pos(), cv.element);
             this.t += dt;
             if (this.t >= cv.hold) this._commit(cv);

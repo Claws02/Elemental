@@ -30,6 +30,7 @@ export class Hud {
             <div class="hud-log" id="hud-log"></div>
             <div class="hud-debug" id="hud-debug"></div>
             <div class="hud-compass" id="hud-compass" aria-hidden="true"><div class="ticks"></div><div class="mark"><i></i><span></span></div><div class="centre"></div></div>
+            <div class="hud-gauge" id="hud-gauge" aria-hidden="true"><span class="label"></span><div class="track"><div class="band"></div><div class="fill"></div><div class="needle"></div></div><div class="hold"><i></i></div></div>
             <div class="hud-objective" id="hud-objective"><span class="text"></span><span class="bar"><i></i></span></div>
             <div class="hud-say" id="hud-say"><b class="who"></b><span class="line"></span></div>
             <div class="hud-card" id="hud-card"></div>
@@ -134,6 +135,21 @@ export class Hud {
      * sliding as you turn; and the objective, a diamond at its bearing with how far it is (pinned to an edge,
      * pointing, when it's behind you). `mark` = { bearing, dist } or null.
      */
+    /** A gauge (the forge's heat): { label, value, lo, hi, progress } or null. The band is where to hold it; `progress`, how long it's been held there. */
+    gauge(g) {
+        const el = this.el('hud-gauge');
+        el.classList.toggle('on', !!g);
+        if (!g) return;
+        el.querySelector('.label').textContent = g.label;
+        el.querySelector('.band').style.cssText = `left:${g.lo * 100}%;width:${(g.hi - g.lo) * 100}%`;
+        const v = Math.max(0, Math.min(1, g.value));
+        el.querySelector('.fill').style.width = (v * 100).toFixed(1) + '%';
+        el.querySelector('.needle').style.left = (v * 100).toFixed(1) + '%';
+        el.classList.toggle('in', v >= g.lo && v <= g.hi);
+        el.classList.toggle('over', v > g.hi);
+        el.querySelector('.hold i').style.width = (Math.min(1, g.progress || 0) * 100).toFixed(0) + '%';
+    }
+
     compass(heading, mark = null) {
         const el = this.el('hud-compass');
         if (!this._ticks) {

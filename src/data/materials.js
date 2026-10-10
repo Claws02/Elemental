@@ -80,6 +80,10 @@ export const MATERIALS = {
         explodes: { radius: 3.5, push: 9, wear: 60 },
         soaks: 20,
     },
+    forge: {
+        name: 'forge',                  // an Oruun forge (Lesson III): Fire FEEDS it while the finger stays, never commits
+        change: { element: 'fire', verb: 'feed', hold: Infinity },
+    },
     coals: {
         name: 'coals',
         change: { element: 'fire', verb: 'pull', hold: 0.25 },

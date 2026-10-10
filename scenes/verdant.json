@@ -392,30 +392,30 @@
    "colour": "green"
   },
   {
-   "id": "Exit_emberwall",
+   "id": "Exit_forge",
    "type": "exit",
    "x": -27,
    "y": 0,
    "z": -113,
    "rotY": 0,
-   "to": "emberwall",
+   "to": "forge",
    "at": "from_verdant",
-   "label": "Emberwall Marches",
+   "label": "The Cold Forge",
    "width": 10,
    "depth": 4,
    "height": 6
   },
   {
-   "id": "Start_from_emberwall",
+   "id": "Start_from_forge",
    "type": "spawn",
    "x": -27,
    "y": 0,
    "z": -104,
    "rotY": 0,
-   "name": "from_emberwall"
+   "name": "from_forge"
   },
   {
-   "id": "Waystone_emberwall",
+   "id": "Waystone_forge",
    "type": "statue",
    "x": -21,
    "y": 0,
@@ -423,10 +423,10 @@
    "rotY": 0,
    "height": 4,
    "style": "stone",
-   "seed": 9
+   "seed": 5
   },
   {
-   "id": "Banner_emberwall_a",
+   "id": "Banner_forge_a",
    "type": "banner",
    "x": -34.2,
    "y": 0,

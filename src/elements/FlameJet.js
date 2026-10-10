@@ -72,6 +72,7 @@ export class FlameJet {
         this._draw(from, end, dt);
         const c = this.target.creature;
         if (c) c.react('fire', FLAME.dps * dt, 'player');
+        this.target.thing?.feed?.(dt, this.prog.wild('fire'));           // an Oruun forge takes the heat (Lesson III)
         // Wild: it sprays, and what burns near where it lands catches.
         if (this.prog.wild('fire')) {
             this.sprayT += dt;

@@ -88,6 +88,31 @@ function _static(ctx, it, { group, boxes }, opts = {}) {
 /** A patrol route as written in the scene: "x,z; x,z; …" → [{ x, z }, …] (story/Npc.js). */
 export { parseRoute };
 
+/** How the forge's heat behaves (Lesson III): per second fed / cooling; the band; seconds to hold; how fast a slip costs. */
+export const FORGE = { rise: 0.24, cool: 0.11, lo: 0.55, hi: 0.82, hold: 6, slip: 1.5 };
+
+/** The Oruun forge: a basalt hearth with a heart-stone in its mouth, a hood above, runes cut round the opening. */
+function _forgeModel(it) {
+    const g = new THREE.Group();
+    const basalt = new THREE.MeshLambertMaterial({ color: 0x3a3632, flatShading: true });
+    const dark = new THREE.MeshLambertMaterial({ color: 0x24211f, flatShading: true });
+    const box = (w, h, d, x, y, z, m = basalt) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = true; b.receiveShadow = true; g.add(b); return b; };
+    box(2.6, 0.9, 1.9, 0, 0.45, 0);                       // the hearth
+    box(2.8, 0.2, 2.1, 0, 0.98, 0);                       // its lip
+    box(1.0, 0.35, 0.9, 0, 1.15, 0.15, dark);              // the mouth
+    box(1.5, 1.6, 0.8, 0, 1.9, -0.55);                    // the hood
+    box(0.9, 1.2, 0.6, 0, 3.0, -0.55);                    // the flue
+    for (const sx of [-1, 1]) box(0.35, 1.4, 0.35, sx * 1.15, 1.7, 0.75);   // the pillars that hold the anvil-stone
+    box(2.7, 0.3, 0.45, 0, 2.5, 0.75);
+    const heart = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3, 0), new THREE.MeshLambertMaterial({ color: 0x4a4440, emissive: 0x000000, flatShading: true }));
+    heart.position.set(0, 1.32, 0.15); g.add(heart);
+    const runes = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.035, 4, 24), new THREE.MeshBasicMaterial({ color: 0xff8a3a }));
+    runes.position.set(0, 1.25, 0.62); g.add(runes);
+    const crack = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.05), new THREE.MeshBasicMaterial({ color: 0x0a0806 }));
+    crack.position.set(0.05, 1.32, 0.44); crack.rotation.z = 0.5; crack.visible = false; g.add(crack);
+    return { group: g, heart, runes, crack };
+}
+
 function _toWorld(it, local) {
     return local.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), it.rotY || 0).add(new THREE.Vector3(it.x || 0, it.y || 0, it.z || 0));
 }
@@ -645,6 +670,77 @@ export const CATALOG = {
                 },
                 restoreState(s) { if (s === 'spun') { spun = true; return; } if (s === 'wrecked') wreckNow(); else if (s === 'turning' || s === 'stopped') { state = s; speed = s === 'turning' ? 1 : 0; } },
             };
+        },
+    },
+
+    // An Oruun forge, cold a thousand years (Lesson III, "Fire, held"). Play Fire on it and its heat climbs;
+    // stop and it cools. Held in the band (FORGE.lo..hi) long enough, it is LIT for good; driven past the top,
+    // its heart-stone cracks and the heat drops away (try again, steadier). A gauge shows while you feed it.
+    forge: {
+        model: it => _forgeModel(it).group,
+        spawn(ctx, it) {
+            const F = _forgeModel(it);
+            const inst = _static(ctx, it, { group: F.group, boxes: [{ x: 0, y: 0.55, z: 0, w: 2.6, h: 1.1, d: 1.9 }, { x: 0, y: 2.2, z: -0.55, w: 1.4, h: 2.2, d: 0.8 }] });
+            const heartAt = _toWorld(it, new THREE.Vector3(0, 1.32, 0.15));
+            let heat = 0, fedT = 9, steadyT = 0, lit = false, cracks = 0, sys = null, wild = false, shown = false;
+            const show = () => {
+                // The heart-stone: dull grey cold, deep red, orange, white-hot; the runes wake with it.
+                const k = lit ? 0.68 : heat;
+                F.heart.material.emissive.setRGB(Math.min(1, k * 1.6), Math.max(0, k * 1.2 - 0.25), Math.max(0, k * 2 - 1.4));
+                F.heart.material.emissiveIntensity = 0.2 + k * 1.6;
+                F.runes.material.color.setScalar(0.25 + (lit ? 1.4 : k * 1.2));
+                F.crack.visible = cracks > 0;
+            };
+            const crack = () => {
+                cracks++;
+                heat = 0.25; steadyT = 0;
+                ctx.world.onGate?.(it.id, `cracked:${cracks}`);
+                EventBus.emit(EV.IMPACT, { x: heartAt.x, y: heartAt.y, z: heartAt.z, speed: 14, mass: 3, element: 'fire', ground: false, cause: 'forge' });
+                EventBus.emit(EV.FORGE, { id: it.id, to: 'cracked', cracks });
+            };
+            Object.assign(inst, {
+                wire(s) {
+                    sys = s;
+                    const thing = s.interactables.add({ id: it.id, mesh: F.group, entry: inst.entries[0], material: 'forge' });
+                    thing.pos = () => heartAt;                     // the jet plays on the heart, not the base
+                    thing.feed = (dt, w) => { fedT = 0; wild = !!w; };
+                },
+                update(dt) {
+                    fedT += dt;
+                    const fed = fedT < 0.15;
+                    if (!lit) {
+                        if (fed) heat += FORGE.rise * (wild ? 1.6 + Math.random() * 0.8 : 1) * dt;
+                        else heat -= FORGE.cool * dt;
+                        heat = Math.max(0, heat);
+                        if (heat >= 1) crack();
+                        const inBand = heat >= FORGE.lo && heat <= FORGE.hi;
+                        steadyT = inBand ? steadyT + dt : Math.max(0, steadyT - dt * FORGE.slip);
+                        if (steadyT >= FORGE.hold) {
+                            lit = true;
+                            ctx.world.onGate?.(it.id, `lit:${cracks}`);          // one state remembered per object: lit, and how many cracks
+                            EventBus.emit(EV.FORGE, { id: it.id, to: 'lit', cracks });
+                        }
+                        // The gauge, while it's being fed or still warm.
+                        const want = fed || heat > 0.05;
+                        if (want || shown) EventBus.emit(EV.GAUGE, want ? { id: it.id, label: 'Heat', value: Math.min(1, heat), lo: FORGE.lo, hi: FORGE.hi, progress: steadyT / FORGE.hold } : { id: it.id, off: true });
+                        shown = want;
+                    } else if (shown) { EventBus.emit(EV.GAUGE, { id: it.id, off: true }); shown = false; }
+                    // Fire in the hearth, as hot as it is.
+                    const k = lit ? 0.7 : heat;
+                    if (k > 0.08 && sys?.fire?.fx) sys.fire.fx.burn(heartAt, dt, { rate: 4 + k * 22, w: 0.9, h: 0.2, size: 0.3 + k * 0.4, smoke: 0.12 + k * 0.2 });
+                    show();
+                },
+                signal: name => name === 'lit' ? lit : name === 'cracked' ? cracks > 0 : name === 'hot' ? heat >= FORGE.lo : name === 'cracks' ? cracks : false,
+                restoreState(st) {
+                    const m = /^(lit|cracked):?(\d*)$/.exec(st);
+                    if (!m) return;
+                    if (m[1] === 'lit') lit = true;
+                    cracks = +m[2] || 0;
+                    show();
+                },
+            });
+            show();
+            return inst;
         },
     },
 

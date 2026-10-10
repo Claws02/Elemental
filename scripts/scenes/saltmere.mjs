@@ -96,7 +96,7 @@ L.paint((x, z, h, s, cur) => {
     if (cur !== 0) return null;
     const d = lowDist(x, z);
     if (d === 0) return z > LOW.z1 - 6 ? 'mud' : null;
-    if (d <= BAND) return 'flagstone';
+    if (d <= BAND) return 'cobble';
     if (h < SEA + 0.4) return 'mud';
     if (h < SEA + 1.6) return 'sand';
     if (s > 0.55) return 'rock';
@@ -154,10 +154,11 @@ const script = {
               { label: 'Who told you that?', flag: { name: 'saltmere.told', value: 'asked' },
                 say: ['@Nerys A man at the fish market. Grey coat. Paid for his fish in silver with no face on it.', '@Cael …Of course he did.'] },
           ] },
-        { id: 'regent', do: [{ water: { prefix: 'Sea', level: SEA, secs: 60 } }, { setFlag: { name: 'saltmere.away', value: '' } }, { setFlag: { name: 'act2.saltmere', value: 'done' } }, { checkpoint: true }],
+        { id: 'regent', do: [{ water: { prefix: 'Sea', level: SEA, secs: 60 } }, { setFlag: { name: 'saltmere.away', value: '' } }, { setFlag: { name: 'act2.saltmere', value: 'done' } }, { setFlag: { name: 'journey', value: 'forge' } }, { checkpoint: true }],
           say: ['@Oriel_Wall The tide’s turning. It always does, and we’re always surprised.', '@Oriel_Wall Saltmere keeps its accounts in water, Conduit. Tonight they’re in your favour.',
-                '@Cael There’ll be more stones. Someone is walking ahead of us with a chisel.', '@Bram Then we walk faster.'],
-          until: { talking: false }, then: { do: [{ hint: 'The wall holds. Lanthe is across the bridges; talk to anyone. The road east leads on.' }] } },
+                '@Cael There’ll be more stones. Someone is walking ahead of us with a chisel.', '@Bram Then we walk faster.',
+                '@Cael North, then. Back through the Reach, and up the pass to the Marches. There’s a forge on the way.'],
+          until: { talking: false }, then: { do: [{ hint: 'The wall holds. Lanthe is across the bridges; talk to anyone. When you’re ready, the compass points the way north to the Cold Forge.' }] } },
     ],
     card: null,
 };

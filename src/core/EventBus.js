@@ -68,6 +68,8 @@ export const EV = {
     STONE_CAUGHT:       'StoneCaught',
     IMPACT:             'Impact',          // { x, y, z, speed, mass, element, ground, cause }: a thrown thing's first hard landing
     SPLASH:             'Splash',          // { x, y, z, strength }: water bursting (an orb, a stream let go)
+    FORGE:              'Forge',           // { id, to: 'lit'|'cracked', cracks }: an Oruun forge relit, or its heart-stone cracked
+    GAUGE:              'Gauge',           // { id, label, value, lo, hi, progress }, or { id, off: true }: a gauge to show (the forge's heat), or hide
     LANDED:             'Landed',          // { x, y, z, v, k }: the hero's feet down after a fall (k: how hard, 0..1)
     ICE:                'Ice',
     ICE_BROKEN:         'IceBroken',

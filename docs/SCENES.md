@@ -123,6 +123,10 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 
 **Earth story events**: reactions can count `earthPulled`, `earthRaised`, `stoneCaught` and `pulledThrow` (a pulled or caught stone thrown), as the yard does.
 
+**The journey**: a story sets `journey` (a scene id) with `setFlag`; in any scene where no story step names a goal, the objective reads *Journey: …* and the compass points at the exit on the shortest way there (`src/data/world.js` `nextHop` over `LINKS`, which the scene builder also reads). Clear it with `setFlag journey ''` when you arrive.
+
+**Forge** (`forge`, Lesson III): Fire held on its heart heats it (the jet's verb `feed`, which never commits); let go and it cools. Held in the band for `FORGE.hold` s: `lit` (remembered with its cracks, `lit:N`); past the top: `cracked`. While fed, a gauge (`EV.GAUGE`, `Hud.gauge`) shows the heat, the band and the hold.
+
 **Tides**: the `water` action eases every water whose id starts with a prefix to a level (`Sea` lifts `Sea`, `Sea_West`, `Sea_Wall`). Water bodies are flat sheets over a rectangle, so ground meant to stay dry below the sea (Saltmere's Lowtown) sits outside every sea sheet, ringed by a berm higher than the tide, with its own water (`Lowtown_Flood`) hidden under its floor until the story raises it.
 
 **Practice**: a `rock_pile` keeps `count` loose stones on it (a thrown one crumbles a few seconds after it lands; a fresh one rises); a `dummy` with `practice` stands back up after it falls and signals `hit` once your throw has knocked it down (reaction `targetDown` each first time). The **compass** strip at the top shows the way you face and the current step's `mark`, with its distance: say north, south, east or west in objectives.
