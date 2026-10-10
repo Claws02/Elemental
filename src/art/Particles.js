@@ -88,7 +88,39 @@ const VERT = /* glsl */`
         vCol = mix(aD.rgb, aE.rgb, k); vA = mix(aD.a, aE.a, k);
     }`;
 
-const FRAG = (additive) => /* glsl */`
+// Each kind's fragment: given uv (−1..1), r = |uv|, the life k (vK), vCol, vA → col, a.
+const SHAPES = {
+    flame: /* glsl */`{                                  // flame: white-hot core, through orange to ember red
+            vec3 orange = vec3(1.0, 0.62, 0.22);
+            col = vK < 0.35 ? mix(vec3(1.0, 0.95, 0.72), orange, vK / 0.35) : mix(orange, vCol, (vK - 0.35) / 0.65);
+            col += vec3(1.0, 0.9, 0.6) * exp(-r * r * 9.0) * (1.0 - vK);
+            a = smoothstep(1.0, 0.0, r) * (1.0 - vK) * 0.95; }`,
+    spark: /* glsl */`{ a = smoothstep(1.0, 0.2, length(uv * vec2(2.2, 1.0))) * vA; col *= 1.6; }`,
+    glow: /* glsl */`{ a = exp(-r * r * 4.0) * vA; }`,
+    smoke: /* glsl */`{                                  // three soft lobes, darker underneath
+            float s = vSeed * 6.2831;
+            vec2 o1 = vec2(cos(s), sin(s)) * 0.32, o2 = vec2(cos(s + 2.1), sin(s + 2.1)) * 0.3, o3 = vec2(cos(s + 4.2), sin(s + 4.2)) * 0.28;
+            float m = max(max(smoothstep(0.7, 0.0, length(uv - o1)), smoothstep(0.68, 0.0, length(uv - o2))), smoothstep(0.66, 0.0, length(uv - o3)));
+            a = m * sin(vK * 3.14159) * vA * 1.6;
+            col *= 0.82 + 0.3 * uv.y; }`,
+    drop: /* glsl */`{                                   // a bead with a glint
+            vec2 g = uv - vec2(-0.32, 0.34);
+            col = mix(col * 0.85, vec3(1.0), exp(-dot(g, g) * 18.0) * 0.9);
+            a = smoothstep(1.0, 0.72, r) * vA; }`,
+    chip: /* glsl */`{                                   // an angular shard, faceted
+            float d = max(abs(uv.x) * 1.25 + abs(uv.y) * 0.45, abs(uv.y) * 1.05 + abs(uv.x) * 0.2);
+            a = step(d, 0.92) * vA * min(1.0, (1.0 - vK) * 6.0);
+            col *= uv.x + uv.y > 0.0 ? 1.15 : 0.7; }`,
+    dust: /* glsl */`{ a = pow(smoothstep(1.0, 0.0, r), 1.5) * sin(vK * 3.14159) * vA; }`,
+    streak: /* glsl */`{ a = exp(-abs(uv.x) * 4.0) * smoothstep(1.0, 0.2, abs(uv.y)) * sin(vK * 3.14159) * vA; }`,
+};
+// Each mesh's shader carries only the shapes drawn in it: less code per pixel (it's what a phone pays for).
+const IN = { add: ['flame', 'spark', 'glow'], alpha: ['smoke', 'drop', 'chip', 'dust', 'streak', 'spark', 'glow'] };
+
+const FRAG = (additive) => {
+    const kinds = IN[additive ? 'add' : 'alpha'];
+    const body = kinds.map((k, n) => `${n ? 'else ' : ''}if (vKind == ${KIND[k].toFixed(1)}) ${SHAPES[k]}`).join('\n        ');
+    return /* glsl */`
     varying vec2 vUv;
     varying float vK, vKind, vSeed, vA;
     varying vec3 vCol;
@@ -96,41 +128,13 @@ const FRAG = (additive) => /* glsl */`
         vec2 uv = vUv;
         float r = length(uv), a = 0.0;
         vec3 col = vCol;
-        if (vKind < 0.5) {                                  // flame: white-hot core, through orange to ember red
-            vec3 orange = vec3(1.0, 0.62, 0.22);
-            col = vK < 0.35 ? mix(vec3(1.0, 0.95, 0.72), orange, vK / 0.35) : mix(orange, vCol, (vK - 0.35) / 0.65);
-            col += vec3(1.0, 0.9, 0.6) * exp(-r * r * 9.0) * (1.0 - vK);
-            a = smoothstep(1.0, 0.0, r) * (1.0 - vK) * 0.95;
-        } else if (vKind < 1.5) {                           // spark: a hot capsule
-            a = smoothstep(1.0, 0.2, length(uv * vec2(2.2, 1.0))) * vA;
-            col *= 1.6;
-        } else if (vKind < 2.5) {                           // glow
-            a = exp(-r * r * 4.0) * vA;
-        } else if (vKind < 3.5) {                           // smoke: three soft lobes, darker underneath
-            float s = vSeed * 6.2831;
-            vec2 o1 = vec2(cos(s), sin(s)) * 0.32, o2 = vec2(cos(s + 2.1), sin(s + 2.1)) * 0.3, o3 = vec2(cos(s + 4.2), sin(s + 4.2)) * 0.28;
-            float m = max(max(smoothstep(0.7, 0.0, length(uv - o1)), smoothstep(0.68, 0.0, length(uv - o2))), smoothstep(0.66, 0.0, length(uv - o3)));
-            a = m * sin(vK * 3.14159) * vA * 1.6;
-            col *= 0.82 + 0.3 * uv.y;
-        } else if (vKind < 4.5) {                           // water drop: a bead with a glint
-            float disc = smoothstep(1.0, 0.72, r);
-            float glint = exp(-dot(uv - vec2(-0.32, 0.34), uv - vec2(-0.32, 0.34)) * 18.0);
-            col = mix(col * 0.85, vec3(1.0), glint * 0.9);
-            a = disc * vA;
-        } else if (vKind < 5.5) {                           // rock chip: an angular shard, faceted
-            float d = max(abs(uv.x) * 1.25 + abs(uv.y) * 0.45, abs(uv.y) * 1.05 + abs(uv.x) * 0.2);
-            a = step(d, 0.92) * vA * min(1.0, (1.0 - vK) * 6.0);
-            col *= uv.x + uv.y > 0.0 ? 1.15 : 0.7;
-        } else if (vKind < 6.5) {                           // dust / mist: a wide soft puff
-            a = pow(smoothstep(1.0, 0.0, r), 1.5) * sin(vK * 3.14159) * vA;
-        } else {                                            // wind streak: a thin line, fading at both ends
-            a = exp(-abs(uv.x) * 4.0) * smoothstep(1.0, 0.2, abs(uv.y)) * sin(vK * 3.14159) * vA;
-        }
+        ${body}
         if (a < 0.01) discard;
         gl_FragColor = ${additive ? 'vec4(col * a, a)' : 'vec4(col, a)'};
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
     }`;
+};
 
 const STRIDE = { aA: 4, aB: 4, aC: 4, aD: 4, aE: 4, aF: 4 };
 const _c0 = new THREE.Color(), _c1 = new THREE.Color();
@@ -150,7 +154,7 @@ class Buffer {
             this.attrs[k] = a;
         }
         for (let i = 0; i < n; i++) this.attrs.aB.array[i * 4 + 3] = 1e-3;     // dead from the start
-        g.instanceCount = n;
+        g.instanceCount = 0;                                  // grows as pools claim slices
         this.mat = new THREE.ShaderMaterial({
             vertexShader: VERT, fragmentShader: FRAG(additive),
             uniforms: { uTime: { value: 0 }, uViewH: { value: 800 } },
@@ -161,19 +165,32 @@ class Buffer {
         this.mesh.frustumCulled = false;
         this.mesh.renderOrder = additive ? 3 : 2;
         this.mesh.visible = false;
-        Object.assign(this, { n, used: 0, until: -1, lo: Infinity, hi: -1 });
+        Object.assign(this, { n, used: 0, until: -1 });
+        this.dirty = new Set();                              // pools with newborns this frame (each uploads only its own range)
     }
     claim(n) {
         const at = this.used;
         if (at + n > this.n) throw new Error(`particles: ${this.n} slots, asked for ${at + n}`);
         this.used += n;
+        this.mesh.geometry.instanceCount = this.used;        // draw only the slots pools have claimed, not the whole buffer
         return at;
     }
-    mark(i, until) { this.lo = Math.min(this.lo, i); this.hi = Math.max(this.hi, i); this.until = Math.max(this.until, until); }
+    mark(pool, i, until) {
+        if (i < pool.lo) pool.lo = i;
+        if (i > pool.hi) pool.hi = i;
+        this.dirty.add(pool);
+        if (until > this.until) this.until = until;
+    }
     flush(t) {
-        if (this.hi >= this.lo) {
-            for (const [k, a] of Object.entries(this.attrs)) { const w = STRIDE[k]; a.clearUpdateRanges(); a.addUpdateRange(this.lo * w, (this.hi - this.lo + 1) * w); a.needsUpdate = true; }
-            this.lo = Infinity; this.hi = -1;
+        if (this.dirty.size) {
+            for (const [k, a] of Object.entries(this.attrs)) {
+                const w = STRIDE[k];
+                a.clearUpdateRanges();
+                for (const p of this.dirty) a.addUpdateRange(p.lo * w, (p.hi - p.lo + 1) * w);
+                a.needsUpdate = true;
+            }
+            for (const p of this.dirty) { p.lo = Infinity; p.hi = -1; }
+            this.dirty.clear();
         }
         this.mesh.visible = t < this.until;
     }
@@ -190,6 +207,7 @@ export class Pool {
         this.cursor = 0;
         this.dies = new Float32Array(n);                     // when each slot's particle is gone
         this.points = this.buf.mesh;                        // callers add it to the scene: the shared mesh, added once
+        this.lo = Infinity; this.hi = -1;                   // this frame's newborns (Buffer.flush uploads just these)
     }
 
     /** A particle: { x, y, z, vx, vy, vz, max (life s), s0, s1 (size), white? (steam), c0?, c1?, a0? }. False when over budget. */
@@ -200,16 +218,17 @@ export class Pool {
         if (j < 0) return false;                            // over budget: skip, as the pools always did
         this.cursor = (j + 1) % this.n;
         const P = o.white && this.preset === PRESETS.smoke ? PRESETS.steam : this.preset;
-        const i = this.at + j, A = this.buf.attrs, life = Math.max(0.02, o.max || 1);
+        const i = this.at + j, A = this.buf.attrs, life = Math.max(0.02, o.max || 1), q = i * 4;
         _c0.set(o.c0 ?? P.c0); _c1.set(o.c1 ?? P.c1);
-        A.aA.array.set([o.x, o.y, o.z, t], i * 4);
-        A.aB.array.set([o.vx || 0, o.vy || 0, o.vz || 0, life], i * 4);
-        A.aC.array.set([o.s0 ?? 0.3, o.s1 ?? o.s0 ?? 0.3, KIND[P.kind], Math.random()], i * 4);
-        A.aD.array.set([_c0.r, _c0.g, _c0.b, o.a0 ?? P.a0], i * 4);
-        A.aE.array.set([_c1.r, _c1.g, _c1.b, o.a1 ?? P.a1], i * 4);
-        A.aF.array.set([o.g ?? P.g, P.drag, P.turb, (P.spin || 0) * (Math.random() < 0.5 ? -1 : 1)], i * 4);
+        // Written in place: no arrays per particle (garbage is stutter on iOS).
+        let a = A.aA.array; a[q] = o.x; a[q + 1] = o.y; a[q + 2] = o.z; a[q + 3] = t;
+        a = A.aB.array; a[q] = o.vx || 0; a[q + 1] = o.vy || 0; a[q + 2] = o.vz || 0; a[q + 3] = life;
+        a = A.aC.array; a[q] = o.s0 ?? 0.3; a[q + 1] = o.s1 ?? o.s0 ?? 0.3; a[q + 2] = KIND[P.kind]; a[q + 3] = Math.random();
+        a = A.aD.array; a[q] = _c0.r; a[q + 1] = _c0.g; a[q + 2] = _c0.b; a[q + 3] = o.a0 ?? P.a0;
+        a = A.aE.array; a[q] = _c1.r; a[q + 1] = _c1.g; a[q + 2] = _c1.b; a[q + 3] = o.a1 ?? P.a1;
+        a = A.aF.array; a[q] = o.g ?? P.g; a[q + 1] = P.drag; a[q + 2] = P.turb; a[q + 3] = (P.spin || 0) * (Math.random() < 0.5 ? -1 : 1);
         this.dies[j] = t + life;
-        this.buf.mark(i, t + life);
+        this.buf.mark(this, i, t + life);
         return true;
     }
 

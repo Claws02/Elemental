@@ -87,7 +87,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         for (let i = 1; i <= 6; i++) { const e = __EL.world.objects.get('Slide_Rock_' + i).entries[0]; e.body.position.set(-12 + i * 0.6, T.height(-12 + i * 0.6, -36) + 1, -36); e.body.velocity.set(0, 0, 0); e.body.wakeUp(); }
         await __W(2500);
         const r = { flag: __EL.prog.flags['thornwick.mill'], sunk: __EL.world.signal('Slide_Jam', 'sunk'), care: __EL.ledger.get('care'), harm: __EL.ledger.get('harm') };
-        await __W(14000);
+        { const t0 = __EL.particles.t; while (__EL.particles.t - t0 < 14) await __W(200); }   // 14 s of game time (software GL runs slower than real time)
         Object.assign(r, { up: __level('River_2'), down: __level('River_4'), wheel: __wheel() });
         await __skip(() => __EL.story.step === 'back');
         __at(18, -8); await __W(1500);
