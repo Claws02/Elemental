@@ -138,7 +138,7 @@ export class FireSystem {
         return true;
     }
 
-    get douseLump() { return FIRE.douseTime; }
+    get douseLump() { return this.water?.douseTime ?? FIRE.douseTime; }
 
     /** How strong a fire is, 0.25 … 1, as it builds. */
     intensity(f) {
@@ -203,7 +203,7 @@ export class FireSystem {
             f.dousing = (f.dousing || 0) + amount;
             f.wettedAt = this.time;
             this.fx.steam?.(thing.pos(), 18 * Math.min(amount, 0.1) + 1);
-            if (f.dousing < FIRE.douseTime) return false;
+            if (f.dousing < (this.water?.douseTime ?? FIRE.douseTime)) return false;      // a surer stream puts it out sooner (Water Control)
         }
         return this.soak(thing, cause);
     }
@@ -272,7 +272,7 @@ export class FireSystem {
         const before = d.heat || 0;
         // With lava learned (Earth + Fire) it doesn't stop at hot: past 1 it is molten.
         const cap = this.prog?.can?.('lava') ? LAVA.molten : 1;
-        d.heat = Math.min(cap, before + FIRE.rockHeat * dt);
+        d.heat = Math.min(cap, before + (this.prog ? this.prog.stat('fire', 'rockHeat') : FIRE.rockHeat) * dt);
         d.heatCause = cause;
         if (before < FIRE.hotIgnites && d.heat >= FIRE.hotIgnites) EventBus.emit(EV.OBJECT_HEATED, { id: thing.id, cause });
         if (!d.molten && d.heat > 1) { d.molten = true; EventBus.emit(EV.MOLTEN, { id: thing.id, cause }); }
@@ -306,7 +306,7 @@ export class FireSystem {
     }
 
     _makeFireball(p, cause, origin = null) {
-        const R = FIRE.fireballRadius;
+        const R = this.prog ? this.prog.stat('fire', 'ballRadius') : FIRE.fireballRadius;      // grows with Fire Power (data/growth.js)
         const grp = new THREE.Group();
         grp.add(new THREE.Mesh(new THREE.IcosahedronGeometry(R * 0.7, 1), new THREE.MeshBasicMaterial({ color: 0xffe08a })));
         this._shellMat ||= fireShellMaterial();          // churning flame round the core, shared (art/ElementFx.js)
@@ -462,7 +462,7 @@ export class FireSystem {
             // Fire is light: most of gravity is cancelled, so a thrown fireball flies flat.
             e.body.velocity.y += 22 * 0.8 * dt;
             const thrown = (e.data.thrownAt || 0) > (e.data.droppedAt || 0);
-            if (this.time - fb.born > (thrown ? FIRE.fireballLife : FIRE.droppedLife)) this._dissipate(fb);
+            if (this.time - fb.born > (thrown ? (this.prog ? this.prog.stat('fire', 'ballLife') : FIRE.fireballLife) : FIRE.droppedLife)) this._dissipate(fb);
         }
     }
 
@@ -480,7 +480,7 @@ export class FireSystem {
                 const held = c.held;
                 const cause = fb.entry.data.cause || 'player';
                 if (c.other.data?.creature && !held) {          // a fireball thrown into a creature
-                    c.other.data.creature.react('fire', 22, cause);
+                    c.other.data.creature.react('fire', cause === 'player' && this.prog ? this.prog.stat('fire', 'ballHit') : 22, cause);
                     this._dissipate(fb);
                     continue;
                 }

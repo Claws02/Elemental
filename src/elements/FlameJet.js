@@ -67,11 +67,11 @@ export class FlameJet {
         const end = this.end();
         if (!end) { this.stop(); return; }
         const from = this.player.handPoint(_a);
-        if (from.distanceTo(end) > FLAME.range) { this.stop(); return; }
+        if (from.distanceTo(end) > this.prog.stat('fire', 'jetRange')) { this.stop(); return; }
         this.used += dt;
         this._draw(from, end, dt);
         const c = this.target.creature;
-        if (c) c.react('fire', FLAME.dps * dt, 'player');
+        if (c) c.react('fire', this.prog.stat('fire', 'jetDps') * dt, 'player');      // hotter with Fire Power (data/growth.js)
         this.target.thing?.feed?.(dt, this.prog.wild('fire'));           // an Oruun forge takes the heat (Lesson III)
         // Wild: it sprays, and what burns near where it lands catches.
         if (this.prog.wild('fire')) {

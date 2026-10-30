@@ -30,6 +30,7 @@
     "juice": "node qa/juice.js",
     "particles": "node qa/particles.js",
     "elementfx": "node qa/elementfx.js",
+    "growth": "node qa/growth.js",
     "forge": "node qa/forge.js",
     "buildings": "node qa/buildings.js",
     "bench": "node qa/bench.js",

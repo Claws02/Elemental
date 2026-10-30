@@ -342,6 +342,8 @@ const SHOTS = path.join(__dirname, 'shots');
         // Drag the finger from the basin to a world point, in steps.
         // Drag the finger from the basin to a world point at a human pace (~0.5 s), so it aims rather than yanks.
         window.__streamTo = async (id, p) => { const a = __screen(__EL.room.basins[1].surface), b = __screen(p); for (let k = 1; k <= 8; k++) { __touch('pointermove', id, a.x + (b.x - a.x) * k / 8, a.y + (b.y - a.y) * k / 8); await new Promise(r => setTimeout(r, 60)); } return b; };
+        // The base mechanics, at level 1 (what each level adds is qa/growth.js's): the sandbox has every element at the top.
+        Object.assign(__EL.prog.els.water, { power: 0, control: 0 });
         __EL.player.body.position.set(1.5, 0.45, -7.5); __EL.cam.yaw = 0.35; __EL.cam.pitch = 0.3;
     });
     await wait(1800);
@@ -481,6 +483,7 @@ const SHOTS = path.join(__dirname, 'shots');
             while (performance.now() - t0 < ms) { const q = __screen(p); __touch('pointermove', id, q.x, q.y); await new Promise(r => setTimeout(r, 150)); }
             return b;
         };
+        Object.assign(__EL.prog.els.air, { power: 0, control: 0 });         // level 1, as for Water above
         __EL.player.body.position.set(0, 0.45, -11); __EL.cam.yaw = 0.2; __EL.cam.pitch = 0.3;
     });
     await wait(1800);

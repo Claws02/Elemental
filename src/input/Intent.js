@@ -108,7 +108,7 @@ export class Intent {
         const h = this.hero.position;
         for (const c of this.creatures?.all || []) {
             if (c.state === 'dead' || c.gone) continue;
-            if (Math.hypot(c.pos.x - h.x, c.pos.y - h.y, c.pos.z - h.z) > FLAME.range) continue;
+            if (Math.hypot(c.pos.x - h.x, c.pos.y - h.y, c.pos.z - h.z) > this.prog.stat('fire', 'jetRange')) continue;
             const q = new THREE.Vector3(c.pos.x, c.pos.y, c.pos.z).project(this.camera);
             if (q.z > 1) continue;
             const d = Math.hypot((q.x + 1) / 2 * innerWidth - x, (1 - q.y) / 2 * innerHeight - y);

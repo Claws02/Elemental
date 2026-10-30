@@ -175,3 +175,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .hud-gauge .hold { height: 4px; margin: 5px auto 0; width: 60%; border-radius: 2px; background: rgba(14,12,10,.6); overflow: hidden; }
 .hud-gauge .hold i { display: block; height: 100%; width: 0; background: #ffe08a; }
 .hud-gauge.in .track { box-shadow: 0 0 10px rgba(255,200,90,.6); }
+
+/* ---- growth: the element rings under the health bar, and the level-up banner (docs/GROWTH_AND_COMBAT.md) ---- */
+.hud-rings { position: absolute; left: calc(env(safe-area-inset-left) + 16px); top: calc(env(safe-area-inset-top) + 72px);
+  display: flex; gap: 6px; pointer-events: none; }
+.hud-rings .ring { position: relative; width: 32px; height: 32px; }
+.hud-rings svg { width: 32px; height: 32px; transform: rotate(-90deg); }
+.hud-rings circle { fill: none; stroke-width: 3; stroke-linecap: round; }
+.hud-rings circle.bg { stroke: rgba(14,12,10,.55); }
+.hud-rings .p circle { stroke: var(--rune); }
+.hud-rings .c circle { stroke: rgba(244,236,220,.85); stroke-width: 2.4; }
+.hud-rings span { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--rune);
+  text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+.hud-rings .ring.wild svg { animation: ring-wild 1.6s infinite alternate ease-in-out; }
+@keyframes ring-wild { from { opacity: 1; } to { opacity: .55; } }
+.hud-levelup { position: absolute; left: 50%; top: calc(env(safe-area-inset-top) + 64px); transform: translate(-50%, -8px); max-width: min(86vw, 420px);
+  padding: 10px 18px; border-radius: 14px; background: rgba(14,12,10,.72); border: 1px solid var(--rune, #ffb347);
+  box-shadow: 0 0 24px -4px var(--rune, #ffb347); text-align: center; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
+.hud-levelup.on { opacity: 1; transform: translate(-50%, 0); }
+.hud-levelup b { display: block; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--rune, #ffb347); }
+.hud-levelup span { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-dim, #cfc6b4); }

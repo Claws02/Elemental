@@ -41,7 +41,8 @@ const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();
 
 export class AirSystem {
-    constructor({ scene, camera, interactables, channel, hero, fire, solids }) {
+    constructor({ scene, camera, interactables, channel, hero, fire, solids, prog = null }) {
+        this.prog = prog;
         Object.assign(this, { scene, camera, interactables, channel, hero, fire, solids });
         this.wind = null;          // { dir: Vector3, aim: Vector3 } while blowing
         this.time = 0;
@@ -49,6 +50,9 @@ export class AirSystem {
         this.streaks = Particles.current.pool(220, 'streak');      // thin lines stretched along the wind (art/Particles.js)
         this.motes = Particles.current.pool(60, 'mote');           // specks carried in it
     }
+
+    /** A number that grows with Air's Power or Control (data/growth.js), or the base tuning without a hero's progress. */
+    _s(key) { return this.prog ? this.prog.stat('air', key) : AIR[key]; }
 
     /** The hero's chest: where Air comes from. */
     origin(out = new THREE.Vector3()) { const p = this.hero.position; return out.set(p.x, p.y + 1.3, p.z); }
@@ -100,9 +104,9 @@ export class AirSystem {
         d.y = Math.max(-0.2, Math.min(0.35, d.y));
         d.normalize();
         this.gusts++;
-        this._blow(d, AIR.gustLen, AIR.gustAngle, 0, true);
+        this._blow(d, this._s('gustLen'), this._s('gustAngle'), 0, true);
         const o = this.origin();
-        ElementFx.current?.ribbons.show(o, d, AIR.gustLen, AIR.gustAngle);
+        ElementFx.current?.ribbons.show(o, d, this._s('gustLen'), this._s('gustAngle'));
         for (let i = 0; i < 60; i++) this._streak(o, d, 14, 0.5);
         EventBus.emit(EV.WIND, { kind: 'gust', cause: 'player' });
     }
@@ -163,7 +167,7 @@ export class AirSystem {
             const k = inCone(b.position);
             if (k <= 0) continue;
             const m = k / (1 + b.mass / 4);
-            const dv = gust ? AIR.gustPush * m : AIR.windPush * m * dt;
+            const dv = gust ? this._s('gustPush') * m : this._s('windPush') * m * dt;
             b.wakeUp();
             b.velocity.x += dir.x * dv; b.velocity.y += (dir.y + 0.25) * dv; b.velocity.z += dir.z * dv;
             e.data.creature?.react('wind', dv, 'player');
@@ -185,10 +189,10 @@ export class AirSystem {
     update(dt) {
         this.time += dt;
         if (this.wind) {
-            this._blow(this.wind.dir, AIR.windLen, AIR.windAngle, dt, false);
+            this._blow(this.wind.dir, this._s('windLen'), this._s('windAngle'), dt, false);
             const o = this.origin();
             for (let i = 0; i < 90 * dt; i++) this._streak(o, this.wind.dir, 9, 0.6);
-            ElementFx.current?.ribbons.show(o, this.wind.dir, AIR.windLen, AIR.windAngle, 0.1);
+            ElementFx.current?.ribbons.show(o, this.wind.dir, this._s('windLen'), this._s('windAngle'), 0.1);
         }
     }
 

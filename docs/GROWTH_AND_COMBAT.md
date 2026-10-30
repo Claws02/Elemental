@@ -20,6 +20,8 @@ So it moves fast because each lesson is a short scene that hands over the finish
 
 ### 2.1 Every level does something (the foundation)
 
+> ✅ **Built** (2026-10-30): curves for all four in `src/data/growth.js`, read by the systems; Power grows from use and fighting; element rings and a level-up banner with a slowed beat. `docs/PROGRESSION.md` has the numbers. Not built yet: Control-gated techniques (§2.2) and everything after.
+
 Give Fire, Water and Air their own Power and Control curves in `src/data/growth.js`, the way Earth has. A level should be something you can *see*:
 
 | | Power (grows with use, cheaply, most with destruction) | Control (grows with precision and restraint) |

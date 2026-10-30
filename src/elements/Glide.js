@@ -36,7 +36,8 @@ export class Glide {
         if (!was) EventBus.emit(EV.GLIDE, { on: true });
         // Sinking at GLIDE.fall through the whole step: gravity's share of this frame is paid in advance.
         const g = -Physics.getWorld().gravity.y * dt;
-        if (b.velocity.y < -GLIDE.fall + g) b.velocity.y = -GLIDE.fall + g;
+        const fall = this.prog.stat('air', 'glideFall');           // Air Control carries a glide further (data/growth.js)
+        if (b.velocity.y < -fall + g) b.velocity.y = -fall + g;
         // A fire below: the heat rises, and carries the hero with it.
         for (const f of this.fire.live) {          // (only what is alight or heating: never the whole village)
             if (!f.burning) continue;
@@ -50,7 +51,7 @@ export class Glide {
     /** After the physics step: gravity over a long frame mustn't turn a glide back into a drop. */
     after() {
         const b = this.player.body;
-        if (this.gliding && b.velocity.y < -GLIDE.fall) b.velocity.y = -GLIDE.fall;
+        if (this.gliding && b.velocity.y < -this.prog.stat('air', 'glideFall')) b.velocity.y = -this.prog.stat('air', 'glideFall');
         if (this.thermal) b.velocity.y = Math.max(b.velocity.y, this.preVy);    // in the heat, gravity doesn't win
     }
 }

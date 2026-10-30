@@ -15,6 +15,7 @@
 import { THREE } from '../engine/lib.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { ELEMENT } from '../art/Palette.js';
+import { WHAT } from '../data/growth.js';
 
 export class Hud {
     constructor(root) {
@@ -22,6 +23,8 @@ export class Hud {
         root.innerHTML = `
             <div class="hud-element" id="hud-element"><span class="rune"></span><span class="label"></span></div>
             <div class="hud-health" id="hud-health" role="meter" aria-label="Health" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+            <div class="hud-rings" id="hud-rings" aria-label="Your elements"></div>
+            <div class="hud-levelup" id="hud-levelup" role="status"><b></b><span></span></div>
             <div class="hud-hint" id="hud-hint">
                 <div><b>Bottom-left thumb</b> move</div>
                 <div><b>Touch a rock</b> grab · <b>flick</b> throw</div>
@@ -56,9 +59,15 @@ export class Hud {
             this.log(`${what} · it got away from you${e.hurt.length ? ' · someone was hurt' : ''}`);
         });
         this.el('hud-say').addEventListener('pointerdown', e => { e.stopPropagation(); this.skipLine = true; });
+        // A level gained: a banner says what it is and what it does (data/growth.js WHAT). Game slows time a beat.
         EventBus.on(EV.GROWTH, e => {
             const name = { earth: 'Earth', fire: 'Fire', water: 'Water', air: 'Air' }[e.el];
-            this.log(`${name} · ${e.track === 'power' ? 'Power' : 'Control'} ${e.level}`);
+            const el = this.el('hud-levelup');
+            el.style.setProperty('--rune', '#' + ELEMENT[e.el].rune.toString(16).padStart(6, '0'));
+            el.querySelector('b').textContent = `${name} · ${e.track === 'power' ? 'Power' : 'Control'} ${e.level}`;
+            el.querySelector('span').textContent = WHAT[e.el]?.[e.track] || '';
+            el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+            clearTimeout(this._levelT); this._levelT = setTimeout(() => el.classList.remove('on'), 4200);
         });
 
         EventBus.on(EV.OBJECT_THROWN, () => this.el('hud-hint').classList.add('gone'));
@@ -244,6 +253,22 @@ export class Hud {
         el.classList.add('on');
         clearTimeout(this._tipT);
         this._tipT = setTimeout(() => el.classList.remove('on'), 6000);
+    }
+
+    /**
+     * The element rings under the health bar: one per element the hero has (not locked), the outer arc Power and the
+     * inner arc Control, each filling toward its next level; the number is the Power level. `els` is Progression's.
+     */
+    rings(els) {
+        const key = Object.entries(els).map(([k, e]) => `${k}${e.state}${Math.round(e.power * 200)}:${Math.round(e.control * 200)}`).join('|');
+        if (key === this._ringsKey) return;
+        this._ringsKey = key;
+        const arc = (r, v) => { const L = 2 * Math.PI * r, f = v >= 1 ? 1 : (v * 10) % 1; return `<circle r="${r}" cx="16" cy="16" stroke-dasharray="${(f * L).toFixed(1)} ${L.toFixed(1)}"/>`; };
+        this.el('hud-rings').innerHTML = ['earth', 'water', 'fire', 'air'].filter(k => els[k] && els[k].state !== 'locked').map(k => {
+            const e = els[k], col = '#' + ELEMENT[k].rune.toString(16).padStart(6, '0'), lv = Math.floor(Math.min(e.power, 0.999) * 10) + 1;
+            return `<div class="ring ${e.state}" style="--rune:${col}" title="${ELEMENT[k].name}: Power ${lv}, Control ${Math.floor(Math.min(e.control, 0.999) * 10) + 1}">`
+                + `<svg viewBox="0 0 32 32"><circle class="bg" r="14" cx="16" cy="16"/><circle class="bg" r="10" cx="16" cy="16"/><g class="p">${arc(14, e.power)}</g><g class="c">${arc(10, e.control)}</g></svg><span>${lv}</span></div>`;
+        }).join('');
     }
 
     /** The health bar: 0..1. Flashes when it drops. */

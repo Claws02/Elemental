@@ -93,6 +93,7 @@ export const EV = {
     TALK:               'Talk',            // { id, n }: the player talked to someone (the n-th time)    // { id, cracked }: the hero laid a hand on a standing stone
     LANDMARK:           'Landmark',        // { id, name, to, region }: a ruler's hall or the palace brought down by the player
     CREATURE:           'Creature',
+    CREATURE_HIT:       'CreatureHit',     // { id, kind, dmg }: the player's element did this much to a creature
     HURT:               'Hurt',
     DIED:               'Died',
     CHECKPOINT:         'Checkpoint',

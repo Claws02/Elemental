@@ -34,7 +34,7 @@ import { TIER } from '../engine/Physics.js';
 import { EventBus, EV } from '../core/EventBus.js';
 import { Particles } from '../art/Particles.js';
 import { waterStreamMaterial } from '../art/ElementFx.js';
-import { WATER } from '../data/elements.js';
+import { WATER, FIRE } from '../data/elements.js';
 import { Ground } from '../world/Ground.js';
 import { SWIM } from '../world/WaterBodies.js';
 
@@ -46,7 +46,8 @@ const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();
 
 export class WaterSystem {
-    constructor({ scene, camera, interactables, channel, hero, fire, fx, solids }) {
+    constructor({ scene, camera, interactables, channel, hero, fire, fx, solids, prog = null }) {
+        this.prog = prog;
         Object.assign(this, { scene, camera, interactables, channel, hero, fire, fx, solids });
         this.sources = [];         // { thing, surface: Vector3 }
         this.stream = null;        // { source, want, target, cur, over }
@@ -61,6 +62,10 @@ export class WaterSystem {
         this.drops = Particles.current.pool(260, 'drop');          // beads of water with a glint (art/Particles.js)
         this.mist = Particles.current.pool(80, 'mist');            // the fine spray off a stream and a splash
     }
+
+    /** A number that grows with Water's Power or Control (data/growth.js), or the base tuning without a hero's progress. */
+    _s(key) { return this.prog ? this.prog.stat('water', key) : { draw: WATER.draw, reach: WATER.reach, push: WATER.push, hit: 4, splash: WATER.splash, douseTime: FIRE.douseTime }[key]; }
+    get douseTime() { return this._s('douseTime'); }
 
     /**
      * A source: its surface point, or for a lake a function giving the point nearest a point
@@ -112,7 +117,7 @@ export class WaterSystem {
         const g = Ground.raycast(r);
         if (g && r.origin.distanceTo(g) < t - 0.05) return null;          // dry ground first
         if (source.contains && !source.contains(p)) return null;
-        if (Math.hypot(p.x - this.hero.position.x, p.z - this.hero.position.z) > WATER.draw) return null;
+        if (Math.hypot(p.x - this.hero.position.x, p.z - this.hero.position.z) > this._s('draw')) return null;
         return p;
     }
 
@@ -136,9 +141,9 @@ export class WaterSystem {
         s.want.copy(p);
         const from = s.source.surface;
         const off = p.clone().sub(from);
-        if (off.length() > WATER.reach) {
+        if (off.length() > this._s('reach')) {
             // Too far: it gives out at its reach and falls, landing short.
-            s.target.copy(from).addScaledVector(off.normalize(), WATER.reach);
+            s.target.copy(from).addScaledVector(off.normalize(), this._s('reach'));
             const gy = Ground.height(s.target.x, s.target.z);
             s.target.y = Math.max(gy + 0.15, gy + (s.target.y - gy) * 0.35);
         } else {
@@ -249,18 +254,18 @@ export class WaterSystem {
             const d = b.position.distanceTo(p);
             if (d > radius) continue;
             const k = (1 - d / radius) / (1 + b.mass / 8) * (this.hero.swimming ? SWIM.weak : 1);
-            const v = dir ? dir.clone().multiplyScalar(WATER.push * amount * k)
+            const v = dir ? dir.clone().multiplyScalar(this._s('push') * amount * k)
                           : new THREE.Vector3(b.position.x - p.x, 0.6, b.position.z - p.z).normalize().multiplyScalar(WATER.splashPush * k);
             b.wakeUp();
             b.velocity.x += v.x; b.velocity.y += v.y; b.velocity.z += v.z;
             if (v.length() > 0.05) { e.data.thrownBy = 'player'; e.data.thrownAt = performance.now(); }
-            e.data.creature?.react('water', (dir ? amount : 1) * k * 4, 'player');     // soaked, pushed, and for an ember bird, grounded
+            e.data.creature?.react('water', (dir ? amount : 1) * k * this._s('hit'), 'player');     // soaked, pushed, and for an ember bird, grounded
         }
     }
 
     /** A burst of water at `p` (an orb landing, a stream let go). */
     splash(p, strength = 1) {
-        this._wet(p, WATER.splash * (0.5 + 0.5 * strength), strength);
+        this._wet(p, this._s('splash') * (0.5 + 0.5 * strength), strength);
         EventBus.emit(EV.SPLASH, { x: p.x, y: p.y, z: p.z, strength });
         for (let i = 0; i < 8 * strength; i++) {
             const a = Math.random() * Math.PI * 2, v = 1 + Math.random() * 2;
@@ -283,7 +288,7 @@ export class WaterSystem {
             if (this.hero.position.distanceTo(s.source.surface) > WATER.range) this.collapse();
             else {
                 s.cur.lerp(s.target, 1 - Math.exp(-10 * dt));
-                const beyond = s.want.distanceTo(s.source.surface) > WATER.reach;
+                const beyond = s.want.distanceTo(s.source.surface) > this._s('reach');
                 this._shapeTube(s, beyond);
                 this._wet(s.cur, WATER.spray, dt, s.dir);
                 // Spray at the end, and drops shed along the way.

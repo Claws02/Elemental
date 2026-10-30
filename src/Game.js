@@ -49,6 +49,7 @@ import { Earthworks } from './elements/Earthworks.js';
 import { Juice } from './art/Juice.js';
 import { nextHop, NAMES } from './data/world.js';
 import { Ground } from './world/Ground.js';
+import { ELEMENT } from './art/Palette.js';
 import { Particles } from './art/Particles.js';
 import { ElementFx, fireShellMaterial } from './art/ElementFx.js';
 import { Ice } from './elements/Ice.js';
@@ -102,8 +103,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const particles = new Particles(scene);                  // every particle in the game: two draw calls, aged on the GPU (art/Particles.js)
     const fx = new FireFx(scene, Renderer.quality.tier === 'mobile' ? { flames: 320, smoke: 120 } : { flames: 480, smoke: 160 });
     const fire = new FireSystem({ scene, fx, interactables, channel, hero: player, prog });
-    const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids });
-    const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids });
+    const water = new WaterSystem({ scene, camera, interactables, channel, hero: player, fire, fx, solids: world.solids, prog });
+    fire.water = water;          // a stream puts fire out as fast as Water Control allows (data/growth.js douseTime)
+    const air = new AirSystem({ scene, camera, interactables, channel, hero: player, fire, solids: world.solids, prog });
     const works = new Earthworks({ scene, hero: player, camera });
     works.things = interactables;            // pulled and caught stones are things to lift
     works.rocks = world.rocks;
@@ -171,6 +173,14 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         EventBus.emit(EV.ROAD_CLOSED, { to: it.to });
     };
     let blockedSay = 0;
+    // A level gained: the world slows for a beat, the screen flashes the element's colour.
+    const LEVEL_SLOW = 0.7;
+    let levelSlow = 0;
+    const offGrowth = EventBus.on(EV.GROWTH, e => {
+        levelSlow = LEVEL_SLOW;
+        const c = ELEMENT[e.el].rune;
+        juice.flash?.(`rgba(${c >> 16 & 255},${c >> 8 & 255},${c & 255},1)`, 0.28, 0.6);
+    });
     vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);
@@ -269,7 +279,9 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         // a longer hitch is treated as a pause rather than a teleport. Never
         // negative: the first rAF timestamp can predate `last`.
         const raw = (now - last) / 1000;
-        const dt = Math.max(0, Math.min(0.1, raw));
+        // A level gained slows the world for a beat (EV.GROWTH below), easing back to full speed.
+        if (levelSlow > 0) levelSlow = Math.max(0, levelSlow - raw);
+        const dt = Math.max(0, Math.min(0.1, raw)) * (levelSlow > 0 ? 0.3 + 0.7 * (1 - levelSlow / LEVEL_SLOW) ** 2 : 1);
         last = now;
         Renderer.adapt(raw);
         EventBus.tick(dt);
@@ -308,6 +320,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         if (charmShown !== prog.flags.charm) { charmShown = prog.flags.charm; hud.charm?.(charmShown === 'refused' ? wearCharm : null); }
         hud.vitals?.(vitals.danger);
         hud.health?.(vitals.health / 100);
+        hud.rings?.(prog.els);
         story?.update(dt);
         talk.update(dt);
         particles.update(dt, renderer.getDrawingBufferSize(_size).y);
@@ -377,6 +390,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         works.dispose();
         juice.dispose();
         offGauge();
+        offGrowth();
         particles.dispose();
         elementFx.dispose();
         ice.dispose();

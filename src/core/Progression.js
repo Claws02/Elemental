@@ -54,12 +54,12 @@ export class Progression {
         return this.profile === 'sandbox' || !!this.flags['learned.' + ability];
     }
 
-    /** A number from data/growth.js for this element's current Power or Control. */
-    earth(key) {
-        const f = GROWTH.earth[key];
-        const byControl = key === 'wobble' || key === 'slam';
-        return f(byControl ? this.control('earth') : this.power('earth'));
+    /** A number from data/growth.js for this element's current Power or Control (the curve names its track). */
+    stat(el, key) {
+        const [track, f] = GROWTH[el][key];
+        return f(track === 'control' ? this.control(el) : this.power(el));
     }
+    earth(key) { return this.stat('earth', key); }
 
     /**
      * How strong the hero is, all told (0 … 5): each element known (not locked; the charm doesn't count against
@@ -94,6 +94,13 @@ export class Progression {
         EventBus.on(EV.OBJECT_THROWN, e => { if (e.element === 'earth' && e.cause === 'player') g('earthThrow'); });
         EventBus.on(EV.PIECE_BROKEN, e => { if (e.cause === 'player' && !e.burned) g('earthBreak'); });
         EventBus.on(EV.FIRE_STARTED, e => { if (e.cause === 'player' && this.wild('fire')) g('fireWildIgnite'); });
+        // Use grows every element's Power; a fight grows it most.
+        EventBus.on(EV.OBJECT_THROWN, e => { if (e.cause === 'player' && (e.element === 'fire' || e.element === 'water')) g(e.element === 'fire' ? 'fireThrow' : 'waterThrow'); });
+        EventBus.on(EV.FIRE_OUT, e => { if (e.cause === 'player' && e.doused) g('waterDouse'); });
+        EventBus.on(EV.WIND, e => { if (e.cause === 'player' && e.kind === 'gust') g('airGust'); });
+        const of = kind => ({ fire: 'fire', water: 'water', wind: 'air', impact: 'earth' })[kind];
+        EventBus.on(EV.CREATURE_HIT, e => { const el = of(e.kind); if (el) this.grant(el, 'power', GAINS.hit.amount * e.dmg / 10, 'hit'); });
+        EventBus.on(EV.CREATURE, e => { const el = e.to === 'dead' && e.cause === 'player' && of(e.kind); if (el) this.grant(el, 'power', GAINS.kill.amount, 'kill'); });
     }
 
     _save() {

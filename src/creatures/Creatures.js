@@ -241,6 +241,8 @@ class Creature {
         const dmg = this.group.item.fragile && amount > 0.02 ? this.hp + 1 : amount * w;
         if (cause === 'player') { this.engaged = true; this.hitBy = 'player'; }
         if (dmg <= 0.01) return;
+        // What the player's elements did (Progression grows the element that did it).
+        if (cause === 'player') { this.lastKind = kind; EventBus.emit(EV.CREATURE_HIT, { id: this.id, kind, dmg: Math.min(dmg, this.hp) }); }
         this.hp -= dmg;
         this.flash = 0.15;
         if (this.hp <= 0) this._die();
@@ -266,7 +268,7 @@ class Creature {
         this.body.fixedRotation = false;
         this.body.updateMassProperties();
         this.body.angularVelocity.set(2, 0, 1);
-        EventBus.emit(EV.CREATURE, { id: this.id, species: this.group.item.species, to: 'dead', cause: this.hitBy || 'environment' });
+        EventBus.emit(EV.CREATURE, { id: this.id, species: this.group.item.species, to: 'dead', cause: this.hitBy || 'environment', kind: this.lastKind || null });
     }
 
     _flee(why) {
