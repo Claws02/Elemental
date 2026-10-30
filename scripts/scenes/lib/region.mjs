@@ -21,7 +21,7 @@ export { Land, Dresser, fbm, ridge, smooth, rng, pathDist };
 export const SIZE = 240, HALF = SIZE / 2;
 
 // Where each exit sits: which edge (N = -z, S = +z, E = +x, W = -x) and how far along it (-1..1).
-import { LINKS, NAMES } from '../../../src/data/world.js';
+import { LINKS, NAMES, ROADS } from '../../../src/data/world.js';
 export { LINKS, NAMES };      // the world's graph lives with the game (src/data/world.js): the journey marker reads it too
 
 // A point on an edge, `inset` metres in, and the direction pointing into the scene.
@@ -47,6 +47,12 @@ export function exits(id, L, S, { banner = 'green', surface = 'dirt', style = 's
         const sx = across ? 6 : 0, sz = across ? 0 : 6;
         S.add(`Waystone_${to}`, 'statue', e.x + sx, e.z + sz, facing(arrive.in), { height: 4, style, seed: to.length }, 2);
         S.add(`Banner_${to}_a`, 'banner', e.x - sx * 1.2, e.z - sz * 1.2, 0, { height: 5, colour: banner }, 1);
+        // A road the story hasn't reached (ROADS): whoever keeps it stands in it, beside the way, until it opens.
+        const road = ROADS[`${id}>${to}`];
+        if (road?.look) {
+            const k = edgePoint(side, along, 11), [ix, iz] = arrive.in;
+            S.add(`Roadkeeper_${to}`, 'npc', k.x + iz * 2.5, k.z - ix * 2.5, facing(arrive.in), { name: road.who, look: road.look, role: 'idle', showWhen: `!${road.open}` }, 1);
+        }
         ends.push({ to, x: arrive.x, z: arrive.z, in: arrive.in });
         L.road([[e.x, e.z], [arrive.x + arrive.in[0] * 8, arrive.z + arrive.in[1] * 8]], 5, surface);
     }

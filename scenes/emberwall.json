@@ -445,6 +445,18 @@
    "colour": "red"
   },
   {
+   "id": "Roadkeeper_halcyra",
+   "type": "npc",
+   "x": 33.5,
+   "y": 0,
+   "z": 109,
+   "rotY": 3.142,
+   "name": "Lantern warden",
+   "look": "lantern",
+   "role": "idle",
+   "showWhen": "!act3"
+  },
+  {
    "id": "Exit_skyreach",
    "type": "exit",
    "x": 113,
@@ -487,6 +499,18 @@
    "rotY": 0,
    "height": 5,
    "colour": "red"
+  },
+  {
+   "id": "Roadkeeper_skyreach",
+   "type": "npc",
+   "x": 109,
+   "y": 0,
+   "z": 2.5,
+   "rotY": -1.571,
+   "name": "Ember Guard",
+   "look": "ember_guard",
+   "role": "idle",
+   "showWhen": "!act2.cindrel"
   },
   {
    "id": "Lava_Channel_1",

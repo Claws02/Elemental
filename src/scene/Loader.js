@@ -55,7 +55,8 @@ export function buildScene(scene, data, { flag = () => undefined, state = () => 
     const st = data.settings || {};
     const world = {
         data, scene, solids: [], rocks: [], props: [], braziers: [], basins: [], barricades: [], plates: [], npcs: [],
-        objects: new Map(), creatureGroups: [], creatures: null, spawns: {}, spawn: null, sys: null, rising: [], onExit: null, session: null,
+        objects: new Map(), creatureGroups: [], creatures: null, spawns: {}, spawn: null, sys: null, rising: [], onExit: null, onBlocked: null, session: null,
+        flag,           // a story flag's value, live (an exit asks whether its road is open yet)
     };
 
     // ---- ground: a height field (terrain scenes), or a flat floor ----------------------

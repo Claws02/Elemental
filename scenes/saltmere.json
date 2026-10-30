@@ -873,6 +873,18 @@
    "colour": "blue"
   },
   {
+   "id": "Roadkeeper_halcyra",
+   "type": "npc",
+   "x": 109,
+   "y": 0,
+   "z": -33.5,
+   "rotY": -1.571,
+   "name": "Lantern warden",
+   "look": "lantern",
+   "role": "idle",
+   "showWhen": "!act3"
+  },
+  {
    "id": "Exit_glass",
    "type": "exit",
    "x": 113,
@@ -915,6 +927,18 @@
    "rotY": 0,
    "height": 5,
    "colour": "blue"
+  },
+  {
+   "id": "Roadkeeper_glass",
+   "type": "npc",
+   "x": 109,
+   "y": 0,
+   "z": 38.5,
+   "rotY": -1.571,
+   "name": "Caravan master",
+   "look": "glass_folk",
+   "role": "idle",
+   "showWhen": "!act3"
   },
   {
    "id": "Bridge_Council_East",

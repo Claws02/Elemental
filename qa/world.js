@@ -25,6 +25,7 @@ const BUDGET = { calls: 400, triangles: 600000 };          // at the start point
     const pass = [], fail = [];
     const check = (ok, msg) => { (ok ? pass : fail).push(msg); if (process.env.QA_LOUD) console.log((ok ? '  ok   ' : '  FAIL ') + msg); };
     const { LINKS } = await import(path.join(ROOT, 'scripts/scenes/lib/region.mjs'));
+    const { ROADS } = await import(path.join(ROOT, 'src/data/world.js'));
 
     // ---- 1. on paper ------------------------------------------------------------------------------
     const scenes = Object.fromEntries(REGIONS.map(id => [id, JSON.parse(fs.readFileSync(path.join(ROOT, 'scenes', id + '.json'), 'utf8'))]));
@@ -152,10 +153,28 @@ const BUDGET = { calls: 400, triangles: 600000 };          // at the start point
             if (e.showWhen || e.hidden) continue;                   // Veyra's road opens at the prologue's dawn (qa/prologue.js)
             errors = [];
             await open(id);
-            await ev(e => {
+            const into = () => ev(e => {
                 const T = __EL.world.terrain, b = __EL.player.body;
                 b.position.set(e.x, T.height(e.x, e.z) + 0.6, e.z); b.velocity.set(0, 0, 0);
             }, e);
+            // A road the story hasn't reached (data/world.js ROADS): turned back, told why by whoever keeps it; then
+            // with its flag set (the story got there), it lets you through like any other.
+            const road = ROADS[`${id}>${e.to}`];
+            if (road) {
+                const flags = road.open.split(',').map(t => t.trim());
+                await ev(flags => { for (const f of flags) delete __EL.prog.flags[f]; }, flags);
+                await into();
+                await wait(1200);
+                const back = scenes[id].objects.find(o => o.type === 'spawn' && o.name === `from_${e.to}`);
+                const shut = await ev(() => ({ mode: __EL.mode, x: +__EL.player.body.position.x.toFixed(1), z: +__EL.player.body.position.z.toFixed(1),
+                    who: document.querySelector('#hud-say .who')?.textContent, line: document.querySelector('#hud-say .line')?.textContent }));
+                const keeper = scenes[id].objects.find(o => o.id === `Roadkeeper_${e.to}`);
+                check(shut.mode === id && Math.hypot(shut.x - back.x, shut.z - back.z) < 3 && shut.who === road.who && shut.line === road.say[0] && (!road.look || keeper?.look === road.look),
+                    `${id} → ${e.to}: closed until ${road.open}; ${road.who} turns you back (${JSON.stringify(shut)})`);
+                await ev(flags => { for (const f of flags) __EL.prog.flags[f] = 'done'; }, flags);
+                await wait(300);
+            }
+            await into();
             const went = await until(to => window.__EL?.mode === to && window.__EL?.ready, e.to, 60000);
             await wait(800);
             const at = scenes[e.to].objects.find(o => o.type === 'spawn' && o.name === e.at);

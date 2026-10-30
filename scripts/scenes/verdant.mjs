@@ -287,7 +287,7 @@ const script = {
               { label: 'The Lord-Warden can judge you.', flag: { name: 'act1.varn', value: 'maren' }, say: ['@Varn The Lord-Warden hasn’t a cell that holds a Stonebound. But we’ll go. We keep our word.'] },
               { label: 'Who told you we’d come?', flag: { name: 'act1.varn', value: 'asked' }, say: ['@Varn Nobody tells the Stonebound anything.', '@Varn …A grey man, at the Loom, a week back. He said the Conduit would come north to crack the next stone. He was very sure.', '@Cael_Ruin Of course he was.'] },
           ] },
-        { id: 'act1', do: [{ setFlag: { name: 'act1.ruin', value: 'done' } }, { checkpoint: true }],
+        { id: 'act1', do: [{ setFlag: { name: 'act1.ruin', value: 'done' } }, { hide: ['Roadkeeper_cistern'] }, { checkpoint: true }],     // the road south opens (data/world.js ROADS)
           say: ['@Cael_Ruin There are more stones like this between here and the sea. If someone’s cracking them, someone’s counting on the cracks.',
                 '@Cael_Ruin South, then. Saltmere. There’s an Oruun cistern on the way, and you’ve a great deal to learn about water.'],
           until: { talking: false }, then: { say: ['@Cael Meet me on the south road, past the river. I\u2019ll be waiting at the border.'], do: [{ hint: 'Act I is told: The Road and the Reach. Act II begins on the road south.' }] } },

@@ -392,6 +392,18 @@
    "colour": "green"
   },
   {
+   "id": "Roadkeeper_halcyra",
+   "type": "npc",
+   "x": 109,
+   "y": 0,
+   "z": 2.5,
+   "rotY": -1.571,
+   "name": "Lantern warden",
+   "look": "lantern",
+   "role": "idle",
+   "showWhen": "!act3"
+  },
+  {
    "id": "Exit_forge",
    "type": "exit",
    "x": -27,
@@ -436,6 +448,18 @@
    "colour": "green"
   },
   {
+   "id": "Roadkeeper_forge",
+   "type": "npc",
+   "x": -24.5,
+   "y": 0,
+   "z": -109,
+   "rotY": 0,
+   "name": "Warden's man",
+   "look": "verdant_guard",
+   "role": "idle",
+   "showWhen": "!act2.saltmere"
+  },
+  {
    "id": "Exit_cistern",
    "type": "exit",
    "x": -27,
@@ -478,6 +502,18 @@
    "rotY": 0,
    "height": 5,
    "colour": "green"
+  },
+  {
+   "id": "Roadkeeper_cistern",
+   "type": "npc",
+   "x": -29.5,
+   "y": 0,
+   "z": 109,
+   "rotY": 3.142,
+   "name": "Warden's man",
+   "look": "verdant_guard",
+   "role": "idle",
+   "showWhen": "!act1.ruin"
   },
   {
    "id": "Thornwick_Bridge",
@@ -8003,6 +8039,11 @@
        "name": "act1.ruin",
        "value": "done"
       }
+     },
+     {
+      "hide": [
+       "Roadkeeper_cistern"
+      ]
      },
      {
       "checkpoint": true

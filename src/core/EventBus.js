@@ -97,4 +97,5 @@ export const EV = {
     DIED:               'Died',
     CHECKPOINT:         'Checkpoint',
     WORLD_STATE:        'WorldState',
+    ROAD_CLOSED:        'RoadClosed',
 };

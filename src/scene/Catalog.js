@@ -41,6 +41,7 @@ import { CREATURE_MODELS } from '../art/CreatureModels.js';
 import { SPECIES } from '../data/creatures.js';
 import { PREFABS, expandPrefab } from '../data/prefabs.js';
 import { defaults } from './schema.js';
+import { ROADS, roadOpen } from '../data/world.js';
 import { plantModel, boulderModel } from '../art/NatureModels.js';
 import { towerModel, bridgeModel, dockModel, townWallModel, gatehouseModel, tentModel, chimneyModel, lampModel, bannerModel, statueModel, fountainModel } from '../art/ArchModels.js';
 
@@ -629,7 +630,11 @@ export const CATALOG = {
                     const inside = Math.abs(p.x) <= it.width / 2 && Math.abs(p.z) <= it.depth / 2 && p.y >= -0.5 && p.y <= it.height;
                     if (armed === null) armed = !inside;
                     else if (!inside) armed = true;
-                    else if (armed && it.to) { gone = true; ctx.world.onExit?.(it.to, it.at || 'start', it); }
+                    else if (armed && it.to) {
+                        // A road the story hasn't reached yet (data/world.js ROADS): turned back, not sent on.
+                        if (!roadOpen(ctx.world.data.id, it.to, ctx.world.flag)) { armed = false; ctx.world.onBlocked?.(it, ROADS[`${ctx.world.data.id}>${it.to}`]); }
+                        else { gone = true; ctx.world.onExit?.(it.to, it.at || 'start', it); }
+                    }
                 },
             };
         },

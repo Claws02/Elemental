@@ -392,6 +392,18 @@
    "colour": "sky"
   },
   {
+   "id": "Roadkeeper_halcyra",
+   "type": "npc",
+   "x": -38.5,
+   "y": 0,
+   "z": 109,
+   "rotY": 3.142,
+   "name": "Lantern warden",
+   "look": "lantern",
+   "role": "idle",
+   "showWhen": "!act3"
+  },
+  {
    "id": "Exit_glass",
    "type": "exit",
    "x": 36,
@@ -434,6 +446,18 @@
    "rotY": 0,
    "height": 5,
    "colour": "sky"
+  },
+  {
+   "id": "Roadkeeper_glass",
+   "type": "npc",
+   "x": 33.5,
+   "y": 0,
+   "z": 109,
+   "rotY": 3.142,
+   "name": "Caravan master",
+   "look": "glass_folk",
+   "role": "idle",
+   "showWhen": "!act3"
   },
   {
    "id": "Wind_Bridge",

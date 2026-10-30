@@ -48,6 +48,7 @@ import { Surges } from './elements/Surges.js';
 import { Earthworks } from './elements/Earthworks.js';
 import { Juice } from './art/Juice.js';
 import { nextHop, NAMES } from './data/world.js';
+import { Ground } from './world/Ground.js';
 import { Particles } from './art/Particles.js';
 import { ElementFx, fireShellMaterial } from './art/ElementFx.js';
 import { Ice } from './elements/Ice.js';
@@ -127,7 +128,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const journey = () => {
         const to = prog.flags.journey;
         if (!to || to === data.id) return null;
-        const hop = nextHop(data.id, to), exit = hop && world.objects.get('Exit_' + hop);
+        const hop = nextHop(data.id, to, n => prog.flags[n]), exit = hop && world.objects.get('Exit_' + hop);
         return exit ? { to, at: exit.item, text: `Journey: ${NAMES[to] || to} (by way of ${NAMES[hop] || hop})`.replace(` (by way of ${NAMES[to] || to})`, '') } : null;
     };     // shake, flashes, flares, shockwaves, marks on the ground
     const ice = new Ice({ scene, fire, fx, creatures });
@@ -162,6 +163,14 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         onTravel?.(to, where);
     };
     world.onExit = (to, where) => travel(to, where);
+    // A road the story hasn't reached (data/world.js ROADS): whoever keeps it says why, and the hero is turned back.
+    world.onBlocked = (it, road) => {
+        const back = world.spawns[`from_${it.to}`];
+        if (back) { player.body.position.set(back.x, Ground.height(back.x, back.z) + 0.6, back.z); player.body.velocity.set(0, 0, 0); }
+        if (road?.say?.length && !story?.talking) { hud.say(road.who, road.say[0]); clearTimeout(blockedSay); blockedSay = setTimeout(() => hud.say(null), 3500); }
+        EventBus.emit(EV.ROAD_CLOSED, { to: it.to });
+    };
+    let blockedSay = 0;
     vitals.onDeath = cause => { if (!leaving) { leaving = true; hud.died?.(cause); setTimeout(() => onDeath?.(cause), 1600); } };
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);

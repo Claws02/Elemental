@@ -17,6 +17,10 @@ A festival-night accident wakes a Conduit, the first person in living memory who
 
 People answer from this when the player taps them: first the scene's own lines, then their house, then their own lines, then their kingdom's folk by standing (`data/talk.js`).
 
+## Roads the story hasn't reached (built)
+
+Every road out of a kingdom is closed until the story gets there, by someone you can see: a Lantern warden on every road to Halcyra (registry papers, until Act III), the Lord-Warden's man on the roads south (until the Watchstone) and north (until Saltmere), the Oruun door at the Cold Forge (until Lesson III), the Ember Guard at the Skyreach switchback (until Cindrel), and a caravan master on the desert roads (until Act III). Walk into a closed road and the keeper says why and you're turned back; the compass only routes along open roads. The way back is always open. `ROADS` in `src/data/world.js`; *test: `qa/world.js`.*
+
 ## The people
 
 **The player.** A young smith's apprentice in Veyra (name and look from the creator). Not chosen, not trained, not cruel. Wants to help. The game never says they're wrong to; it shows what helping cost.
