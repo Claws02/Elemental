@@ -77,6 +77,7 @@ CI runs all of them but the model sheet on every push (`.github/workflows/ci.yml
 | [`docs/CHECKLIST.md`](docs/CHECKLIST.md) | The master checklist. One task at a time |
 | [`docs/SCENES.md`](docs/SCENES.md) | The scene format: objects, puzzle wires, story scripts; how scenes come from the editor |
 | [`docs/PROGRESSION.md`](docs/PROGRESSION.md) | Element states, Power and Control, Wild Fire, Lesson I |
+| [`docs/GROWTH_AND_COMBAT.md`](docs/GROWTH_AND_COMBAT.md) | The plan for slower, earned growth: every level does something, techniques by Control, drills, a fight on every road |
 | [`docs/CONTEXT_CONTROLS.md`](docs/CONTEXT_CONTROLS.md) | How the element is chosen: material + gesture, hold times per material |
 | [`docs/TECH_ARCHITECTURE.md`](docs/TECH_ARCHITECTURE.md) | The stack, the Unity → web mapping, the frame, physics tiers, risks |
 | [`docs/ART_AND_MODELS.md`](docs/ART_AND_MODELS.md) | What Hundred Block Dash's 3D models teach, and the rules Elemental's models follow |
