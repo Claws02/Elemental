@@ -372,6 +372,7 @@ export const BEHAVIOURS = {
             const m = c.model.parts.core?.material;
             if (m && c._shown !== c.form) { c._shown = c.form; m.color?.setHex(cols[c.form]); m.emissive?.setHex(cols[c.form]); }
             if (c.model.parts.core) c.model.parts.core.rotation.y = T * 2;
+            if (c.model.parts.body) c.model.parts.body.rotation.set(Math.sin(T * 0.4) * 0.3, -T * 0.7, 0);     // the cage's rings turn round it
         },
     },
 };

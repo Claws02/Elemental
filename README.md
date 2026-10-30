@@ -64,6 +64,7 @@ npm run movement   # jump, the stick's corner, climbing, full speed on stone and
 npm run buildings  # houses burn and break true to material, landmarks, the wooden bridge and the ford
 npm run bench      # the benchmark headless (on a phone: open index.html?bench); docs/PERFORMANCE.md
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
+npm run gallery    # every creature, building and person framed alone → qa/shots/gallery-*.png (a name filters)
 ```
 
 CI runs all of them but the model sheet on every push (`.github/workflows/ci.yml`).

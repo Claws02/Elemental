@@ -16,19 +16,32 @@ const joint = (parent, x, y, z) => { const g = new THREE.Group(); g.position.set
 export function emberwing(look) {
     const root = new THREE.Group();
     const body = part(k => {
-        k.geo('body', new THREE.IcosahedronGeometry(0.22, 0), at(0, 0, 0, 0, 0, 0, 0.8, 0.75, 1.3), look.body, { flat: true });
-        k.geo('body', new THREE.IcosahedronGeometry(0.13, 0), at(0, 0.06, 0.28), look.body, { flat: true });
-        k.box('body', 0.05, 0.05, 0.12, at(0, 0.04, 0.42), 0x2a1a10);                         // beak
-        k.box('glow', 0.03, 0.03, 0.02, at(0.07, 0.1, 0.35), 0xffd07a);
-        k.box('glow', 0.03, 0.03, 0.02, at(-0.07, 0.1, 0.35), 0xffd07a);
-        for (let i = 0; i < 3; i++) k.box('glow', 0.06 - i * 0.01, 0.02, 0.3, at((i - 1) * 0.06, -0.02, -0.34, 0.2, (i - 1) * 0.25, 0), look.glow);   // an ember tail
+        k.geo('body', new THREE.IcosahedronGeometry(0.24, 0), at(0, 0, 0, 0, 0, 0, 0.8, 0.75, 1.35), look.body, { flat: true });
+        k.geo('body', new THREE.IcosahedronGeometry(0.14, 0), at(0, 0.07, 0.3), look.body, { flat: true });
+        k.cyl('body', 0, 0.05, 0.16, 4, at(0, 0.04, 0.46, Math.PI / 2, 0, 0), 0x2a1a10, { flat: true });        // a hooked beak
+        k.cyl('body', 0, 0.04, 0.14, 4, at(0, 0.17, 0.24, -0.6, 0, 0), look.wing, { flat: true });              // a crest
+        k.box('glow', 0.03, 0.03, 0.02, at(0.07, 0.11, 0.37), 0xffd07a);
+        k.box('glow', 0.03, 0.03, 0.02, at(-0.07, 0.11, 0.37), 0xffd07a);
+        // An ember tail: three long plumes, fanned, burning at the tips.
+        for (let i = 0; i < 3; i++) {
+            const a = (i - 1) * 0.3;
+            k.box('body', 0.07, 0.02, 0.34, at(Math.sin(a) * 0.16, -0.02, -0.38, 0.15, a, 0), look.wing);
+            k.box('glow', 0.06, 0.02, 0.12, at(Math.sin(a) * 0.3, -0.05, -0.6, 0.15, a, 0), look.glow);
+        }
     }, true);
     root.add(body);
+    // Wings: a broad inner arm, a swept outer hand and three primaries fanned at the tip; the trailing edge smoulders.
     const wings = [-1, 1].map(s => {
-        const j = joint(root, s * 0.14, 0.04, 0);
+        const j = joint(root, s * 0.15, 0.05, 0);
         j.add(part(k => {
-            k.box('body', 0.55, 0.03, 0.26, at(s * 0.28, 0, 0), look.wing);
-            k.box('glow', 0.2, 0.02, 0.1, at(s * 0.5, 0.01, -0.06), look.glow);
+            k.box('body', 0.34, 0.03, 0.32, at(s * 0.17, 0, 0.02), look.wing);
+            k.box('body', 0.32, 0.03, 0.22, at(s * 0.48, 0, -0.04, 0, s * 0.25, 0), look.wing);
+            for (let i = 0; i < 3; i++) {
+                const a = s * (0.25 + i * 0.28);
+                k.box('body', 0.3, 0.02, 0.06, at(s * 0.72 + Math.cos(a) * 0.08, 0, -0.12 - i * 0.07, 0, a, 0), look.wing);
+                k.box('glow', 0.1, 0.022, 0.05, at(s * 0.86 + Math.cos(a) * 0.1, 0.002, -0.16 - i * 0.09, 0, a, 0), look.glow);
+            }
+            k.box('glow', 0.5, 0.022, 0.03, at(s * 0.4, 0.002, -0.17, 0, s * 0.12, 0), look.glow);
         }));
         return j;
     });
@@ -38,20 +51,37 @@ export function emberwing(look) {
 export function bristleback(look) {
     const root = new THREE.Group();
     const body = part(k => {
-        k.box('body', 0.9, 0.8, 1.5, at(0, 0.85, 0), look.body, { ch: 0.2 });
-        k.box('body', 0.95, 0.35, 1.3, at(0, 1.25, -0.05), look.bristle, { ch: 0.12 });            // the ridge of bristles
-        for (let i = 0; i < 7; i++) k.box('body', 0.08, 0.28, 0.08, at(0, 1.45, -0.55 + i * 0.18, -0.3, 0, 0), look.bristle);
-        k.box('body', 0.62, 0.55, 0.55, at(0, 0.82, 0.92), look.body, { ch: 0.14 });                // head
-        k.box('body', 0.34, 0.26, 0.2, at(0, 0.7, 1.24), 0x3a2820, { ch: 0.06 });                   // snout
-        for (const s of [-1, 1]) {
-            k.cyl('body', 0.02, 0.05, 0.36, 5, at(s * 0.22, 0.72, 1.28, -1.1, 0, s * 0.4), look.tusk, { flat: true });
-            k.box('glow', 0.05, 0.05, 0.02, at(s * 0.2, 0.95, 1.2), 0xffb070);
+        // A charger: the weight up front, a shoulder hump over the forelegs, the back falling away to the hips.
+        k.box('body', 0.88, 0.72, 1.3, at(0, 0.86, -0.05, 0.08, 0, 0), look.body, { ch: 0.2 });
+        k.box('body', 0.98, 0.62, 0.66, at(0, 1.08, 0.36), look.body, { ch: 0.22 });                   // shoulder hump
+        k.box('body', 0.78, 0.55, 0.5, at(0, 0.86, -0.64), look.body, { ch: 0.16 });                   // hips
+        // The bristles: a crest of spikes raked back, tallest over the shoulders.
+        for (let i = 0; i < 9; i++) {
+            const t = i / 8, z = 0.62 - t * 1.3, y = 1.44 - t * 0.36 - t * t * 0.1;
+            k.cyl('body', 0, 0.07 - t * 0.02, 0.42 - t * 0.18, 4, at(0, y, z, -0.55, 0, 0), look.bristle, { flat: true });
+            if (i % 2 === 0) for (const s of [-1, 1]) k.cyl('body', 0, 0.05, 0.26 - t * 0.1, 4, at(s * 0.18, y - 0.1, z, -0.55, 0, s * 0.35), look.bristle, { flat: true });
         }
+        // The head, low and wedge-shaped: brow, long snout, a flat dark nose.
+        k.box('body', 0.6, 0.5, 0.5, at(0, 0.86, 0.86, 0.3, 0, 0), look.body, { ch: 0.14 });
+        k.box('body', 0.36, 0.28, 0.42, at(0, 0.66, 1.18, 0.2, 0, 0), look.body, { ch: 0.08 });
+        k.box('body', 0.32, 0.22, 0.05, at(0, 0.6, 1.4, 0.2, 0, 0), 0x2a1c16, { ch: 0.03 });
+        for (const s of [-1, 1]) {
+            k.cyl('body', 0, 0.07, 0.2, 4, at(s * 0.22, 1.12, 0.78, -0.3, 0, s * 0.5), look.bristle, { flat: true });   // ears
+            // Tusks: out from the jaw, then up.
+            k.cyl('body', 0.035, 0.055, 0.22, 5, at(s * 0.19, 0.56, 1.28, -1.25, 0, s * 0.35), look.tusk, { flat: true });
+            k.cyl('body', 0.01, 0.035, 0.2, 5, at(s * 0.27, 0.7, 1.38, -0.35, 0, s * 0.5), look.tusk, { flat: true });
+            k.box('glow', 0.06, 0.05, 0.02, at(s * 0.2, 0.98, 1.06), 0xffb070);
+        }
+        k.box('body', 0.06, 0.06, 0.32, at(0, 0.98, -0.95, 0.9, 0, 0), look.bristle);                   // tail
     }, true);
     root.add(body);
-    const legs = [[-0.32, 0.45], [0.32, 0.45], [-0.32, -0.5], [0.32, -0.5]].map(([x, z]) => {
-        const j = joint(root, x, 0.6, z);
-        j.add(part(k => k.box('body', 0.2, 0.6, 0.22, at(0, -0.3, 0), look.bristle, { ch: 0.05 })));
+    // Forelegs heavier than hind; each tapers to a dark hoof.
+    const legs = [[-0.32, 0.45, 0.13], [0.32, 0.45, 0.13], [-0.3, -0.58, 0.11], [0.3, -0.58, 0.11]].map(([x, z, r]) => {
+        const j = joint(root, x, 0.62, z);
+        j.add(part(k => {
+            k.cyl('body', r * 0.75, r, 0.5, 6, at(0, -0.25, 0), look.bristle, { flat: true });
+            k.box('body', r * 1.6, 0.1, r * 1.8, at(0, -0.56, 0.02), 0x2a1c16, { ch: 0.02 });
+        }));
         return j;
     });
     return { root, parts: { body, legs }, ownMaterials: body.userData.ownMaterials };
@@ -201,13 +231,23 @@ export function glasswight(look) {
 export function sentinel(look) {
     const root = new THREE.Group();
     const body = part(k => {
-        // An iron construct of the Lantern Office: a broad body, brass trim, rune lamps across its chest.
-        k.box('body', 1.3, 1.5, 0.9, at(0, 1.6, 0), look.body, { ch: 0.12 });
-        k.box('body', 1.4, 0.15, 1.0, at(0, 2.4, 0), look.trim, { ch: 0.04 });
-        k.box('body', 0.7, 0.55, 0.6, at(0, 2.75, 0), look.body, { ch: 0.1 });
-        k.box('body', 0.5, 0.08, 0.05, at(0, 2.8, 0.31), look.dark);                              // visor
-        for (const s of [-1, 1]) k.box('body', 0.35, 1.1, 0.35, at(s * 0.85, 1.6, 0), look.body, { ch: 0.06 });
-        k.box('body', 1.0, 0.9, 0.7, at(0, 0.45, 0), look.dark, { ch: 0.1 });
+        // An iron warden of the Lantern Office: a hooded figure in plate whose head is a lantern, the Office's sign.
+        k.cyl('body', 0.62, 0.86, 1.1, 6, at(0, 0.55, 0), look.dark, { flat: true });                    // a long plated skirt
+        k.box('body', 1.2, 1.15, 0.86, at(0, 1.62, 0), look.body, { ch: 0.14 });                          // the breastplate
+        k.box('body', 1.32, 0.12, 0.96, at(0, 1.08, 0), look.trim, { ch: 0.03 });                         // a brass belt
+        for (const s of [-1, 1]) {
+            k.box('body', 0.5, 0.32, 0.72, at(s * 0.72, 2.18, 0, 0, 0, s * -0.25), look.trim, { ch: 0.08 });   // pauldrons
+            k.box('body', 0.3, 1.0, 0.32, at(s * 0.82, 1.5, 0.04), look.body, { ch: 0.06 });               // arms
+            k.box('body', 0.34, 0.26, 0.36, at(s * 0.82, 0.92, 0.08), look.dark, { ch: 0.06 });             // gauntlets
+        }
+        k.box('body', 1.0, 0.85, 0.12, at(0, 2.1, -0.46, -0.15, 0, 0), look.dark, { ch: 0.04 });          // the hood, falling behind
+        // The lantern head: a base, four posts, a peaked cap with a ring, and the flame inside.
+        k.box('body', 0.66, 0.1, 0.66, at(0, 2.32, 0), look.trim, { ch: 0.02 });
+        for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) k.box('body', 0.07, 0.58, 0.07, at(x * 0.27, 2.66, z * 0.27), look.trim);
+        k.box('body', 0.7, 0.08, 0.7, at(0, 2.98, 0), look.trim, { ch: 0.02 });
+        k.cyl('body', 0, 0.46, 0.36, 4, at(0, 3.2, 0, 0, Math.PI / 4, 0), look.body, { flat: true });
+        k.geo('body', new THREE.TorusGeometry(0.1, 0.025, 4, 8), at(0, 3.46, 0), look.trim, { flat: true });
+        k.geo('glow', new THREE.OctahedronGeometry(0.17, 0), at(0, 2.66, 0, 0, 0, 0, 1, 1.5, 1), look.lamp, { flat: true });
     }, true);
     root.add(body);
     // Three rune lamps: each goes dark when a careful stream puts it out.
@@ -222,13 +262,21 @@ export function sentinel(look) {
 
 export function wellspawn() {
     const root = new THREE.Group();
-    // A creature of pure element: a bright core in a shell of shards that turn with it. Its colour is its element.
-    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), new THREE.MeshPhongMaterial({ color: 0xff6a1a, emissive: 0xff6a1a, emissiveIntensity: 1.2, flatShading: true, shininess: 20 }));
-    core.position.y = 1.0;
+    // Pure element held in an Oruun cage, out of the Glass scar: a bright core (its colour is its element,
+    // creatures/Behaviours.js) inside three worn stone rings that turn round it, studded where they were pinned.
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), new THREE.MeshPhongMaterial({ color: 0xff6a1a, emissive: 0xff6a1a, emissiveIntensity: 1.2, flatShading: true, shininess: 20 }));
+    core.position.y = 1.05;
     root.add(core);
     const body = part(k => {
-        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; k.geo('body', new THREE.ConeGeometry(0.1, 0.6, 4), at(Math.cos(a) * 0.65, 1.0 + Math.sin(i * 2.1) * 0.3, Math.sin(a) * 0.65, Math.sin(a), a, Math.cos(a)), 0x3a3a42, { flat: true }); }
+        for (const [rx, rz, r] of [[Math.PI / 2, 0, 0.72], [0.5, 0.9, 0.8], [-0.6, -0.8, 0.88]]) {
+            k.geo('body', new THREE.TorusGeometry(r, 0.06, 4, 18), at(0, 0, 0, rx, 0, rz), 0x5e5850, { flat: true });
+            for (let i = 0; i < 4; i++) {
+                const a = (i / 4) * Math.PI * 2, p = new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0).applyEuler(new THREE.Euler(rx, 0, rz));
+                k.box('body', 0.13, 0.13, 0.13, at(p.x, p.y, p.z, rx, a, rz), 0x3a3631, { ch: 0.03 });
+            }
+        }
     }, true);
+    body.position.y = 1.05;
     root.add(body);
     return { root, parts: { body, core }, ownMaterials: body.userData.ownMaterials };
 }

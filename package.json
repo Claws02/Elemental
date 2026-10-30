@@ -8,6 +8,7 @@
     "check": "bash qa/parsecheck.sh src",
     "smoke": "node qa/smoke.js",
     "sheet": "node qa/modelsheet.js",
+    "gallery": "node qa/gallerysheet.js",
     "lesson": "node qa/lesson.js",
     "core": "node qa/core.js",
     "creatures": "node qa/creatures.js",
