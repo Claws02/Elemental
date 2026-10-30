@@ -23,13 +23,17 @@ L.shape((x, z) => {
     return h + 6 - chasm;
 });
 const S = new Dresser(L, SEED);
-// Vaelmont: the temple and cells on the summit plateau.
+// Vaelmont: the abbey and the monks' cells on the summit plateau. Every road up the mountain ends at one pilgrim way
+// from the south; the abbey heads the plaza on the north, its back to the peak; two lanes run along the plateau's
+// edge, west and east, where the cells are cut; the towers stand by the plaza; the glider launch stays open.
 const V = town(L, S, {
-    id: 'Vaelmont', x: PEAK.x, z: PEAK.z, r: 24, plazaR: 9, plaza: 'cobble',
+    id: 'Vaelmont', x: PEAK.x, z: PEAK.z, r: 24, plazaR: 9, plaza: 'cobble', region: 'skyreach', seed: SEED, street: 'cobble',
+    turn: { emberwall: Math.PI / 2, halcyra: Math.PI / 2, glass: Math.PI / 2 }, lanes: [Math.PI, 0.05], head: -Math.PI / 2,
+    clear: [[[PEAK.x + 18, PEAK.z - 6], [PEAK.x + 40, PEAK.z - 6]]], clearW: 8,
     buildings: ['vaelmont_temple', 'vaelmont_cell', 'vaelmont_cell', { type: 'tower', height: 14, radius: 2, style: 'whitestone', top: 'cone' }, 'vaelmont_cell', 'vaelmont_cell', { type: 'tower', height: 11, radius: 1.8, style: 'whitestone', top: 'cone' }],
-    startAngle: -Math.PI / 2,
 });
-for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2 + 0.3; S.add(`Vaelmont_Banner_${i + 1}`, 'banner', PEAK.x + Math.cos(a) * 11, PEAK.z + Math.sin(a) * 11, 0, { height: 6, colour: i % 2 ? 'sky' : 'white', seed: i }, 1); }
+// Prayer banners line the pilgrim way up into the plaza.
+for (let i = 0; i < 6; i++) S.add(`Vaelmont_Banner_${i + 1}`, 'banner', PEAK.x + (i % 2 ? 3.4 : -3.4), PEAK.z + 11 + Math.floor(i / 2) * 5, 0, { height: 6, colour: i % 2 ? 'sky' : 'white', seed: i }, 1);
 S.add('Vaelmont_Statue', 'statue', PEAK.x, PEAK.z, Math.PI, { height: 6, style: 'whitestone', seed: 4 }, 2);
 const temple = V.spots[0];
 S.add('Senn', 'npc', temple.x + Math.sin(temple.face) * 9, temple.z + Math.cos(temple.face) * 9, temple.face + Math.PI, { name: 'Abbess-Prince Senn', look: 'senn', role: 'idle' });

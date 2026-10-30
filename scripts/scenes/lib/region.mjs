@@ -6,7 +6,7 @@
 //   exits       zones at the edge to the neighbouring scenes, each with an
 //               arrival point (`from_<that scene>`) and a waystone between
 //               two banners so you can see the way out
-//   a town      buildings ringed round a plaza on flattened ground, facing in
+//   a town      a plaza on flattened ground, streets out to the roads, each building where it has a reason to be
 //   roads       painted and eased, linking the town to the exits
 //   scenery     each climate's trees, plants and boulders, kept off roads
 //   people      a ruler at their hall, folk who walk the plaza, guards
@@ -22,6 +22,7 @@ export const SIZE = 240, HALF = SIZE / 2;
 
 // Where each exit sits: which edge (N = -z, S = +z, E = +x, W = -x) and how far along it (-1..1).
 import { LINKS, NAMES, ROADS } from '../../../src/data/world.js';
+import { PREFABS } from '../../../src/data/prefabs.js';
 export { LINKS, NAMES };      // the world's graph lives with the game (src/data/world.js): the journey marker reads it too
 
 // A point on an edge, `inset` metres in, and the direction pointing into the scene.
@@ -60,21 +61,96 @@ export function exits(id, L, S, { banner = 'green', surface = 'dirt', style = 's
 }
 
 /**
- * A town: flat ground at (x, z) radius r, a plaza of `plaza` surface, and buildings (prefab names, or
- * { type, ...props }) ringed round it facing in. Returns { h, spots } (each building's place).
+ * A town, laid out for reasons a person would give (docs/AUDIT_2026-10.md §4), not on a ring:
+ *   streets   run out from the plaza toward each road out of the region (`region`'s exits), plus any `lanes`
+ *             (bearings, radians: direction (cos a, sin a)); houses front them, doors to the street
+ *   hall      a landmark prefab: at the head of the plaza (`head`, default opposite the main road, the first
+ *             street), `headAt` metres out, facing the plaza: the first thing anyone arriving sees
+ *   smithy    a forge or smithy: the street slot nearest `water` (quenching), else the main road in
+ *   barn      the slot nearest `fields`; tents the outermost slots (`downwind`, if given); towers by the plaza
+ *   houses    the rest, innermost first, spread round the streets
+ * `turn` ({ scene: bearing }) bends a road's street; `ends[scene]` (returned) is where it leaves town, for the road out.
+ * `clear` is a list of paths ([[x, z], ...], each kept `clearW` wide) no building may stand on: the routes the
+ * story walks. `ok(x, z)` vetoes ground (a river bank, a pool). Each building keeps its id and its place in
+ * `spots`, so `spots[0]` is still the first building given. Throws if one can't be placed: the lint.
  */
-export function town(L, S, { id, x, z, r = 34, plaza = 'cobble', plazaR = 10, buildings = [], ring = 0.7, startAngle = 0, height = null, keep = 7 }) {
+export function town(L, S, { id, x, z, r = 34, plaza = 'cobble', plazaR = 10, buildings = [], height = null, keep = 7, region = null,
+                             lanes = [], turn = {}, head = null, headAt = null, water = null, fields = null, downwind = null, clear = [], clearW = 5,
+                             ok = () => true, street = 'dirt', seed = 1 }) {
     const h = L.flatten(x, z, r + 10, height, 0.8);
-    L.paintCircle(x, z, plazaR, plaza);
-    const spots = [];
-    buildings.forEach((b, i) => {
-        const a = startAngle + (i / buildings.length) * Math.PI * 2, d = r * ring + (i % 2) * 3;
-        const bx = x + Math.cos(a) * d, bz = z + Math.sin(a) * d, face = Math.atan2(x - bx, z - bz);
-        const spec = typeof b === 'string' ? { type: 'prefab', prefab: b, style: 'prefab' } : b;
-        S.add(`${id}_${String(i + 1).padStart(2, '0')}_${spec.prefab || spec.type}`, spec.type, bx, bz, face, { seed: i + 3, ...spec }, keep);
-        spots.push({ x: bx, z: bz, a, face });
+    if (plaza) L.paintCircle(x, z, plazaR, plaza);         // (none: the ground is the plaza, an oasis's shore)
+    const R = rng(seed * 7 + 3), ROAD = 2.4;
+    // The streets: toward each way out, merged where two leave together.
+    // `turn` sets a street's own bearing where the road out can't leave straight (a hall, a river in the way).
+    const bearings = [], to = [];
+    for (const [side, along, scene] of region ? LINKS[region] || [] : []) { const e = edgePoint(side, along, 7); bearings.push(turn[scene] ?? Math.atan2(e.z - z, e.x - x)); to.push(scene); }
+    bearings.push(...lanes); to.push(...lanes.map(() => null));
+    const streets = [], ends = {};
+    bearings.forEach((a, i) => {
+        let k = streets.findIndex(b => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) < 0.45);
+        if (k < 0) { k = streets.length; streets.push(a); }
+        if (to[i]) ends[to[i]] = [x + Math.cos(streets[k]) * (r + 6), z + Math.sin(streets[k]) * (r + 6)];
     });
-    return { h, spots };
+    for (const a of streets) L.road([[x + Math.cos(a) * (plazaR - 1), z + Math.sin(a) * (plazaR - 1)], [x + Math.cos(a) * (r + 6), z + Math.sin(a) * (r + 6)]], ROAD * 2, street);
+    const sizeOf = b => b.type === 'prefab' ? PREFABS[b.prefab].footprint : b.type === 'timber_house' ? [b.cols, b.depth + 0.8]
+        : b.type === 'tent' ? [b.size, b.size] : b.type === 'tower' ? [b.radius * 2.2, b.radius * 2.2] : [6, 6];
+    const roleOf = b => b.role || (b.type === 'prefab' && PREFABS[b.prefab].landmark ? 'hall' : /forge|smithy/.test(b.prefab || '') ? 'smithy'
+        : b.kind === 'barn' ? 'barn' : b.type === 'tent' ? 'tent' : b.type === 'tower' ? 'tower' : 'house');
+    const specs = buildings.map((b, i) => { const spec = typeof b === 'string' ? { type: 'prefab', prefab: b, style: 'prefab' } : b; return { i, spec, role: roleOf(spec), size: sizeOf(spec) }; });
+    // What a building's corners must keep clear of: other buildings, every street but its own, the story's paths.
+    const placed = [];
+    const corners = (cx, cz, face, w, d) => [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]].map(([u, v]) => [cx + Math.cos(face) * u * w / 2 + Math.sin(face) * v * d / 2, cz - Math.sin(face) * u * w / 2 + Math.cos(face) * v * d / 2]);
+    const fits = (cx, cz, face, w, d, own = -1) => {
+        const cs = corners(cx, cz, face, w, d);
+        if (cs.some(([px, pz]) => Math.hypot(px - x, pz - z) > r + 2 || Math.hypot(px - x, pz - z) < plazaR + 0.5 || !ok(px, pz))) return false;
+        for (const [k, a] of streets.entries()) if (k !== own && cs.some(([px, pz]) => pathDist([[x, z], [x + Math.cos(a) * (r + 6), z + Math.sin(a) * (r + 6)]], px, pz) < ROAD + 0.6)) return false;
+        for (const c of clear) if (cs.some(([px, pz]) => pathDist(c, px, pz) < clearW / 2)) return false;
+        for (const o of placed) if (Math.hypot(o.x - cx, o.z - cz) < (Math.hypot(w, d) + Math.hypot(o.w, o.d)) / 2 * 0.78) return false;
+        return true;
+    };
+    // A street's frontage: where the next building along each side would go.
+    const cursor = streets.flatMap((a, k) => [-1, 1].map(side => ({ k, a, side, s: plazaR + 1.5 })));
+    const slotFor = (c, w, d) => {
+        for (let s = c.s; s + w / 2 < r + 2; s += 1) {
+            const u = [Math.cos(c.a), Math.sin(c.a)], n = [-u[1], u[0]], off = c.side * (ROAD + d / 2 + 0.8), along = s + w / 2;
+            const bx = x + u[0] * along + n[0] * off, bz = z + u[1] * along + n[1] * off;
+            const face = Math.atan2(-c.side * n[0], -c.side * n[1]);                  // the door to the street
+            if (fits(bx, bz, face, w, d, c.k)) return { x: bx, z: bz, face, s: along + w / 2 };
+        }
+        return null;
+    };
+    const take = (c, slot, b) => { c.used = (c.used || 0) + 1; c.s = slot.s + 1 + R() * 1.6 + (R() < 0.3 ? 2.5 : 0); placed.push({ x: slot.x, z: slot.z, w: b.size[0], d: b.size[1] }); b.at = slot; };
+    const best = (b, score) => {
+        let top = null;
+        for (const c of cursor) { const slot = slotFor(c, ...b.size); if (slot && (!top || score(slot, c) < top.v)) top = { c, slot, v: score(slot, c) }; }
+        if (!top) throw new Error(`${id}: no room for ${b.spec.prefab || b.spec.type} (${b.role})`);
+        take(top.c, top.slot, b);
+    };
+    const near = p => slot => Math.hypot(slot.x - p.x, slot.z - p.z);
+    const order = { hall: 0, smithy: 1, barn: 2, tower: 3, tent: 4, house: 5 };
+    for (const b of [...specs].sort((p, q) => order[p.role] - order[q.role] || p.i - q.i)) {
+        const [w, d] = b.size;
+        if (b.role === 'hall') {
+            const a = head ?? (streets.length ? streets[0] + Math.PI : -Math.PI / 2), dist = headAt ?? plazaR + d / 2 + 2;
+            const hx = x + Math.cos(a) * dist, hz = z + Math.sin(a) * dist, face = Math.atan2(x - hx, z - hz);
+            if (!fits(hx, hz, face, w, d)) throw new Error(`${id}: the hall doesn't fit at the head of the plaza`);
+            placed.push({ x: hx, z: hz, w, d }); b.at = { x: hx, z: hz, face };
+        }
+        else if (b.role === 'smithy') best(b, water ? near(water) : (slot, c) => (c.k === 0 ? 0 : 100) - slot.s);
+        else if (b.role === 'barn') best(b, fields ? near(fields) : slot => -Math.hypot(slot.x - x, slot.z - z));
+        else if (b.role === 'tent') best(b, downwind ? (slot) => near(downwind)(slot) : slot => -Math.hypot(slot.x - x, slot.z - z));
+        else if (b.role === 'tower') best(b, slot => Math.hypot(slot.x - x, slot.z - z));
+        else best(b, (slot, c) => Math.hypot(slot.x - x, slot.z - z) + (c.used || 0) * 4);
+    }
+    // The lint: every building is placed, inside the town, its door toward a street or the plaza.
+    const spots = specs.map(b => {
+        const { x: bx, z: bz, face } = b.at, fx = bx + Math.sin(face) * (b.size[1] / 2 + 3), fz = bz + Math.cos(face) * (b.size[1] / 2 + 3);
+        const onStreet = Math.hypot(fx - x, fz - z) < plazaR + 4 || streets.some(a => pathDist([[x, z], [x + Math.cos(a) * (r + 6), z + Math.sin(a) * (r + 6)]], fx, fz) < ROAD + 2);
+        if (!onStreet) throw new Error(`${id}: ${b.spec.prefab || b.spec.type} #${b.i + 1} doesn't face a street`);
+        S.add(`${id}_${String(b.i + 1).padStart(2, '0')}_${b.spec.prefab || b.spec.type}`, b.spec.type, bx, bz, face, { seed: b.i + 3, ...b.spec, role: undefined }, keep);
+        return { x: bx, z: bz, a: Math.atan2(bz - z, bx - x), face, role: b.role };
+    });
+    return { h, spots, streets, ends };       // ends[scene]: where that road's street leaves town
 }
 
 /** Each climate's growth: [tree kinds, plant kinds, boulder kinds]. */

@@ -22,18 +22,21 @@ L.shape((x, z) => {
     return highland + rim - bowl - channel;
 });
 const S = new Dresser(L, SEED);
-// Cindrel on the bowl floor; two gates cut through the rim to the south and east.
+// Cindrel on the bowl floor; two gates cut through the rim to the south and east. Its streets run to the gates (and a
+// lane west); the forges crowd the plaza's lava-fed pool, the fire they all work from; the Queen's hall heads the
+// plaza on the north, over the vents; houses line the streets.
 const C = town(L, S, {
-    id: 'Cindrel', x: CAL.x, z: CAL.z, r: 26, plazaR: 10, plaza: 'cobble', height: 6,
+    id: 'Cindrel', x: CAL.x, z: CAL.z, r: 26, plazaR: 10, plaza: 'cobble', height: 6, region: 'emberwall', seed: SEED,
+    turn: { forge: Math.PI / 2, halcyra: Math.PI / 2, skyreach: 0 }, lanes: [Math.PI], head: -Math.PI / 2, water: { x: CAL.x, z: CAL.z }, street: 'cobble',
     buildings: ['forge_hall', 'cindrel_house', 'cindrel_forge', 'cindrel_house', 'cindrel_house', 'cindrel_forge', 'cindrel_house', 'cindrel_house'],
-    startAngle: -Math.PI / 2,
 });
 for (const [gx, gz, face] of [[CAL.x, CAL.z + CAL.r, 0], [CAL.x + CAL.r, CAL.z, Math.PI / 2]]) {
     L.flatten(gx, gz, 11, 6.2, 0.7);
     S.add(`Cindrel_Gate_${face ? 'East' : 'South'}`, 'gatehouse', gx, gz, face, { width: 5, height: 8, style: 'basalt', seed: 3 }, 9);
 }
 // Chimneys and braziers through the city; a lava-fed forge pool in the plaza.
-for (let i = 0; i < 5; i++) { const a = i * 1.3; S.add(`Cindrel_Chimney_${i + 1}`, 'chimney', CAL.x + Math.cos(a) * 17, CAL.z + Math.sin(a) * 17, 0, { height: 6 + i, seed: i }, 1.5); }
+// Each forge and the first houses send up a stack behind them: the city's skyline is its smoke.
+C.spots.filter(p => p.role !== 'hall').slice(0, 5).forEach((p, i) => S.add(`Cindrel_Chimney_${i + 1}`, 'chimney', p.x - Math.sin(p.face) * 4.2, p.z - Math.cos(p.face) * 4.2, 0, { height: 6 + i, seed: i }, 1.5));
 S.add('Cindrel_ForgePool', 'water', CAL.x, CAL.z, 0, { kind: 'lava', width: 5, depth: 5, round: true, level: 6.15 });
 for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2 + 0.4; S.add(`Cindrel_Brazier_${i + 1}`, 'brazier', CAL.x + Math.cos(a) * 6, CAL.z + Math.sin(a) * 6, 0, { seed: i }, 1); }
 // The Forge-Queen at her hall; workers in the plaza; guards at the gates.

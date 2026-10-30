@@ -111,6 +111,8 @@ Combinations come in the kingdoms where they matter (Ice on the coast, Firestorm
 
 ## Act III: The Hero (Halcyra)
 
+*Built (blockout): `scripts/scenes/halcyra.mjs`. Halcyra is walled, with a gatehouse on each kingdom's road; the villa quarter is on the west shore, the Lantern Office in the north-east, the market on the south road, and **the Eastern District** on the Glass road: plaster and timber, the only quarter that burns, where Act III's damage happens.*
+
 Alone in the capital. Everyone talks about Cael: he stopped the flood, saved the miners, killed the Ash Wyrm. And *some other Wielder* tore up the eastern district (you). The Lantern Office posts your likeness; Isolde is assigned to you. The Glass Expanse (the oasis dying from below) is where you go to prove them wrong, and where the Architect's work is clearest.
 
 ## Act IV: The Conflict

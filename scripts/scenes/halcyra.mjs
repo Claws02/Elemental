@@ -7,7 +7,7 @@
 //   node scripts/scenes/halcyra.mjs
 // ============================================================
 import fs from 'fs';
-import { Land, Dresser, fbm, smooth, exits, grow, people, scene, span } from './lib/region.mjs';
+import { Land, Dresser, fbm, smooth, exits, grow, people, scene, span, town, edgePoint, LINKS } from './lib/region.mjs';
 
 const SEED = 77;
 const L = new Land(240, 2, SEED);
@@ -37,14 +37,15 @@ for (const [name, dx, dz] of DIRS) {
     // A Lantern Sentinel at each bridgehead: it binds only those who start trouble.
     S.add(`Bridge_${name}_Sentinel`, 'creature', dx * (SHORE + 6) - dz * 4, dz * (SHORE + 6) + dx * 4, 0, { species: 'sentinel', count: 1, spread: 1, aggressive: false });
 }
-// The shore city: villas round the lake, three in each quarter between the bridges.
+// The shore city, in quarters, each where its reason puts it:
+//   the villa quarter   the west and north-west shore, on the Verdant road: old families, marble, tile
+//   the Lantern Office  the north-east, between the two northern roads: it watches who comes down from the Marches
+//   the market          on the south road, where Saltmere's traders (and anyone arriving) come in
+//   the Eastern District on the Glass road: caravan hands, plaster and timber, the city's poor; the only quarter
+//                        that burns. Act III's "some other Wielder tore up the eastern district" happens here.
 const villas = [];
-for (let q = 0; q < 4; q++) for (const off of [0.32, 0.785, 1.25]) {
-    const a = q * Math.PI / 2 + off, r = SHORE + 16 + (off === 0.785 ? 4 : 0);
-    villas.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, a });
-}
-// The Lantern Office takes the north-east villa's place.
-const OFFICE = villas.splice(villas.findIndex(v => v.x > 0 && v.z < 0 && Math.abs(v.x + v.z) < 1), 1)[0];
+for (const a of [Math.PI * 0.62, Math.PI * 0.86, Math.PI * 1.14, Math.PI * 1.38, Math.PI * 1.62]) villas.push({ x: Math.cos(a) * (SHORE + 17), z: Math.sin(a) * (SHORE + 17), a });
+const OFFICE = { x: Math.cos(-Math.PI / 4) * (SHORE + 18), z: Math.sin(-Math.PI / 4) * (SHORE + 18) };
 villas.forEach((v, i) => {
     L.flatten(v.x, v.z, 8, TOP, 0.75); L.paintCircle(v.x, v.z, 6, 'cobble');
     S.add(`Halcyra_Villa_${i + 1}`, 'prefab', v.x, v.z, Math.atan2(-v.x, -v.z), { prefab: 'halcyra_villa', style: 'prefab', seed: i + 4 }, 7);
@@ -54,7 +55,7 @@ L.flatten(OFFICE.x, OFFICE.z, 13, TOP, 0.8); L.paintCircle(OFFICE.x, OFFICE.z, 1
 const of = Math.atan2(-OFFICE.x, -OFFICE.z), ox = Math.sin(of), oz = Math.cos(of), px = oz, pz = -ox;
 S.add('Lantern_Office', 'prefab', OFFICE.x, OFFICE.z, of, { prefab: 'halcyra_villa', style: 'basalt', seed: 9, owner: 'empire', landmark: true }, 8);
 for (const t of [-1, 1]) {
-    S.add(`Lantern_Office_Tower_${t > 0 ? 'R' : 'L'}`, 'tower', OFFICE.x + px * 6.5 * t, OFFICE.z + pz * 6.5 * t, 0, { height: 12, radius: 1.6, style: 'basalt', top: 'crenels', seed: 5 }, 2);
+    S.add(`Lantern_Office_Tower_${t > 0 ? 'R' : 'L'}`, 'tower', OFFICE.x + px * 6.5 * t, OFFICE.z + pz * 6.5 * t, 0, { height: 12, radius: 1.6, style: 'basalt', top: 'lantern', seed: 5 }, 2);
     S.add(`Lantern_Office_Banner_${t > 0 ? 'R' : 'L'}`, 'banner', OFFICE.x + ox * 6 + px * 3 * t, OFFICE.z + oz * 6 + pz * 3 * t, 0, { height: 6, colour: 'gold' }, 1);
 }
 S.add('Corvane', 'npc', OFFICE.x + ox * 7, OFFICE.z + oz * 7, of, { name: 'High Lantern Corvane', look: 'corvane', role: 'idle' });
@@ -67,6 +68,32 @@ for (let i = 0; i < 8; i++) {
 }
 people(S, { id: 'Isle', x: 0, z: 12, folk: 'halcyra_folk', guard: 'imperial_guard', n: 3, r: 5, guards: [] });
 S.add('Start', 'spawn', 0, SHORE + 12, Math.PI, { name: 'start' }, 2);
+// The market on the south road, the Eastern District on the east (scripts/scenes/lib/region.mjs town: streets, doors to them).
+// Both between the shore road and the walls (WALL).
+const WALL = 100, MARKET = { x: 0, z: SHORE + 23 }, EAST = { x: SHORE + 23, z: 0 }, inside = (x, z) => Math.hypot(x, z) > SHORE + 9 && Math.hypot(x, z) < WALL - 4;
+const M = town(L, S, { id: 'Halcyra_Market', x: MARKET.x, z: MARKET.z, r: 17, plazaR: 7, height: TOP, keep: 5, seed: 3, ok: inside, lanes: [Math.PI / 2, -Math.PI / 2, 0, Math.PI], street: 'cobble',
+    buildings: ['house', { type: 'prefab', prefab: 'house', style: 'plaster' }, 'house', { type: 'prefab', prefab: 'house', style: 'plaster' }] });
+for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2 + 0.5; S.add(`Halcyra_Market_Stall_${i + 1}`, 'stall', MARKET.x + Math.cos(a) * 4.5, MARKET.z + Math.sin(a) * 4.5, -a + Math.PI / 2, { width: 2.4, awning: ['red', 'ochre', 'blue'][i % 3], seed: i + 20 }, 2); }
+const E = town(L, S, { id: 'East_District', x: EAST.x, z: EAST.z, r: 18, plazaR: 5, plaza: 'dirt', height: TOP, keep: 5, seed: 5, ok: inside, lanes: [0, Math.PI, Math.PI / 2, -Math.PI / 2],
+    buildings: [{ type: 'prefab', prefab: 'house', style: 'plaster' }, 'cottage', { type: 'prefab', prefab: 'house', style: 'timber' }, 'cottage', { type: 'prefab', prefab: 'house', style: 'plaster' }, 'cottage', 'shed', 'cottage', { type: 'prefab', prefab: 'house', style: 'timber' }] });
+S.add('East_District_Well', 'basin', EAST.x, EAST.z, 0, { seed: 9, owner: 'civilian' }, 2);
+people(S, { id: 'East_District', x: EAST.x, z: EAST.z, folk: 'halcyra_folk', guard: 'imperial_guard', n: 4, r: 4, guards: [] });
+// The walls: whitestone round the city, a gatehouse where each kingdom's road comes in.
+const gates = [];
+for (const [side, along] of LINKS.halcyra) {
+    const e = edgePoint(side, along, 16), heads = [[0, SHORE + 4], [0, -SHORE - 4], [SHORE + 4, 0], [-SHORE - 4, 0]];
+    const h = heads.reduce((b, p) => Math.hypot(p[0] - e.x, p[1] - e.z) < Math.hypot(b[0] - e.x, b[1] - e.z) ? p : b);
+    let best = null;
+    for (let t = 0; t <= 1; t += 0.002) { const x = e.x + (h[0] - e.x) * t, z = e.z + (h[1] - e.z) * t; if (!best || Math.abs(Math.hypot(x, z) - WALL) < best.d) best = { x, z, d: Math.abs(Math.hypot(x, z) - WALL), f: Math.atan2(e.x - h[0], e.z - h[1]) }; }
+    gates.push(best);
+    L.flatten(best.x, best.z, 7, null, 0.7);
+    S.add(`City_Gate_${side}${along ? (along < 0 ? 'a' : 'b') : ''}`, 'gatehouse', best.x, best.z, best.f, { width: 6, height: 9, style: 'whitestone', seed: 11 }, 6);
+}
+for (let i = 0, n = 52; i < n; i++) {
+    const a = (i + 0.5) / n * Math.PI * 2, x = Math.cos(a) * WALL, z = Math.sin(a) * WALL;
+    if (gates.some(g => Math.hypot(g.x - x, g.z - z) < 9) || Math.abs(x) > 116 || Math.abs(z) > 116) continue;
+    S.add(`City_Wall_${String(i + 1).padStart(2, '0')}`, 'town_wall', x, z, -a - Math.PI / 2, { length: WALL * Math.PI * 2 / n + 0.4, height: 6, style: 'whitestone', seed: i }, 3);
+}
 // Roads: each exit to its nearest bridgehead.
 const ends = exits('halcyra', L, S, { banner: 'gold', surface: 'cobble', style: 'marble' });
 const heads = DIRS.map(([, dx, dz]) => [dx * (SHORE + 4), dz * (SHORE + 4)]);
@@ -80,7 +107,7 @@ L.road(ring, 4, 'cobble');
 // The bridges last, so each end sits on the ground the roads left: island rim to the shore.
 for (const [name, dx, dz] of DIRS) span(L, S, `Bridge_${name}`, [dx * (ISLE - 1), dz * (ISLE - 1)], [dx * (SHORE + 2), dz * (SHORE + 2)], { width: 5, rise: 1.6, style: 'marble', seed: name.length });
 // Growth: cypress and gardens round the lake, the open country beyond.
-grow(S, 'Garden', 'lake', { x0: -115, z0: -115, x1: 115, z1: 115 }, { trees: 50, plants: 70, boulders: 8, ok: (x, z, h, s) => Math.hypot(x, z) > SHORE + 2 && s < 0.6 && !L.busy(x, z, 2) && !villas.some(v => Math.hypot(v.x - x, v.z - z) < 8) && Math.hypot(OFFICE.x - x, OFFICE.z - z) > 13 });
+grow(S, 'Garden', 'lake', { x0: -115, z0: -115, x1: 115, z1: 115 }, { trees: 50, plants: 70, boulders: 8, ok: (x, z, h, s) => Math.hypot(x, z) > SHORE + 2 && Math.hypot(x, z) < WALL - 3 && s < 0.6 && !L.busy(x, z, 2) && !villas.some(v => Math.hypot(v.x - x, v.z - z) < 8) && Math.hypot(OFFICE.x - x, OFFICE.z - z) > 13 });
 grow(S, 'Isle', 'lake', { x: 0, z: 0, r: ISLE - 1 }, { trees: 6, plants: 10, boulders: 0, ok: (x, z) => Math.abs(x) > 12 || z > 14 });
 L.paint((x, z, h, s, cur) => {
     if (cur !== 0) return null;

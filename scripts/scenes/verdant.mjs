@@ -35,11 +35,23 @@ const FORD = { x: -43, z: 28, across: [30, 22] };
 // Thornwick on the east bank; farmland north-east; the forest south-west.
 const TW = { x: 18, z: 4 };
 const S = new Dresser(L, SEED);
+const ROUTES = {
+    arrive: '-80,2; -52,4; -40,4; -26,4; -12,4; 4,4',
+    hall: '12,-4; 15,-8',
+    up: '6,-2; -4,-12; -9,-22; -11,-27',
+    back: '-9,-22; -4,-12; 6,-4; 14,-7',
+    yard: '20,-20; 24,-32',
+    north: '30,-48; 34,-80; 31,-92',
+};
+// Thornwick grew along its roads: the hall at the north head of the plaza (toward the fields and the Lord-Warden's
+// yard), the smithy at the west end by the river, the barn out toward the fields; Cael's ways through stay open.
+const path = r => r.split(';').map(p => p.split(',').map(Number));
 const T = town(L, S, {
-    id: 'Thornwick', x: TW.x, z: TW.z, r: 30, plazaR: 12,
+    id: 'Thornwick', x: TW.x, z: TW.z, r: 30, plazaR: 12, region: 'verdant', seed: SEED, head: -Math.PI / 2, headAt: 21, turn: { gate: Math.PI, forge: -2.45 },
+    water: { x: -10, z: TW.z }, fields: { x: 60, z: -45 }, ok: (x, z) => pathDist(RIVER, x, z) > 17,
+    clear: [ROUTES.hall, ROUTES.up, ROUTES.yard, ROUTES.back].map(path), clearW: 4,
     buildings: ['thornwick_hall', 'house', 'cottage', { type: 'timber_house', kind: 'house', cols: 5, depth: 4, rows: 3 }, 'cottage', 'house',
                 { type: 'timber_house', kind: 'barn', cols: 6, depth: 5, rows: 3 }, 'cottage', 'smithy', 'house'],
-    startAngle: -Math.PI / 2,
 });
 // The market in the plaza; a well; lamps.
 for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; S.add(`Thornwick_Stall_${i + 1}`, 'stall', TW.x + Math.cos(a) * 7, TW.z + Math.sin(a) * 7, -a + Math.PI / 2, { width: 2.4, awning: ['red', 'ochre', 'green', 'blue'][i % 4], seed: i }, 2); }
@@ -62,7 +74,7 @@ const ends = exits('verdant', L, S, { banner: 'green', surface: 'dirt' });
 for (const e of ends) {
     // The west road stops at each bank: the bridge carries it over the river (placed after, on the roads' ground).
     if (e.to === 'gate') { L.road([[e.x, e.z], [bridgeX - 17, bridgeZ]], 4.5, 'dirt'); L.road([[bridgeX + 9, bridgeZ], [TW.x - 12, TW.z]], 4.5, 'dirt'); }
-    else L.road([[e.x, e.z], [(e.x + TW.x) / 2, (e.z + TW.z) / 2 + 6], [TW.x, TW.z]], 4.5, 'dirt');
+    else { const [sx, sz] = T.ends[e.to]; L.road([[e.x, e.z], [(e.x + sx) / 2, (e.z + sz) / 2 + 6], [sx, sz]], 4.5, 'dirt'); }      // on to its street
 }
 // Thornwick's bridge: timber on posts. It can burn (the ford below is the other way over).
 bridgeAcross(L, S, 'Thornwick_Bridge', bridgeX, bridgeZ, 1, 0, LEVEL, { width: 4, rise: 0.5, style: 'plank', seed: 2 });
@@ -153,14 +165,6 @@ S.add('Zone_Slide', 'trigger', DX + 10, DZ - 1, 0, { width: 10, depth: 16, heigh
 
 const UP = 'River_1,River_2', DOWN = 'River_3,River_4,River_5,River_6', LOW = 2.6, HIGH = LEVEL + 0.6;
 const started = { flag: { name: 'thornwick.started' } }, mill = v => ({ flag: { name: 'thornwick.mill', is: v } });
-const ROUTES = {
-    arrive: '-80,2; -52,4; -40,4; -26,4; -12,4; 4,4',
-    hall: '12,-4; 15,-8',
-    up: '6,-2; -4,-12; -9,-22; -11,-27',
-    back: '-9,-22; -4,-12; 6,-4; 14,-7',
-    yard: '20,-20; 24,-32',
-    north: '30,-48; 34,-80; 31,-92',
-};
 const script = {
     id: 'Thornwick', speaker: 'Cael', face: 'Cael', when: 'lesson1', flags: {},
     reactions: [

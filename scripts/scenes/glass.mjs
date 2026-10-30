@@ -21,11 +21,13 @@ L.shape((x, z) => {
     return dunes + crater + oasis;
 });
 const S = new Dresser(L, SEED);
-// Sarn round the oasis: domed houses, tents, the Matriarch's tents at the head.
+// Sarn round the oasis: the water is its plaza. Caravan streets run out from the shore to each road and to the east
+// gate where the caravans come in; the Matriarch's tents stand at the head on the south shore, looking out over the water;
+// tents for the caravans pitch on the east side by the gate; domed houses line the streets.
 const T = town(L, S, {
-    id: 'Sarn', x: OASIS.x, z: OASIS.z, r: 30, plazaR: 0, plaza: 'sand', ring: 0.95, height: L.at(OASIS.x + 28, OASIS.z),
+    id: 'Sarn', x: OASIS.x, z: OASIS.z, r: 32, plazaR: 15, plaza: null, keep: 4, height: L.at(OASIS.x + 28, OASIS.z), region: 'glass', seed: SEED,
+    lanes: [0], head: Math.PI / 2, headAt: 23, downwind: { x: OASIS.x + 26, z: OASIS.z + 10 }, street: 'sand',
     buildings: ['sarn_matriarch', 'sarn_house', { type: 'tent', size: 5, colour: 'red' }, 'sarn_house', { type: 'tent', size: 6, colour: 'blue' }, 'sarn_house', { type: 'tent', size: 5, colour: 'ochre' }, 'sarn_house', { type: 'tent', size: 4, colour: 'green' }],
-    startAngle: Math.PI,
 });
 // The town's flattening filled the oasis: dig it again.
 const pool = L.flatten(OASIS.x, OASIS.z, 14, L.at(OASIS.x, OASIS.z) - 2.5, 0.5);
@@ -37,7 +39,7 @@ S.add('Start', 'spawn', OASIS.x + 34, OASIS.z, -Math.PI / 2, { name: 'start' }, 
 grow(S, 'Oasis', 'coast', { x: OASIS.x, z: OASIS.z, r: 16 }, { trees: 12, plants: 18, boulders: 0, ok: (x, z, h) => h > pool + 1.9 });
 // Exits and the caravan roads.
 const ends = exits('glass', L, S, { banner: 'ochre', surface: 'sand', style: 'stone' });
-for (const e of ends) L.road([[e.x, e.z], [OASIS.x + 30, OASIS.z]], 5, 'sand');
+for (const e of ends) L.road([[e.x, e.z], T.ends[e.to]], 5, 'sand');            // each caravan road arrives on its own street
 L.road([[OASIS.x + 30, OASIS.z], [SCAR.x - SCAR.r, SCAR.z]], 4, 'salt');
 // The Sealed Heart: Oruun ruins at the scar's centre, ringed by statues that face it.
 for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; S.add(`Heart_Statue_${i + 1}`, 'statue', SCAR.x + Math.cos(a) * 14, SCAR.z + Math.sin(a) * 14, Math.atan2(-Math.cos(a), -Math.sin(a)), { height: 7, style: 'stone', seed: i }, 2); }
