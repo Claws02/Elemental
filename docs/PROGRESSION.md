@@ -10,7 +10,7 @@ Agreed 2026-09-29. The player does not start with every element. They gather the
 | **Wild** | It answers, but untrained. Dangerous (see Wild Fire). |
 | **Trained** | Learned from Cael. Grows in Power and Control. |
 
-**The prologue (Veyra):** every element locked until the stone cracks; then all four answer at once, all wild, and the first thing the power does is set the player's own roof alight (cause `awakening`: the ledger doesn't count it). When it ends, Earth becomes Cael's to teach; Fire, Water and Air stay wild.
+**The prologue (Veyra):** every element locked until the stone cracks; then all four answer at once, all wild, and the first thing the power does is set the player's own roof alight (cause `awakening`: the ledger doesn't count it). When it ends, Earth becomes Cael's to teach, Fire stays wild, and Water and Air go dormant (locked) until their lessons wake them: Water at the Sunken Cistern (Lesson II), Air at Skyreach (Lesson IV).
 
 **Cael's charm.** After the fire Cael offers a charm. Worn, it stills every WILD element (`Progression.live()` reads it as locked); a trained element still answers, so each comes back as Cael trains it. Refused, it stays in the player's pocket (a small silver button on the HUD) and can be put on any time; once on, it stays on. Flag `charm`: `none` (the stone has cracked, not yet offered), `worn`, `refused`.
 

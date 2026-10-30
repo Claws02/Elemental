@@ -173,8 +173,11 @@ const script = {
     { id: 'prophecy',
       say: ['@Cael My name is Cael. I read old stones for a living.', '@Cael That one cracked tonight. So did something in you.',
             '@Cael There\'s a verse on the oldest of them. Two. One who saves the world. One who changes it.',
-            '@Cael I came here following the stones. I didn\'t expect to find a person.', '@Cael Fire is the loudest thing in you. I\'ll teach you something quieter first.'],
-      do: [{ setElement: { el: 'earth', state: 'trained' } }, { setFlag: { name: 'prologue', value: 'done' } }],
+            '@Cael I came here following the stones. I didn\'t expect to find a person.', '@Cael Fire is the loudest thing in you. I\'ll teach you something quieter first.',
+            '@Cael The water and the wind have gone back to sleep. They\'ll wake again, each in its own place.'],
+      // Canon (docs/PROGRESSION.md): at dawn Water and Air go dormant, Fire stays wild. Lessons II and IV wake them.
+      do: [{ setElement: { el: 'earth', state: 'trained' } }, { setElement: { el: 'water', state: 'locked' } }, { setElement: { el: 'air', state: 'locked' } },
+           { setFlag: { name: 'prologue', value: 'done' } }],
       until: { talking: false },
       then: { say: ['@Cael It\'s nearly light. Walk with me.'], do: [{ mood: { name: 'day', secs: 20 } }, { npc: { id: 'Cael', role: 'lead', route: '8,14; 18,5; 34,5; 60,2; 86,1; 104,0' } }, { reveal: ['Exit_gate'] }], next: 'road' } },
     // Dawn: out of the valley on foot, Cael leading the way. The east road leads to the Oruun Gate (scenes/gate.json).

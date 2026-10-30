@@ -56,7 +56,7 @@ People answer from this when the player taps them: first the scene's own lines, 
 4. Dusk, home. Emberwings come for you, not the thatch; you can't fight back.
 5. The stone cracks; all four elements wake wild in you. Fire from your hands drives off the birds and spills onto your own roof.
 6. Cael arrives, puts out every fire, and stills you. Wynn tells him the stone answered your hand; he answers what you told her.
-7. The night is counted: what burned, Bram's barn, who Veyra blames. The charm (wear it or not). Help clear the ashes, hunt the birds, or say nothing. The verse.
+7. At dawn Water and Air fall quiet again (dormant until Lessons II and IV); Fire stays wild. The night is counted: what burned, Bram's barn, who Veyra blames. The charm (wear it or not). Help clear the ashes, hunt the birds, or say nothing. The verse.
 8. **Dawn: the road out.** Cael leads you out of Veyra up the east road (he waits if you fall behind). No teleport.
 
 ## Act I: The Road and the Reach

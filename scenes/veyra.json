@@ -3611,13 +3611,26 @@
      "@Cael That one cracked tonight. So did something in you.",
      "@Cael There's a verse on the oldest of them. Two. One who saves the world. One who changes it.",
      "@Cael I came here following the stones. I didn't expect to find a person.",
-     "@Cael Fire is the loudest thing in you. I'll teach you something quieter first."
+     "@Cael Fire is the loudest thing in you. I'll teach you something quieter first.",
+     "@Cael The water and the wind have gone back to sleep. They'll wake again, each in its own place."
     ],
     "do": [
      {
       "setElement": {
        "el": "earth",
        "state": "trained"
+      }
+     },
+     {
+      "setElement": {
+       "el": "water",
+       "state": "locked"
+      }
+     },
+     {
+      "setElement": {
+       "el": "air",
+       "state": "locked"
       }
      },
      {
