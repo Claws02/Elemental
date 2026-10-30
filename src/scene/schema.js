@@ -242,7 +242,7 @@ export const TYPES = {
     },
     tower: {
         label: 'Round tower', group: 'Buildings',
-        props: { height: num('Height', 9, 3, 30, 0.5), radius: num('Radius', 2.2, 1, 6, 0.1), style: BSTYLE, top: select('Top', 'cone', ['cone', 'dome', 'crenels']), seed: SEED, hidden: HIDDEN },
+        props: { height: num('Height', 9, 3, 30, 0.5), radius: num('Radius', 2.2, 1, 6, 0.1), style: BSTYLE, top: select('Top', 'cone', ['cone', 'dome', 'crenels', 'belfry', 'lantern']), seed: SEED, hidden: HIDDEN },
     },
     bridge: {
         label: 'Bridge', group: 'Buildings',

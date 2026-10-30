@@ -14,13 +14,13 @@ function shade(c) { const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; 
 
 export const CHARACTER_LOOKS = {
     // ---- the rulers ----
-    maren: look({ scale: 1.04, skin: 0xc49a72, hair: 0x6a4a2a, tunic: 0x4a5e3a, trim: 0xb8a070, cloak: 0x5a4a2e, trouser: 0x4a4234, extras: ['circlet', 'beard'] }),        // Lord-Warden Aldric Maren
-    vorn: look({ scale: 1.06, skin: 0xb07a58, hair: 0x2a1a14, tunic: 0x5a2a24, trim: 0x8a8a90, cloak: 0x2a2226, trouser: 0x2e2a2a, bracer: 0x6a6e76, extras: ['ironcrown', 'pauldrons'] }),   // Forge-Queen Talia Vorn
-    oriel: look({ scale: 0.98, skin: 0xd8b090, hair: 0x9a7a4a, tunic: 0x2e5a7a, trim: 0xe0d8c0, cloak: 0x3a7a9a, trouser: 0x2e4a5e, extras: ['shellcirclet', 'robe'] }),        // Tide-Regent Oriel Sand
-    senn: look({ scale: 1.02, skin: 0xd0a888, hair: 0xe8e4dc, tunic: 0xe8e6e0, trim: 0x7aa8c8, cloak: 0xd8e4ec, trouser: 0xc8ccd0, extras: ['hood', 'robe', 'staff'] }),        // Abbess-Prince Senn
-    yessa: look({ scale: 0.95, skin: 0x9a6a48, hair: 0xb8b0a4, tunic: 0xb8803a, trim: 0x8a3a2a, cloak: 0x8a5a2a, trouser: 0x6a4a2a, extras: ['headwrap', 'robe', 'staff'] }),   // Matriarch Yessa Keth
-    ilvane: look({ scale: 1.0, skin: 0xd8b49a, hair: 0xc8c4bc, tunic: 0xf0ece4, trim: 0xc8a85a, cloak: 0xe8e0d0, trouser: 0xe0dcd4, extras: ['crown', 'robe'] }),               // Empress Ilvane IV
-    corvane: look({ scale: 1.06, skin: 0xc09878, hair: 0x3a3430, tunic: 0x3a3e46, trim: 0xc8a85a, cloak: 0x2a2e36, trouser: 0x2e3036, bracer: 0x8a7a4a, extras: ['badge', 'robe', 'beard'] }),   // High Lantern Corvane
+    maren: look({ scale: 1.04, skin: 0xc49a72, hair: 0x6a4a2a, tunic: 0x4a5e3a, trim: 0xb8a070, cloak: 0x5a4a2e, trouser: 0x4a4234, extras: ['widehat', 'beard', 'ledger'] }),        // Lord-Warden Aldric Maren
+    vorn: look({ scale: 1.06, skin: 0xb07a58, hair: 0x2a1a14, tunic: 0x5a2a24, trim: 0x8a8a90, cloak: 0x2a2226, trouser: 0x2e2a2a, bracer: 0x6a6e76, extras: ['ironcrown', 'pauldrons', 'hammer'] }),   // Forge-Queen Talia Vorn
+    oriel: look({ scale: 0.98, skin: 0xd8b090, hair: 0x9a7a4a, tunic: 0x2e5a7a, trim: 0xe0d8c0, cloak: 0x3a7a9a, trouser: 0x2e4a5e, extras: ['shellcirclet', 'robe', 'tidestaff'] }),        // Tide-Regent Oriel Sand
+    senn: look({ scale: 1.02, skin: 0xd0a888, hair: 0xe8e4dc, tunic: 0xe8e6e0, trim: 0x7aa8c8, cloak: 0xd8e4ec, trouser: 0xc8ccd0, extras: ['hood', 'robe', 'bellstaff'] }),        // Abbess-Prince Senn
+    yessa: look({ scale: 0.95, skin: 0x9a6a48, hair: 0xb8b0a4, tunic: 0xb8803a, trim: 0x8a3a2a, cloak: 0x8a5a2a, trouser: 0x6a4a2a, extras: ['headwrap', 'veil', 'robe', 'staff'] }),   // Matriarch Yessa Keth
+    ilvane: look({ scale: 1.0, skin: 0xd8b49a, hair: 0xc8c4bc, tunic: 0xf0ece4, trim: 0xc8a85a, cloak: 0xe8e0d0, trouser: 0xe0dcd4, extras: ['crown', 'robe', 'train'] }),               // Empress Ilvane IV
+    corvane: look({ scale: 1.06, skin: 0xc09878, hair: 0x3a3430, tunic: 0x3a3e46, trim: 0xc8a85a, cloak: 0x2a2e36, trouser: 0x2e3036, bracer: 0x8a7a4a, extras: ['badge', 'robe', 'beard', 'lantern'] }),   // High Lantern Corvane
     // ---- the companions ----
     bram: look({ scale: 1.08, skin: 0xc49070, hair: 0x6a4020, tunic: 0x4a6a4a, trim: 0xb8a070, cloak: 0x7a5030, trouser: 0x4a4038, extras: ['apron'] }),                        // Bram Holloway
     isolde: look({ scale: 1.0, skin: 0xe0c0a4, hair: 0x2a2224, tunic: 0x3e4e66, trim: 0xc8a85a, cloak: 0x2e3e56, trouser: 0x2e3440, bracer: 0x6a6e76, extras: ['badge', 'tail'] }),   // Isolde Marr

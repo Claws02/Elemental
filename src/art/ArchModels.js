@@ -31,7 +31,7 @@ export function palette(style, seed = 1) {
     }[style] || [WORLD.stone[0], WORLD.stoneDark, WORLD.stoneTop];
 }
 
-/** A round tower: courses of its stone, slit windows, a cone, dome or crenellated top. */
+/** A round tower: courses of its stone, slit windows, a cone, dome, crenellated, belfry or lantern top. */
 export function towerModel({ height: H = 9, radius: R = 2.2, style = 'stone', top = 'cone', seed = 1 } = {}) {
     const k = new Kit();
     const [face, trim, cap] = palette(style, seed);
@@ -47,6 +47,19 @@ export function towerModel({ height: H = 9, radius: R = 2.2, style = 'stone', to
     k.cyl('body', R * 1.08, R * 1.08, 0.3, 12, at(0, H + 0.15, 0), trim, { flat: true });
     if (top === 'cone') k.cyl('body', 0.05, R * 1.25, R * 1.6, 12, at(0, H + 0.3 + R * 0.8, 0), style === 'marble' ? 0xb05a38 : TOWN.slate[0], { flat: true });
     else if (top === 'dome') k.geo('body', new THREE.SphereGeometry(R * 1.02, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), at(0, H + 0.3, 0), style === 'marble' ? 0xc8a85a : 0x5a9a88, { flat: true });
+    else if (top === 'belfry' || top === 'lantern') {
+        // An open stage on four piers under a pyramid cap: a bronze bell hangs in a belfry (Vaelmont), a light
+        // burns in a lantern (the Lantern Office's sign, on Halcyra's palace).
+        const P = R * 1.1, S = R * 1.25;
+        for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) k.box('body', R * 0.38, S, R * 0.38, at(x * R * 0.72, H + 0.3 + S / 2, z * R * 0.72), face, { ch: 0.04 });
+        k.box('body', P * 1.85, 0.25, P * 1.85, at(0, H + 0.3 + S + 0.12, 0), trim, { ch: 0.04 });
+        k.cyl('body', 0.05, P * 1.3, R * 1.3, 4, at(0, H + 0.55 + S + R * 0.65, 0, 0, Math.PI / 4, 0), style === 'marble' ? 0xc8a85a : TOWN.slate[0], { flat: true });
+        if (top === 'belfry') {
+            k.cyl('body', R * 0.12, R * 0.42, R * 0.6, 10, at(0, H + 0.3 + S * 0.55, 0), 0xa8823a, { flat: true });
+            k.cyl('body', R * 0.46, R * 0.46, 0.06, 10, at(0, H + 0.3 + S * 0.55 - R * 0.3, 0), 0x8a6a2e, { flat: true });
+            k.box('body', P * 1.5, 0.12, 0.12, at(0, H + 0.3 + S * 0.9, 0), WORLD.timber[1]);              // the headstock
+        } else k.geo('glow', new THREE.OctahedronGeometry(R * 0.4, 0), at(0, H + 0.3 + S * 0.5, 0, 0, 0, 0, 1, 1.5, 1), 0xffd38a, { flat: true });
+    }
     else for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; if (i % 2 === 0) k.box('body', 0.7, 0.6, 0.35, at(Math.cos(a) * R, H + 0.6, Math.sin(a) * R, 0, -a + Math.PI / 2, 0), face, { ch: 0.03 }); }
     k.box('body', 1.1, 2.1, 0.2, at(0, 1.05, R - 0.02), WORLD.timber[1]);           // its door
     return { group: k.build(), boxes: [{ x: 0, y: H / 2, z: 0, w: R * 1.7, h: H, d: R * 1.7 }] };

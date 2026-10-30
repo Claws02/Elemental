@@ -36,14 +36,15 @@ const only = process.argv[2] || '';
     });
     await page.waitForTimeout(600);
     // What to frame: [kind, name, focus x/y/z, distance, height of the focus].
-    const targets = await page.evaluate(() => {
+    const targets = await page.evaluate(async () => {
+        const { PREFABS } = await import('./src/data/prefabs.js');
         const out = [];
         for (const c of __EL.creatures.all) {
             const it = c.group.item, b = new __EL.THREE.Box3().setFromObject(c.model.root), s = b.getSize(new __EL.THREE.Vector3()), m = b.getCenter(new __EL.THREE.Vector3());
             out.push(['creature', it.species, m.x, m.y, m.z, Math.max(2.4, Math.max(s.x, s.y, s.z) * 2.2)]);
         }
         for (const o of __EL.world.data.objects) {
-            if (o.type === 'prefab') out.push(['building', o.prefab, o.x, 3, o.z, 17]);
+            if (o.type === 'prefab') { const big = PREFABS[o.prefab]?.landmark; out.push(['building', o.prefab, o.x, big ? 6 : 3, o.z, big ? 34 : 17]); }
             if (o.type === 'npc') out.push(['person', o.look, o.x, 0.95, o.z, 2.8]);
         }
         return out;

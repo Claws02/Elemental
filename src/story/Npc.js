@@ -123,6 +123,29 @@ function addExtras(rig, L) {
         case 'pauldrons': for (const s of [-1, 1]) body.box('body', 0.18, 0.09, 0.22, at(s * 0.26, 0.45, 0, 0, 0, -s * 0.35), iron, { ch: 0.03 }); break;
         case 'scarf': body.box('body', 0.3, 0.07, 0.28, at(0, 0.47, 0), L.trim, { ch: 0.02 }); body.box('body', 0.06, 0.3, 0.03, at(0.08, 0.3, 0.15, 0.1), L.trim); break;
         case 'staff': hand.cyl('body', 0.022, 0.026, 1.7, 6, at(0, -0.1, 0.03), 0x6a4a2a, { flat: true }); hand.geo('glow', new THREE.OctahedronGeometry(0.06, 0), at(0, 0.78, 0.03), L.trim, { flat: true }); break;
+        // ---- the rulers' signs: one each, big enough to tell them apart across a square ----
+        case 'widehat': head.box('body', 0.52, 0.025, 0.52, at(0, 0.3, 0), 0x4a3a28, { ch: 0.01 }); head.box('body', 0.27, 0.12, 0.29, at(0, 0.37, 0), 0x4a3a28, { ch: 0.03 }); head.box('body', 0.28, 0.03, 0.3, at(0, 0.33, 0), L.trim); break;
+        case 'veil': head.box('body', 0.2, 0.09, 0.02, at(0, 0.1, 0.14), L.trim); head.box('body', 0.26, 0.5, 0.04, at(0, 0.02, -0.17, 0.12, 0, 0), L.trim, { ch: 0.02 }); break;
+        case 'train': body.box('body', 0.46, 1.2, 0.04, at(0, -0.22, -0.18, 0.08, 0, 0), L.cloak, { ch: 0.02 }); body.box('body', 0.5, 0.03, 0.7, at(0, -0.84, -0.52), L.cloak); body.box('body', 0.5, 0.035, 0.05, at(0, -0.82, -0.86), L.trim); break;
+        case 'ledger': hand.box('body', 0.06, 0.26, 0.2, at(0.04, -0.04, 0.06), 0x6a3a22, { ch: 0.01 }); hand.box('body', 0.05, 0.24, 0.17, at(0.045, -0.04, 0.075), 0xe8dcc0); break;
+        case 'hammer': hand.cyl('body', 0.022, 0.026, 0.95, 6, at(0, -0.3, 0.04), 0x5a4030, { flat: true }); hand.box('body', 0.16, 0.16, 0.34, at(0, -0.78, 0.04), iron, { ch: 0.03 }); break;
+        case 'tidestaff':
+            hand.cyl('body', 0.02, 0.024, 1.8, 6, at(0, -0.05, 0.03), 0xd8ccb0, { flat: true });
+            hand.box('body', 0.26, 0.03, 0.03, at(0, 0.86, 0.03), 0xd8ccb0);
+            for (const x of [-0.12, 0, 0.12]) hand.geo('body', new THREE.ConeGeometry(0.025, x ? 0.18 : 0.24, 4), at(x, x ? 0.96 : 0.99, 0.03), 0xe8e0cc, { flat: true });
+            break;
+        case 'bellstaff':
+            hand.cyl('body', 0.022, 0.026, 1.8, 6, at(0, -0.05, 0.03), 0x6a4a2a, { flat: true });
+            hand.box('body', 0.22, 0.03, 0.03, at(0, 0.84, 0.03), 0x6a4a2a);
+            hand.cyl('body', 0.025, 0.07, 0.12, 8, at(0, 0.76, 0.03), 0xa8823a, { flat: true });
+            break;
+        case 'lantern':
+            hand.box('body', 0.015, 0.14, 0.015, at(0, -0.06, 0.06), iron);
+            hand.box('body', 0.15, 0.03, 0.15, at(0, -0.14, 0.06), gold);
+            for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) hand.box('body', 0.02, 0.16, 0.02, at(x * 0.06, -0.23, 0.06 + z * 0.06), gold);
+            hand.box('glow', 0.09, 0.13, 0.09, at(0, -0.23, 0.06), 0xffd38a);
+            hand.box('body', 0.15, 0.03, 0.15, at(0, -0.32, 0.06), gold);
+            break;
         case 'spear': hand.cyl('body', 0.018, 0.02, 2.0, 6, at(0, 0.05, 0.03), 0x5a4030, { flat: true }); hand.geo('body', new THREE.ConeGeometry(0.04, 0.2, 4), at(0, 1.15, 0.03), iron, { flat: true }); break;
         }
     }

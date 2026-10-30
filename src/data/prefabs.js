@@ -88,10 +88,15 @@ export const PREFABS = {
     cindrel_house: {
         label: 'Cindrel: basalt house', footprint: [6, 5],
         pieces: [
+            // Cindrel lives round its heat: a basalt ground floor against the caldera's fire, a brick room above
+            // where it's warm, a tall chimney, a lamp by the door for the ash-dark streets.
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 6, depth: 5, style: 'stone' },
-            ...box4(6, 5, 3.2, 0, 'basalt', ['door', 'window', 'window', 'none']),
-            { type: 'b_roof', x: 0, y: 3.2, z: 0, rotY: 0, width: 6.4, depth: 5.4, pitch: 0.5, style: 'flat', gables: false },
-            { type: 'chimney', x: 2.2, y: 3.2, z: -1.6, rotY: 0, height: 1.6 },
+            ...box4(6, 5, 2.7, 0, 'basalt', ['door', 'window', 'window', 'none']),
+            { type: 'b_floor', x: 0, y: 2.7, z: 0, rotY: 0, width: 6.3, depth: 5.3, style: 'planks' },
+            ...box4(6, 5, 2.3, 2.8, 'brick', ['two windows', 'window', 'none', 'window']),
+            { type: 'b_roof', x: 0, y: 5.1, z: 0, rotY: 0, width: 6.6, depth: 5.6, pitch: 0.5, style: 'flat', gables: false },
+            { type: 'chimney', x: 2.2, y: 5.1, z: -1.6, rotY: 0, height: 2.6 },
+            { type: 'lamp', x: 1.7, y: 0, z: 3.1, rotY: 0 },
         ],
     },
     cindrel_forge: {
@@ -158,11 +163,13 @@ export const PREFABS = {
         landmark: true,
         label: 'Vaelmont: the Abbess-Prince\'s temple', footprint: [12, 12],
         pieces: [
+            // A mountain abbey: a long hall under a steep copper roof that sheds the snow, a round apse at the back,
+            // and the bell tower that is Skyreach's voice (Lesson IV climbs a stair like it).
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 12, depth: 12, style: 'stone' },
-            ...box4(12, 12, 5, 0, 'whitestone', ['arch', 'two windows', 'two windows', 'two windows']),
-            { type: 'b_roof', x: 0, y: 5, z: 0, rotY: 0, width: 12.4, depth: 12.4, pitch: 5, style: 'dome', gables: false },
-            { type: 'tower', x: -6.5, y: 0, z: -6.5, rotY: 0, height: 13, radius: 1.8, style: 'whitestone', top: 'cone' },
-            { type: 'tower', x: 6.5, y: 0, z: -6.5, rotY: 0, height: 13, radius: 1.8, style: 'whitestone', top: 'cone' },
+            ...box4(9, 12, 5, 0, 'whitestone', ['arch', 'none', 'two windows', 'two windows']),
+            { type: 'b_roof', x: 0, y: 5, z: 0, rotY: 0, width: 10, depth: 12.8, pitch: 4, style: 'copper', gables: true },
+            { type: 'tower', x: 0, y: 0, z: -6.2, rotY: 0, height: 5, radius: 3, style: 'whitestone', top: 'dome' },
+            { type: 'tower', x: -5.6, y: 0, z: 4.6, rotY: 0, height: 15, radius: 1.9, style: 'whitestone', top: 'belfry' },
             { type: 'banner', x: -3.5, y: 0, z: 6.6, rotY: 0, height: 5, colour: 'sky' },
             { type: 'banner', x: 3.5, y: 0, z: 6.6, rotY: 0, height: 5, colour: 'sky' },
         ],
@@ -204,8 +211,13 @@ export const PREFABS = {
             { type: 'b_floor', x: 0, y: 0, z: 0, rotY: 0, width: 18, depth: 14, style: 'stone' },
             ...box4(18, 14, 5, 0, 'marble', ['arch', 'two windows', 'two windows', 'two windows']),
             { type: 'b_floor', x: 0, y: 5, z: 0, rotY: 0, width: 18.3, depth: 14.3, style: 'stone' },
+            // The Empire in tiers: a marble court, a gallery above, a keep, and over all of it the lantern spire,
+            // the sign the Lantern Office took for its own.
             ...box4(14, 10, 4.5, 5.1, 'marble', ['two windows', 'two windows', 'two windows', 'two windows']),
-            { type: 'b_roof', x: 0, y: 9.6, z: 0, rotY: 0, width: 10.4, depth: 10.4, pitch: 5, style: 'dome', gables: false },
+            { type: 'b_floor', x: 0, y: 9.6, z: 0, rotY: 0, width: 14.3, depth: 10.3, style: 'stone' },
+            ...box4(8, 6, 4, 9.7, 'marble', ['two windows', 'window', 'window', 'window']),
+            { type: 'b_roof', x: 0, y: 13.7, z: 0, rotY: 0, width: 8.4, depth: 6.4, pitch: 0.5, style: 'flat', gables: false },
+            { type: 'tower', x: 0, y: 13.7, z: 0, rotY: 0, height: 4, radius: 1.5, style: 'marble', top: 'lantern' },
             { type: 'tower', x: -9.5, y: 0, z: -7.5, rotY: 0, height: 16, radius: 2.2, style: 'marble', top: 'dome' },
             { type: 'tower', x: 9.5, y: 0, z: -7.5, rotY: 0, height: 16, radius: 2.2, style: 'marble', top: 'dome' },
             { type: 'tower', x: -9.5, y: 0, z: 7.5, rotY: 0, height: 12, radius: 1.8, style: 'marble', top: 'dome' },
