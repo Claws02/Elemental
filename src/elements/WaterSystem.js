@@ -139,6 +139,9 @@ export class WaterSystem {
         if (!p) p = _ray.ray.at(60, new THREE.Vector3());       // the sky: as far as it gets
         p.y = Math.max(p.y, Ground.height(p.x, p.z) + 0.15);
         s.want.copy(p);
+        // An unsure stream drifts off its mark, slowly, side to side (Water Control steadies it: data/growth.js); the reach still holds.
+        const w = this.prog ? this.prog.stat('water', 'wander') : 0;
+        if (w > 0.01) { const t = this.time || 0; p.x += Math.sin(t * 1.3) * w; p.z += Math.cos(t * 0.9) * w * 0.7; }
         const from = s.source.surface;
         const off = p.clone().sub(from);
         if (off.length() > this._s('reach')) {
@@ -228,10 +231,10 @@ export class WaterSystem {
             const d = q.distanceTo(p);
             if (d > radius) continue;
             const near = 1 - d / radius;
-            if (t.material === 'wood') {
-                // A stream brings `amount` seconds of water; a burst a lump,
-                // enough to put out what it hits squarely (within ~1 m), not
-                // what it only splashes.
+            if (t.material === 'wood' || this.fire.flammables.has(t)) {
+                // Anything that burns: timber, hay, thatch, canvas. A stream brings `amount` seconds of
+                // water; a burst a lump, enough to put out what it hits squarely (within ~1 m), not
+                // what it only splashes. (Only timber pieces wear through, below.)
                 this.fire.wetten(t, dir ? amount : this.fire.douseLump * 2 * near, 'player');
                 // Water under pressure wears timber through.
                 const piece = t.entry?.data.piece, owner = t.entry?.data.owner;

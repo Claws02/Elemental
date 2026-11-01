@@ -191,6 +191,52 @@
    "owner": "civilian"
   },
   {
+   "id": "Drill_Hay_1",
+   "type": "hay",
+   "x": 8.5,
+   "y": 0,
+   "z": -5,
+   "rotY": 0,
+   "seed": 120,
+   "fuel": 9,
+   "owner": "none"
+  },
+  {
+   "id": "Drill_Hay_2",
+   "type": "hay",
+   "x": 9.7,
+   "y": 0,
+   "z": -2,
+   "rotY": 0,
+   "seed": 121,
+   "fuel": 9,
+   "owner": "none"
+  },
+  {
+   "id": "Drill_Hay_3",
+   "type": "hay",
+   "x": 8.5,
+   "y": 0,
+   "z": 1,
+   "rotY": 0,
+   "seed": 122,
+   "fuel": 9,
+   "owner": "none"
+  },
+  {
+   "id": "Cistern_Flock",
+   "type": "creature",
+   "x": -4,
+   "y": 0,
+   "z": -16,
+   "rotY": 0,
+   "species": "emberwing",
+   "count": 4,
+   "spread": 4,
+   "aggressive": true,
+   "hidden": true
+  },
+  {
    "id": "Cael",
    "type": "npc",
    "x": 2.5,
@@ -1839,6 +1885,68 @@
       "@Bram Hey! We’re putting fires OUT."
      ]
     ]
+   },
+   {
+    "on": "playerDouse",
+    "match": {
+     "id": "Drill_Hay_*"
+    },
+    "count": "drillTurns",
+    "when": {
+     "not": {
+      "level": {
+       "el": "water",
+       "atLeast": 6
+      }
+     }
+    },
+    "do": [
+     {
+      "grant": {
+       "el": "water",
+       "track": "control",
+       "amount": 0.03
+      }
+     }
+    ],
+    "lines": [
+     [
+      "@Cael Out. Next."
+     ],
+     [],
+     [
+      "@Bram You’re getting quicker. I think. I’m not counting."
+     ],
+     [],
+     [
+      "@Cael Only what’s burning. Good."
+     ]
+    ],
+    "cycle": false
+   },
+   {
+    "on": "playerThrow",
+    "match": {
+     "element": "water"
+    },
+    "count": "orbs"
+   },
+   {
+    "on": "burnedOut",
+    "match": {
+     "id": "Drill_Hay_*"
+    },
+    "count": "drillTurns",
+    "lines": [
+     [
+      "@Cael Too slow. It’s ash. Again."
+     ],
+     [
+      "@Cael Quicker. Before it takes."
+     ]
+    ],
+    "cycle": true,
+    "throttle": 4
    }
   ],
   "steps": [
@@ -2070,12 +2178,1495 @@
         "grant": {
          "el": "water",
          "track": "control",
-         "amount": 0.15
+         "amount": 0.05
         }
        }
       ]
      }
     ]
+   },
+   {
+    "id": "flock",
+    "do": [
+     {
+      "checkpoint": true
+     },
+     {
+      "reveal": [
+       "Cistern_Flock"
+      ]
+     },
+     {
+      "hint": "Hold the stream on a bird: wet wings don’t fly. Then finish it."
+     }
+    ],
+    "say": [
+     "@Bram Birds! Those are the ones from home!",
+     "@Cael The smoke drew them. They follow fire.",
+     "@Cael Wet wings don’t fly. Ground them before they light the tents again."
+    ],
+    "objective": "Ground the Emberwings with water",
+    "mark": "Cistern_Flock",
+    "fight": [
+     "Cistern_Flock"
+    ],
+    "waiting": [
+     {
+      "when": {
+       "time": 30
+      },
+      "say": [
+       "@Cael Keep the pool behind you. The water reaches no further than it’s let."
+      ]
+     }
+    ],
+    "until": {
+     "signal": {
+      "obj": "Cistern_Flock",
+      "name": "gone"
+     }
+    },
+    "then": {
+     "say": [
+      "@Cael That’s what water’s for, mostly. Not the drowning. The putting out."
+     ]
+    }
+   },
+   {
+    "id": "drill",
+    "do": [
+     {
+      "npc": {
+       "id": "Cael",
+       "role": "walk",
+       "target": {
+        "x": 12,
+        "z": -6
+       }
+      }
+     },
+     {
+      "ignite": {
+       "prefix": "Drill_Hay_1",
+       "dry": true
+      }
+     }
+    ],
+    "say": [
+     "@Cael Again. Smaller. I’ll light, you put out.",
+     "@Cael Only what’s burning. The rest stays dry."
+    ],
+    "objective": "Put out each bundle Cael lights · Water Control {water.control} of 3",
+    "mark": "Drill_Hay_2",
+    "waiting": [
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 1
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 2
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 3
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 4
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 5
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 6
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 7
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 8
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 9
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 10
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 11
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 12
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 13
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 14
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 15
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 16
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 17
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 18
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 19
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 20
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 21
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 22
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 23
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 24
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 25
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 26
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 27
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 28
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 29
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 30
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 31
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 32
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 33
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 34
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 35
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 36
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 37
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 38
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 39
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 40
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     }
+    ],
+    "until": {
+     "level": {
+      "el": "water",
+      "atLeast": 3
+     }
+    },
+    "then": {
+     "say": [
+      "@Cael Steadier. It goes where you mean it now."
+     ],
+     "do": [
+      {
+       "setFlag": {
+        "name": "learned.orb",
+        "value": "yes"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "id": "orb",
+    "do": [
+     {
+      "ignite": {
+       "prefix": "Drill_Hay_2",
+       "dry": true
+      }
+     },
+     {
+      "hint": "Draw a stream, then pull your finger away hard, or flick: the water tears free into an orb. Flick it at the fire."
+     }
+    ],
+    "say": [
+     "@Cael Now tear it free. Pull away from the pool, hard, and it comes with you.",
+     "@Cael Then throw it."
+    ],
+    "objective": "Tear the water free and throw it",
+    "mark": "Drill_Hay_2",
+    "waiting": [
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 1
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 2
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 3
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 4
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 5
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 6
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 7
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 8
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 9
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 10
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 11
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 12
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 13
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 14
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 15
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 16
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 17
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 18
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 19
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 20
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 21
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 22
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 23
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 24
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 25
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 26
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 27
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 28
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 29
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 30
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 31
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 32
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 33
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 34
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 35
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 36
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 37
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 38
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 39
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 40
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     }
+    ],
+    "until": {
+     "count": {
+      "name": "orbs",
+      "min": 1
+     }
+    }
    },
    {
     "id": "sluice",
@@ -2125,7 +3716,7 @@
        "grant": {
         "el": "water",
         "track": "control",
-        "amount": 0.15
+        "amount": 0.05
        }
       }
      ],
@@ -2134,6 +3725,740 @@
       "@Cael Water doesn’t push. It persuades. Remember that."
      ]
     }
+   },
+   {
+    "id": "ready",
+    "do": [
+     {
+      "ignite": {
+       "prefix": "Drill_Hay_3",
+       "dry": true
+      }
+     }
+    ],
+    "say": [
+     "@Cael Saltmere’s sea won’t wait for you to be sure. It would help, though."
+    ],
+    "objective": "Practise at the bundles until you’re sure (Water Control {water.control} of 4), or go on south",
+    "mark": "Drill_Hay_3",
+    "waiting": [
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 1
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 2
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 3
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 4
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 5
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 6
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 7
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 8
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 9
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 10
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 11
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 12
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 13
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 14
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 15
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 16
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 17
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 18
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 19
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 20
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 21
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 22
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 23
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 24
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 25
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 26
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 27
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 28
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 29
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 30
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 31
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 32
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 33
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 34
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 35
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 36
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 37
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 38
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_3",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 39
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_1",
+         "dry": true
+        }
+       }
+      ]
+     },
+     {
+      "fresh": true,
+      "when": {
+       "count": {
+        "name": "drillTurns",
+        "min": 40
+       }
+      },
+      "do": [
+       {
+        "ignite": {
+         "prefix": "Drill_Hay_2",
+         "dry": true
+        }
+       }
+      ]
+     }
+    ],
+    "ends": [
+     {
+      "when": {
+       "level": {
+        "el": "water",
+        "atLeast": 4
+       }
+      },
+      "say": [
+       "@Cael Good. Now the sea."
+      ],
+      "next": "onward"
+     },
+     {
+      "when": {
+       "not": {
+        "signal": {
+         "obj": "Zone_Cistern",
+         "name": "inside"
+        }
+       }
+      },
+      "say": [
+       "@Cael Already? All right. Stay close at the wall."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "lesson2.unready",
+         "value": "true"
+        }
+       }
+      ],
+      "next": "onward"
+     }
+    ]
    },
    {
     "id": "onward",

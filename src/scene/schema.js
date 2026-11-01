@@ -113,7 +113,7 @@ export const TYPES = {
         props: { kind: select('Kind', 'crag', BOULDER_KINDS), size: num('Size', 2, 0.5, 10, 0.1), seed: SEED },
         note: 'Fixed stone: crags, mossy and snowy boulders, basalt columns, obsidian, lava rock, sea stacks, glass spires, salt pillars, glass shards. Too big for Earth to lift (a rock is what Earth lifts).',
     },
-    hay: { label: 'Hay bundle', group: 'Nature', props: { seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned'] },
+    hay: { label: 'Hay bundle', group: 'Nature', props: { seed: SEED, fuel: num('Burns for (s; 0 = loose hay)', 0, 0, 30, 0.5), hidden: HIDDEN }, signals: ['burning', 'burned'] },
 
     // ---- elements -----------------------------------------------------------------
     brazier: { label: 'Brazier (fire source)', group: 'Elements', props: { seed: SEED, hidden: HIDDEN } },
@@ -399,6 +399,8 @@ export const REACTION_EVENTS = {
     gentleSet: 'The player sets a stone down softly on a plate',
     roughSet: 'The player drops or throws a stone onto a plate',
     creatureDown: 'The player kills a creature (match: { species } for one kind)',
+    playerDouse: 'The player puts a fire out with water (match: { id: "Drill_*" } for some)',
+    burnedOut: 'Something burns away (match: { id } to pick it)',
 };
 
 /** A new object of `type` with every prop at its default. */

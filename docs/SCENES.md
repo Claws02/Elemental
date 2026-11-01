@@ -105,7 +105,7 @@ A scene with a `script` is a story scene. Its lines are spoken by the character 
 ```
 
 - On entering a step: its lines (`say`), then its actions (`do`). `mark` puts the Earth ring over an object, and the speaker points at it.
-- `waiting`: while in the step, each time a condition *becomes* true, say and do something.
+- `waiting`: while in the step, each time a condition *becomes* true, say and do something. With `fresh: true` an entry already true as the step begins waits for the next change (a drill's relight, counted across steps).
 - `ends`: the first ending whose condition holds finishes the step: its lines, its actions, then the `next` step (or the one after it; `done` ends the story). An ending can set the `outcome` the card and the save read. (`until` + `then` is shorthand for one ending.)
 - `choices`: a list of `{ label, flag?, say?, do?, next? }`. When the step's lines are done, the replies show as buttons; the pick sets its `flag` `{name, value}`, runs its lines and actions, then goes to its `next`.
 - A line starting `@Name ` is spoken by that character instead of the speaker (`"@Bram Watch the sparks!"`). `{name}` is the player's name from the character creator.

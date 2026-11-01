@@ -61,9 +61,40 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     const s = scr(f.thing.pos()); E.water.aimStream(s.x, s.y); await W(500);
   }
   E.water.endStream?.();
-  await skip(() => E.story.step === 'sluice');
+  await skip(() => E.story.step === 'flock');
   out.outs = outs; out.dist = [...E.fire.flammables.values()].filter(f => /Camp/.test(f.thing.id)).slice(0,3).map(f => +f.thing.pos().distanceTo(E.player.position).toFixed(1));
   out.camp = { flag: E.prog.flags['lesson2.camp'], care: E.ledger.get('care'), step: E.story.step };
+  // The flock the smoke drew: revealed, and the story waits until it's gone.
+  await skip(() => !E.story.talking);
+  const birds = E.creatures.all.filter(c => c.group.item.id === 'Cistern_Flock');
+  out.flock = { step: E.story.step, birds: birds.length, up: birds.every(c => !c.gone) };
+  for (const c of birds) c.react('water', 999, 'player');
+  await skip(() => E.story.step === 'drill'); await skip(() => !E.story.talking);
+  out.flock.after = E.story.step;
+  // The drill: a real douse on a bundle Cael lit is Water Control, and the next bundle catches. One that burns away
+  // first is replaced (renewed) and the turn passes on.
+  const lit = () => [...E.fire.flammables.values()].filter(f => f.burning && /^Drill_Hay/.test(f.thing.id));
+  const c0 = E.prog.control('water'), orb0 = E.prog.can('orb');
+  at(5.5, -8); E.cam.yaw = Math.PI - 0.3; await W(400);
+  E.water.beginStream(pool);
+  let doused = null;
+  for (let k = 0; k < 80 && !doused; k++) {
+    const f = lit()[0];
+    if (f) { const s = scr(f.thing.pos()); E.water.aimStream(s.x, s.y); }
+    await W(150);
+    doused = outs.find(o => o.startsWith('D:Drill_'));
+  }
+  E.water.endStream?.(); await W(800);
+  out.drill = { outs: outs.filter(o => /Drill/.test(o)), doused, c: +(E.prog.control('water') - c0).toFixed(3), next: lit().map(f => f.thing.id), orb0, objective: document.querySelector('#hud-objective .text')?.textContent };
+  E.prog.els.water.control = 0.2;                          // the rest of the drill: level 3
+  await skip(() => E.story.step === 'orb'); await skip(() => !E.story.talking);
+  out.orb = { step: E.story.step, learned: E.prog.flags['learned.orb'], can: E.prog.can('orb') };
+  // Tear it free and throw it.
+  E.water.beginStream(pool); await W(300);
+  const orb = E.water.snap();
+  if (orb) E.channel.throwEntry(orb.entry, new E.THREE.Vector3(1, 0.2, 0).normalize(), 10, 'water');
+  await skip(() => E.story.step === 'sluice');
+  out.orb.thrown = !!orb; out.orb.after = E.story.step;
   // The wheel.
   at(3.5, 9); E.cam.yaw = Math.PI - 0.6; await W(800);
   E.water.beginStream(pool);
@@ -71,7 +102,11 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
   for (let k = 0; k < 24 && !E.world.signal('Sluice_Wheel', 'spun'); k++) { const s = scr(new E.THREE.Vector3(w.x, w.y, w.z)); E.water.aimStream(s.x, s.y); await W(500); }
   out.wheel = { spun: E.world.signal('Sluice_Wheel', 'spun'), turning: E.world.signal('Sluice_Wheel', 'turning') };
   E.water.endStream?.();
+  await skip(() => E.story.step === 'ready'); await skip(() => !E.story.talking);
+  out.ready = { step: E.story.step, objective: document.querySelector('#hud-objective .text')?.textContent };
+  E.prog.els.water.control = 0.3;                          // level 4: ready
   await skip(() => E.story.step === 'onward'); await W(2000);
+  out.ready.unready = E.prog.flags['lesson2.unready'] ?? null;
   out.gate = { open: E.world.signal('Sluice_Gate', 'open'), step: E.story.step, lesson2: E.prog.flags.lesson2 };
   at(0, 44); await W(1500);
   out.end = E.story.step;
@@ -83,6 +118,11 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     check(r.road.cael === 'lead' && r.road.bram === 'follow', `Cael leads south to the cistern, Bram follows (${JSON.stringify(r.road)})`);
     check(r.smoke.step === 'smoke' && r.smoke.burning >= 1 && r.smoke.canWater && r.smoke.water === 'trained', `at the cistern the cart catches; Water answers now, trained (${JSON.stringify(r.smoke)})`);
     check(r.began && r.outs.some(o => o.startsWith('D:Camp_')) && r.camp.flag === 'saved' && r.camp.care > 0, `a stream drawn from the pool and aimed puts the fire out: the camp saved, and it's care (${JSON.stringify({ outs: r.outs, camp: r.camp })})`);
+    check(r.flock.step === 'flock' && r.flock.birds >= 2 && r.flock.up && r.flock.after === 'drill', `the smoke draws a flock of Emberwings: a fight, and the lesson waits until they're grounded (${JSON.stringify(r.flock)})`);
+    check(r.drill.doused && Math.abs(r.drill.c - 0.03) < 0.001 && r.drill.next.length === 1 && 'D:' + r.drill.next[0] !== r.drill.doused && !r.drill.orb0 && /Water Control \d+ of 3/.test(r.drill.objective || ''),
+        `the drill: Cael lights a bundle; put out, it's Water Control (+0.03) and the next one catches (a burned one is renewed); no orb yet (${JSON.stringify(r.drill)})`);
+    check(r.orb.step === 'orb' && r.orb.learned === 'yes' && r.orb.can && r.orb.thrown && r.orb.after === 'sluice', `at Water Control 3 the orb is taught: torn free and thrown, the lesson moves on (${JSON.stringify(r.orb)})`);
+    check(r.ready.step === 'ready' && /Water Control \d+ of 4/.test(r.ready.objective || '') && r.ready.unready === null, `the soft gate: practise to Water Control 4, and Cael calls it ready (${JSON.stringify(r.ready)})`);
     check(r.wheel.spun && r.gate.open, `a stream held on the wheel turns it, and the sluice gate rises (${JSON.stringify({ wheel: r.wheel, gate: r.gate })})`);
     check(r.gate.lesson2 === 'done' && r.end === 'done', `on south through the throat: Lesson II told (${JSON.stringify({ gate: r.gate, end: r.end })})`);
     check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.slice(0, 3).join(' | ') : ''));

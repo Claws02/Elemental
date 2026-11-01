@@ -42,6 +42,8 @@ const EVENTS = {
     gentleSet:   [[EV.PLATE, e => e.gentle]],          // a stone set down softly on a plate (the yard's drill)
     roughSet:    [[EV.PLATE, e => !e.gentle]],         // …dropped or thrown onto one
     creatureDown: [[EV.CREATURE, e => e.to === 'dead' && e.cause === 'player']],   // `match: { species }` for one kind
+    playerDouse: [[EV.FIRE_OUT, e => e.cause === 'player' && e.doused]],       // a fire the player put out with water (`match: { id: 'Drill_*' }`)
+    burnedOut:   [[EV.FIRE_OUT, e => e.burnedOut]],                            // something burned away (a drill's target, too slow)
 };
 
 export class Story {
@@ -72,7 +74,8 @@ export class Story {
         for (const r of this.reactions) {
             // `match` picks events by their fields (a creature's species); `when` is a condition that must hold.
             for (const [type, ok] of EVENTS[r.on] || []) this.off.push(EventBus.on(type, e => {
-                if (ok(e) && (!r.match || Object.entries(r.match).every(([k, v]) => e[k] === v)) && (!r.when || this.test(r.when))) this._react(r);
+                const is = (got, want) => typeof want === 'string' && want.endsWith('*') ? String(got ?? '').startsWith(want.slice(0, -1)) : got === want;      // 'Drill_*': a prefix
+                if (ok(e) && (!r.match || Object.entries(r.match).every(([k, v]) => is(e[k], v))) && (!r.when || this.test(r.when))) this._react(r);
             }));
         }
         EventBus.emit(EV.LESSON, { id: this.id, step: 'start' });
@@ -214,7 +217,10 @@ export class Story {
         case 'npc': { const n = this.world.objects.get(v.id)?.npc; if (v.at) n?.placeAt(v.at.x, v.at.z); n?.setRole(v.role, v.target, v.route); break; }
         case 'ignite': {                // set alight everything whose id starts with one of `prefix`, not on the player's account
             const pre = String(v.prefix || '').split(',').map(x => x.trim()).filter(Boolean);
-            for (const t of this.world.sys?.interactables?.things || []) if (pre.some(x => t.id.startsWith(x)) && !this.fire.isBurning(t)) this.fire.ignite(t, 'environment', { direct: true });
+            for (const t of this.world.sys?.interactables?.things || []) if (pre.some(x => t.id.startsWith(x)) && !this.fire.isBurning(t)) {
+                if (v.dry) { this.fire.renew?.(t); this.fire.dry?.(t); }      // a drill's target: whole and dry first, so it catches again
+                this.fire.ignite(t, 'environment', { direct: true });
+            }
             break;
         }
         case 'water': {                 // every water whose id starts with one of `prefix` (comma-separated)
@@ -260,6 +266,8 @@ export class Story {
         this._mark(null);
         EventBus.emit(EV.LESSON, { id: this.id, step: this.step });
         if (!s) return;
+        // A `fresh` waiting entry answers only what changes from here on: true already as the step begins, it waits.
+        (s.waiting || []).forEach((w, i) => { if (w.fresh) this.edges.set(i, this.test(w.when)); });
         this.say(s.say);
         this.act(s.do);
     }

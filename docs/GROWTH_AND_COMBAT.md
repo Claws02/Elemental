@@ -33,6 +33,8 @@ Give Fire, Water and Air their own Power and Control curves in `src/data/growth.
 
 ### 2.2 Techniques you earn, not just get
 
+> ✅ **Water built** (2026-11-01): the orb (tearing the stream free) at Water Control 3; below it a yank or a flick just lets the stream go. An unsure stream drifts off its mark (0.45 m at Control 1, none at 11). Lesson II grants +0.05 for the camp saved and +0.05 for the sluice, not +0.3.
+>
 > ✅ **Earth built** (2026-10-30): pull at Earth Control 3, raise at 4, catch at 5 (`ABILITIES` in `data/growth.js`; taught *and* sure enough). Lesson I now grants +0.2 Control the quiet way (level 3), +0.1 the loud way (level 2), not +0.6. Fire, Water and Air ladders: not yet.
 
 Each element gets a ladder of techniques at Control levels (Power alone never unlocks one: the brief's "more powerful, never automatically wiser").
@@ -50,6 +52,8 @@ Cael (and later Kestrel and the Tidekeepers) teach each one in a short lesson wh
 
 ### 2.3 Learning control is play
 
+> ✅ **Water built:** the Cistern's drill: Cael lights three bound hay bundles east of the pool one at a time; each one you put out is +0.03 Water Control (to level 6); one that burns away first is ash, the turn passes, and he renews it. Water Control 3 teaches the orb; **soft gate** at 4 before Saltmere (`lesson2.unready`; Cael remembers it at the sea wall).
+>
 > ✅ **Earth built:** the Thornwick yard's drill: three plates at eye level; a stone set down softly is +0.03 Earth Control (a drop teaches nothing; once per let-go), up to level 6. Cael won't teach the pull until level 3; raising waits on 4. **The soft gate:** level 5 is ready for the Watchstone; walk out of the yard before then and you go anyway (`act1.unready`), and Cael tells you to stay behind him at the ruin.
 
 - **Drills.** Each lesson leaves behind a drill you can repeat at any camp or training ground. A Thornwick-yard style course per element: hold a stone through a swaying gate, light only the marked lantern, put out five fires without soaking the hay, deflect three stones. Graded by how cleanly you do it; only clean runs grow Control.
@@ -58,6 +62,8 @@ Cael (and later Kestrel and the Tidekeepers) teach each one in a short lesson wh
 
 ### 2.4 More fighting, and fighting that teaches
 
+> ✅ **Water built:** the smoke from the burning camp draws a flock of Emberwings (required): a stream grounds them.
+>
 > ✅ **Earth built:** the Oruun Gate's road fight (three Thornhounds off the pass, scree to throw: required). The Thornwick hunt (Brask asks about the boar in the north fields: optional; killed, it's `hunt.boar`, care in the Reach, Brask's lines change). Making the Stonebound yield is +0.05 Earth Control: a clean fight.
 
 - **A fight on every road.** Each road chapter gets an encounter built for its lesson. At the Oruun Gate, Thornhounds test your stone throwing. On the cistern road, Mudlings test the new Water. At the Cold Forge, Cindermites test held Fire.

@@ -45,6 +45,11 @@ S.add('Camp_Tent_1', 'tent', -10, -1, 0.4, { size: 3.2, colour: 'ochre', seed: 3
 S.add('Camp_Tent_2', 'tent', -10.5, 6, -0.3, { size: 3, colour: 'blue', seed: 4, owner: 'civilian' }, 2);
 S.add('Camp_Cart', 'stall', -8, 2.6, 1.3, { width: 2, awning: 'green', seed: 5, owner: 'civilian' }, 1);
 for (let i = 0; i < 3; i++) S.add(`Camp_Hay_${i + 1}`, 'hay', -8.5 + i * 1.1, -5 - (i % 2) * 0.8, 0, { seed: 90 + i, owner: 'civilian' }, 1);
+// The drill (docs/GROWTH_AND_COMBAT.md §2.3): bundles on the east side of the pool, far enough apart that a sure stream
+// puts out the one that's burning and leaves the others dry. Cael lights them, one at a time.
+for (let i = 0; i < 3; i++) S.add(`Drill_Hay_${i + 1}`, 'hay', 8.5 + (i % 2) * 1.2, -5 + i * 3, 0, { seed: 120 + i, fuel: 9, owner: 'none' }, 1);      // bound tight: it smoulders long enough to aim
+// The flock the smoke draws: Emberwings, like the ones that came for you in Veyra. Wet wings don't fly.
+S.add('Cistern_Flock', 'creature', -4, -16, 0, { species: 'emberwing', count: 4, spread: 4, aggressive: true, hidden: true });
 // Cael and Bram: Bram caught up with you at the border.
 S.add('Cael', 'npc', 2.5, -98, 0, { name: 'Cael', look: 'cael', role: 'idle', showWhen: 'act1.ruin, !lesson2' });
 S.add('Bram', 'npc', -2.5, -99, 0, { name: 'Bram', look: 'bram', role: 'idle', showWhen: 'act1.ruin' });
@@ -61,10 +66,19 @@ L.paint((x, z, h, sl, cur) => cur !== 0 ? null : sl > 0.6 ? 'rock' : null);
 
 // ---- the story: Bram; the burning camp; the sluice; on to Saltmere ----
 const fire = v => ({ flag: { name: 'veyra.fire', is: v } });
+// The drill relights a bundle each time one goes out, put out or burned away, round the three (whole and dry first).
+const RELIGHT = Array.from({ length: 40 }, (_, n) => ({ fresh: true, when: { count: { name: 'drillTurns', min: n + 1 } }, do: [{ ignite: { prefix: `Drill_Hay_${(n + 1) % 3 + 1}`, dry: true } }] }));
 const script = {
     id: 'Cistern', speaker: 'Cael', face: 'Bram', when: 'act1.ruin', flags: {},
     reactions: [
         { on: 'playerFire', count: 'fires', throttle: 16, lines: [['@Cael Water, today. Not that.'], ['@Bram Hey! We’re putting fires OUT.']] },
+        // The drill: each bundle put out is Water Control (up to level 6).
+        { on: 'playerDouse', match: { id: 'Drill_Hay_*' }, count: 'drillTurns', when: { not: { level: { el: 'water', atLeast: 6 } } },
+          do: [{ grant: { el: 'water', track: 'control', amount: 0.03 } }],
+          lines: [['@Cael Out. Next.'], [], ['@Bram You’re getting quicker. I think. I’m not counting.'], [], ['@Cael Only what’s burning. Good.']], cycle: false },
+        { on: 'playerThrow', match: { element: 'water' }, count: 'orbs' },
+        // Too slow, and it's ash: the turn passes (Cael lights the next), and it teaches nothing.
+        { on: 'burnedOut', match: { id: 'Drill_Hay_*' }, count: 'drillTurns', lines: [['@Cael Too slow. It\u2019s ash. Again.'], ['@Cael Quicker. Before it takes.']], cycle: true, throttle: 4 },
     ],
     steps: [
         { id: 'bram',
@@ -93,15 +107,40 @@ const script = {
         { id: 'camp', ends: [
             { when: { many: { prefix: 'Camp_Tent', signal: 'burned', min: 1 } }, say: ['@Cael Some of it’s gone. You saved the rest. That counts.', '@Bram Whoever owns that tent is going to be furious. Not at us. Probably.'], do: [{ setFlag: { name: 'lesson2.camp', value: 'some' } }] },
             { when: { time: 0 }, say: ['@Cael All of it, and nothing drowned that didn’t need to be. Good.', '@Bram That was… that was amazing. You were amazing. Don’t let it go to your head.'],
-              do: [{ setFlag: { name: 'lesson2.camp', value: 'saved' } }, { grant: { el: 'water', track: 'control', amount: 0.15 } }] } ] },
+              do: [{ setFlag: { name: 'lesson2.camp', value: 'saved' } }, { grant: { el: 'water', track: 'control', amount: 0.05 } }] } ] },
+        // The smoke draws a flock (the first fight on this road: required). A stream grounds them.
+        { id: 'flock', do: [{ checkpoint: true }, { reveal: ['Cistern_Flock'] }, { hint: 'Hold the stream on a bird: wet wings don\u2019t fly. Then finish it.' }],
+          say: ['@Bram Birds! Those are the ones from home!', '@Cael The smoke drew them. They follow fire.', '@Cael Wet wings don\u2019t fly. Ground them before they light the tents again.'],
+          objective: 'Ground the Emberwings with water', mark: 'Cistern_Flock', fight: ['Cistern_Flock'],
+          waiting: [{ when: { time: 30 }, say: ['@Cael Keep the pool behind you. The water reaches no further than it\u2019s let.'] }],
+          until: { signal: { obj: 'Cistern_Flock', name: 'gone' } },
+          then: { say: ['@Cael That\u2019s what water\u2019s for, mostly. Not the drowning. The putting out.'] } },
+        // The drill: Cael lights the bundles one at a time; each one put out is Water Control. At level 3, the orb.
+        { id: 'drill', do: [{ npc: { id: 'Cael', role: 'walk', target: { x: 12, z: -6 } } }, { ignite: { prefix: 'Drill_Hay_1', dry: true } }],
+          say: ['@Cael Again. Smaller. I\u2019ll light, you put out.', '@Cael Only what\u2019s burning. The rest stays dry.'],
+          objective: 'Put out each bundle Cael lights · Water Control {water.control} of 3', mark: 'Drill_Hay_2',
+          waiting: RELIGHT,
+          until: { level: { el: 'water', atLeast: 3 } },
+          then: { say: ['@Cael Steadier. It goes where you mean it now.'], do: [{ setFlag: { name: 'learned.orb', value: 'yes' } }] } },
+        { id: 'orb', do: [{ ignite: { prefix: 'Drill_Hay_2', dry: true } }, { hint: 'Draw a stream, then pull your finger away hard, or flick: the water tears free into an orb. Flick it at the fire.' }],
+          say: ['@Cael Now tear it free. Pull away from the pool, hard, and it comes with you.', '@Cael Then throw it.'],
+          objective: 'Tear the water free and throw it', mark: 'Drill_Hay_2', waiting: RELIGHT,
+          until: { count: { name: 'orbs', min: 1 } } },
         // Then the sluice: the Oruun opened it with water, not hands.
         { id: 'sluice', do: [{ npc: { id: 'Cael', role: 'walk', target: { x: 3, z: 11 } } }],
           say: ['@Cael The road runs on under the sluice. The Oruun opened it with water, not hands.', '@Cael The wheel. Put a stream on it and hold it there.'],
           objective: 'Turn the wheel with a stream of water', mark: 'Sluice_Wheel',
           waiting: [{ when: { time: 40 }, say: ['@Bram Maybe get closer to the wheel? I’m just saying. I don’t know water.'] }],
           until: { signal: { obj: 'Sluice_Wheel', name: 'spun' } },
-          then: { do: [{ do: { obj: 'Sluice_Gate', action: 'open' } }, { grant: { el: 'water', track: 'control', amount: 0.15 } }],
+          then: { do: [{ do: { obj: 'Sluice_Gate', action: 'open' } }, { grant: { el: 'water', track: 'control', amount: 0.05 } }],
                   say: ['@Bram It’s going up! The whole thing’s going up!', '@Cael Water doesn’t push. It persuades. Remember that.'] } },
+        // The soft gate: Water Control 4 is ready for Saltmere's sea; go south before then and you go anyway.
+        { id: 'ready', do: [{ ignite: { prefix: 'Drill_Hay_3', dry: true } }],
+          say: ['@Cael Saltmere\u2019s sea won\u2019t wait for you to be sure. It would help, though.'],
+          objective: 'Practise at the bundles until you\u2019re sure (Water Control {water.control} of 4), or go on south', mark: 'Drill_Hay_3', waiting: RELIGHT,
+          ends: [{ when: { level: { el: 'water', atLeast: 4 } }, say: ['@Cael Good. Now the sea.'], next: 'onward' },
+                 { when: { not: { signal: { obj: 'Zone_Cistern', name: 'inside' } } }, say: ['@Cael Already? All right. Stay close at the wall.'],
+                   do: [{ setFlag: { name: 'lesson2.unready', value: 'true' } }], next: 'onward' }] },
         { id: 'onward', do: [{ setFlag: { name: 'lesson2', value: 'done' } }, { checkpoint: true }, { npc: { id: 'Cael', role: 'lead', route: '0,14; 0,24; -1,40; -1,52' } }],
           say: ['@Cael Saltmere’s past the throat. The sea, and a town that lives with it.'],
           objective: 'Follow Cael south to Saltmere', mark: 'Cael', until: { signal: { obj: 'Zone_South', name: 'inside' } } },

@@ -99,8 +99,9 @@ const SHOTS = process.env.QA_SHOTS || path.join(__dirname, 'shots');
             __EL.intent.state = 'stream';
             __EL.channel.aimAt(__EL.water.stream.cur, 'water');
             await __gt(0.3);
-            const a = r.shoulder[1].rotation.x; await __gt(0.35); const b = r.shoulder[1].rotation.x;
-            flow = { mode: A.mode, moved: +Math.abs(a - b).toFixed(2) };
+            // The arm's flow is periodic: two samples can land on the same phase, so take its swing over several.
+            const xs = []; for (let k = 0; k < 6; k++) { xs.push(r.shoulder[1].rotation.x); await __gt(0.12); }
+            flow = { mode: A.mode, moved: +(Math.max(...xs) - Math.min(...xs)).toFixed(2) };
             __EL.water.collapse(); __EL.intent._cancel(); __EL.channel.aimAt(null);
         }
         // The throw: the arm whips through and follows on across the body.

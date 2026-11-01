@@ -70,10 +70,10 @@ export class FireSystem {
 
     // ---- registration ----------------------------------------------------
 
-    /** `size` (metres across, default 1): a bigger piece burns longer and throws its fire further. */
-    addFlammable(thing, { onBurn = null, size = 1 } = {}) {
+    /** `size` (metres across, default 1): a bigger piece burns longer and throws its fire further. `fuel`: its own seconds of burning. */
+    addFlammable(thing, { onBurn = null, size = 1, fuel: own = 0 } = {}) {
         const fl = thing.mat.flammable;
-        const k = Math.max(1, Math.min(2.2, size)), fuel = fl.fuel * k, reach = (fl.reach || FIRE.spreadRadius) + (k - 1) * 0.9;
+        const k = Math.max(1, Math.min(2.2, size)), fuel = own || fl.fuel * k, reach = (fl.reach || FIRE.spreadRadius) + (k - 1) * 0.9;
         this.flammables.set(thing, { thing, heat: 0, burning: false, burned: false, fuel, fuelMax: fuel, ignitesAt: fl.ignitesAt, flash: fl.flash || 0, reach: size > 1 ? reach : fl.reach || 0, cause: null, heatCause: null, onBurn, wet: 0, dryCol: null });
     }
 
@@ -221,6 +221,26 @@ export class FireSystem {
         this.live.add(f);
         if (first) EventBus.emit(EV.OBJECT_SOAKED, { id: thing.id, cause });
         return true;
+    }
+
+    /** Whole again, a burned thing: unburnt, its colour and size back (a drill's target the story relights). */
+    renew(thing) {
+        const f = this.flammables.get(thing);
+        if (!f?.burned) return;
+        this.reset(thing);
+        thing.mesh.scale.set(1, 1, 1);
+        const m = thing.mesh.userData.ownMaterials?.body;
+        if (m) { m.color.setScalar(1); m.emissiveIntensity = 0; }
+    }
+
+    /** Dry it at once (a drill's target, relit by the story): as if it had dried out in the sun. */
+    dry(thing) {
+        const f = this.flammables.get(thing);
+        if (!f || !f.wet) return;
+        f.wet = 0;
+        const m = thing.mesh.userData.ownMaterials?.body;
+        if (m && f.dryCol && !f.burned) m.color.copy(f.dryCol);
+        f.dryCol = null;
     }
 
     /** Water on hot stone: it cools fast and steams. */

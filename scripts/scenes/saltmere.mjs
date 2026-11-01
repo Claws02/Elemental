@@ -132,6 +132,7 @@ const script = {
           say: ['@Nerys The tide’s turned in. Here it comes.', '@Cael Three sockets, three stones. Set them. Don’t drop them.'],
           objective: 'Set a stone on each of the wall’s three sockets', mark: 'Breach_Socket_2',
           waiting: [{ when: sockets(1), say: ['@Cael One.'] }, { when: sockets(2), say: ['@Bram Two! One more!'] },
+                    { when: { all: [{ flag: { name: 'lesson2.unready' } }, { time: 4 }] }, say: ['@Cael Stay close. You left the cistern before you were sure.'] },      // the soft gate, remembered
                     { when: { time: 45 }, say: ['@Nerys It’s over the sill! Lowtown’s taking water!'] },
                     { when: { time: 75 }, say: ['@Oriel_Wall Faster, Conduit, or there’ll be no Lowtown left to argue about.'] }],
           ends: [{ when: { all: [sockets(3), { not: { time: 50 } }] }, do: [{ setFlag: { name: 'saltmere.wall', value: 'held' } }], next: 'sealed' },

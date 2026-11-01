@@ -328,7 +328,7 @@ export const CATALOG = {
             ctx.world.props.push(prop);
             return {
                 mesh: m, entries: [], prop,
-                wire(sys) { prop.thing = sys.interactables.add({ id: it.id, mesh: m, material: 'hay' }); sys.fire.addFlammable(prop.thing); },
+                wire(sys) { prop.thing = sys.interactables.add({ id: it.id, mesh: m, material: 'hay' }); sys.fire.addFlammable(prop.thing, { fuel: it.fuel || 0 }); },      // `fuel`: a bound bundle burns longer
                 signal: (name, sys) => name === 'burning' ? !!prop.thing && sys.fire.isBurning(prop.thing) : name === 'burned' ? !!prop.thing && sys.fire.isBurned(prop.thing) : false,
             };
         },

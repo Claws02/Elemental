@@ -29,11 +29,11 @@ Two tracks per element, 0 to 1, shown as levels 1 to 11.
 | How it grows | With use: cheaply, and most with destruction and fighting | Only through training and restraint (Cael's lessons) |
 | Earth | How heavy a stone you can lift (4 → 25), how hard you throw (24 → 36 m/s) | How steady a held stone is (sway 0.12 m → 0), how softly a set-down lands |
 | Fire | Fireball size (0.34 → 0.54 m) and hit (22 → 55); the jet's reach (12 → 20 m) and heat (40 → 90 /s) | How long a thrown fireball holds together (4 → 7 s), how fast a stone heats in your grip (×1 → ×2) |
-| Water | The stream's reach (8 → 16 m) and draw (12 → 18 m), its shove (×1 → ×2), what it does to a creature (×1 → ×2.5), an orb's burst | How fast a fire goes out under it (0.8 → 0.4 s) |
+| Water | The stream's reach (8 → 16 m) and draw (12 → 18 m), its shove (×1 → ×2), what it does to a creature (×1 → ×2.5), an orb's burst | How far it drifts off your aim (0.45 m → 0), how fast a fire goes out under it (0.8 → 0.4 s) |
 | Air | Wind and gust reach (7 → 12 m, 9 → 15 m), their push (gust ×1 → ×2) | How tight the wind's cone is (a gust's half-angle 0.6 → 0.36 rad: it hits what you aim at, spares what's beside it), how slowly a glide sinks (1.6 → 0.96 m/s) |
 | Gains | A throw +0.01 (fireball, orb, stone); a fire doused +0.01; a gust +0.006; a piece broken +0.02 (Earth); wild Fire, a fire lit +0.03; **in a fight**, +0.002 per 10 damage and +0.015 a kill, to the element that did it (about 4–5 kills a level) | The lessons' grants (Lesson I: +0.05, +0.05, +0.1 the quiet way); the yard's drill (+0.03 a soft set-down, to level 6); a clean fight (the Stonebound made to yield: +0.05) |
 
-**Techniques wait on Control** (`ABILITIES` in `growth.js`): taught in the story *and* sure enough. Earth: pull a stone from the ground at Control 3, raise a column at 4, catch a thrown stone at 5. Power never unlocks one.
+**Techniques wait on Control** (`ABILITIES` in `growth.js`): taught in the story *and* sure enough. Earth: pull a stone from the ground at Control 3, raise a column at 4, catch a thrown stone at 5. Water: tear the stream free into an orb at 3. Power never unlocks one.
 
 Level 1 of every track is the tuning before levels meant anything, so a level only ever adds. Control is precision, never less effect: a master can still break a plank on purpose. The curves are `GROWTH` in `src/data/growth.js` (each names its track); `Progression.stat(el, key)` reads one; the systems read them where they used to read a constant.
 

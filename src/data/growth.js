@@ -39,6 +39,7 @@ export const GROWTH = {
         hit:        [P, p => 4 * (1 + 1.5 * p)],       // what the spray does to a creature
         splash:     [P, p => 2 * (1 + 0.5 * p)],       // an orb's burst (WATER.splash)
         douseTime:  [C, c => 0.8 * (1 - 0.5 * c)],     // seconds of steady water a burning plank takes (FIRE.douseTime)
+        wander:     [C, c => 0.45 * (1 - c)],          // metres an unsure stream drifts off where you aim it (0 for a sure one)
     },
     air: {
         windLen:    [P, p => 7 + 5 * p],               // metres the steady wind reaches (AIR.windLen)
@@ -55,7 +56,7 @@ export const GROWTH = {
 export const WHAT = {
     earth: { power: 'Heavier stones answer you, and you throw harder.', control: 'A held stone sways less and sets down softer.' },
     fire:  { power: 'Bigger fireballs that hit harder; the jet burns hotter and reaches further.', control: 'Your fireballs hold together further, and a stone heats faster in your grip.' },
-    water: { power: 'The stream reaches further, shoves harder and hits harder.', control: 'Fires go out sooner under your stream.' },
+    water: { power: 'The stream reaches further, shoves harder and hits harder.', control: 'Your stream drifts less off its mark, and fires go out sooner under it.' },
     air:   { power: 'Wind and gusts reach further and push harder.', control: 'Your wind hits what you aim at and spares what\'s beside it, and a glide carries you further.' },
 };
 
@@ -107,6 +108,7 @@ export const ABILITIES = {
     pull:      { name: 'Pull stone',  needs: ['earth'], control: 3 },
     raise:     { name: 'Raise stone', needs: ['earth'], control: 4 },
     catch:     { name: 'Catch stone', needs: ['earth'], control: 5 },
+    orb:       { name: 'Water orb',   needs: ['water'], control: 3 },
     freeze:    { name: 'Ice',         needs: ['water', 'air'] },
     lava:      { name: 'Lava',        needs: ['earth', 'fire'] },
     firestorm: { name: 'Firestorm',   needs: ['fire', 'air'] },

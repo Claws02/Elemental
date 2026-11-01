@@ -3540,6 +3540,23 @@
      },
      {
       "when": {
+       "all": [
+        {
+         "flag": {
+          "name": "lesson2.unready"
+         }
+        },
+        {
+         "time": 4
+        }
+       ]
+      },
+      "say": [
+       "@Cael Stay close. You left the cistern before you were sure."
+      ]
+     },
+     {
+      "when": {
        "time": 45
       },
       "say": [

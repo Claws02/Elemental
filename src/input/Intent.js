@@ -282,7 +282,7 @@ export class Intent {
             return null;
         case 'stream':
             this.water.aimStream(x, y);
-            if (this._yanked(x, y, t)) this._tearFree();
+            if (this._yanked(x, y, t) && this.prog.can('orb')) this._tearFree();      // an orb waits on Water Control 3 (data/growth.js)
             return null;
         default:
             return null;
@@ -297,7 +297,7 @@ export class Intent {
         }
         if (this.state === 'holding') this.channel.release(r);
         else if (this.state === 'stream') {
-            if (r?.flick) {
+            if (r?.flick && this.prog.can('orb')) {
                 // A flick breaks the water off and throws it.
                 const orb = this.water.snap();
                 if (orb) { this.channel.grab(orb.entry, 'water', { lift: 0 }); this.channel.release(r); }
