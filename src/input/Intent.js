@@ -154,7 +154,7 @@ export class Intent {
         // fat-finger assist. The hero's touch area is generous, and must not
         // steal a touch that lands squarely on a rock at their feet.
         // A stone thrown at you, under the finger in the air: caught (Earth). First of all: it's coming.
-        const flying = this.prog.has('earth') && !this.hero.swimming && this.works ? this.creatures?.catchable?.(x, y, this.camera, RANGE) : null;
+        const flying = this.prog.can('catch') && !this.hero.swimming && this.works ? this.creatures?.catchable?.(x, y, this.camera, RANGE) : null;
         if (flying) {
             const k = this.works.adopt(flying.entry, flying.mesh);
             Object.assign(this, { x, y, ax: x, ay: y, thing: k.thing, t: 0, still: 0, state: 'holding', element: 'earth', pulled: null });

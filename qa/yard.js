@@ -77,8 +77,37 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const said = document.querySelector('#hud-say .line')?.textContent;
         return { hits: out, count: __EL.story.counters.yardHits, step: __EL.story.step, flag: __EL.prog.flags['act1.yard'], said };
     });
-    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'ground' && !throws.flag,
-        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Cael moves on to the ground (${JSON.stringify(throws)})`);
+    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'drill' && !throws.flag,
+        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Cael moves on to the drill (${JSON.stringify(throws)})`);
+
+    // The drill: a stone set softly on a plate is Earth Control; a drop isn't. Pull waits on Control 3.
+    const drill = await ev(async () => {
+        await __skip(() => !__EL.story.talking);
+        const plate = __EL.world.objects.get('Yard_Plate_1').plate, p = plate.pos, ch = __EL.channel;
+        const set = async gentle => {
+            const s = __pile()[0];
+            s.body.position.set(p.x + 1.2, p.y + 0.8, p.z); s.body.velocity.set(0, 0, 0);
+            ch.grab(s, 'earth');
+            ch.held.target.set(p.x, plate.top + s.data.radius + (gentle ? 0.1 : 2.2), p.z);
+            await __W(1800);
+            ch.release({});
+            await __W(2200);
+            const g = plate.gentle;
+            s.body.position.set(p.x + 3, p.y + 0.5, p.z); s.body.velocity.set(0, 0, 0);          // off the plate again
+            await __W(600);
+            return g;
+        };
+        __at(p.x + 2.5, p.z); await __W(400);
+        const c0 = __EL.prog.control('earth'), canPull0 = __EL.prog.can('pull');
+        const dropped = await set(false), c1 = __EL.prog.control('earth');
+        const soft = await set(true), c2 = __EL.prog.control('earth');
+        const objective = document.querySelector('#hud-objective .text')?.textContent, bar = document.querySelector('#hud-objective .bar i')?.style.width;
+        __EL.prog.els.earth.control = 0.2;                 // the rest of the drill (level 3)
+        await __W(800);
+        return { c0, dropped, c1, soft, c2: +c2.toFixed(3), canPull0, objective, bar, step: __EL.story.step };
+    });
+    check(!drill.dropped && drill.c1 === drill.c0 && drill.soft && Math.abs(drill.c2 - drill.c0 - 0.03) < 0.001 && !drill.canPull0 && /Earth Control \d+ of 3/.test(drill.objective || '') && drill.step === 'ground',
+        `the drill: a drop on the plate teaches nothing, a soft set-down is Earth Control (+0.03); the objective counts the level; at Control 3 the pull unlocks (${JSON.stringify(drill)})`);
 
     // Pull a stone up out of the ground (hold still on open ground), and throw it.
     const pull = await ev(async () => {
@@ -107,11 +136,16 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     check(pull.took && pull.state === 'holding' && /^Pulled_/.test(pull.id || '') && pull.pulled === 1 && pull.flag === 'yes' && pull.step === 'cover',
         `hold still on open ground: a stone tears up into your hand; thrown, the lesson moves on to cover (${JSON.stringify(pull)})`);
 
-    // Hold on past the stone: it sinks back and the ground rises as a column.
+    // Hold on past the stone: it sinks back and the ground rises as a column (Control 4).
     const cover = await ev(async () => {
         const I = __EL.intent, h = __EL.player.body.position, T = __EL.world.terrain;
         await __skip(() => !__EL.story.talking);
+        const unsure = __EL.prog.can('raise');
+        __EL.prog.els.earth.control = 0.3;
         const x = h.x - 4, z = h.z + 1, q = new __EL.THREE.Vector3(x, T.height(x, z), z).project(__EL.cam.cam);
+        // Bare ground: nothing loose lying where the hand goes (a stone there would be grabbed instead).
+        for (const e of __EL.world.rocks) { const b = e.body.position; if (Math.hypot(b.x - x, b.z - z) < 3) { b.set(x + 8, b.y + 1, z + 8); e.body.velocity.set(0, 0, 0); } }
+        await __W(200);
         const sx = (q.x + 1) / 2 * innerWidth, sy = (1 - q.y) / 2 * innerHeight;
         const stones0 = __EL.works.stones.length;
         I.press(sx, sy);
@@ -121,11 +155,38 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const col = __EL.works.columns[__EL.works.columns.length - 1];
         const out = { seen: [...seen], state: I.state, columns: __EL.works.columns.length, top: col && +col.top.toFixed(2), stonesBack: __EL.works.stones.length === stones0 };
         I.release?.({ vx: 0, vy: 0, speed: 0 }); I._cancel();
-        await __skip(() => __EL.story.step === 'gone');
-        return { ...out, step: __EL.story.step, flag: __EL.prog.flags['act1.yard'], raise: __EL.prog.flags['learned.raise'] };
+        await __skip(() => __EL.story.step === 'ready');
+        return { ...out, unsure, step: __EL.story.step, raise: __EL.prog.flags['learned.raise'], catch: __EL.prog.flags['learned.catch'], canCatch: __EL.prog.can('catch') };
     });
-    check(cover.seen.includes('holding') && cover.state === 'raising' && cover.columns >= 1 && cover.top > 0.5 && cover.stonesBack && cover.step === 'gone' && cover.flag === 'done' && cover.raise === 'yes',
-        `held still past the stone, it sinks back and a column of earth rises; then Cael goes ahead to the ruin (${JSON.stringify(cover)})`);
+    check(!cover.unsure && cover.seen.includes('holding') && cover.state === 'raising' && cover.columns >= 1 && cover.top > 0.5 && cover.stonesBack && cover.step === 'ready' && cover.raise === 'yes' && cover.catch === 'yes' && !cover.canCatch,
+        `raising waits on Control 4; held still past the stone, it sinks back and a column rises; catching is taught, but needs Control 5 (${JSON.stringify(cover)})`);
+
+    // The soft gate: walk out of the yard before Control 5 and you go anyway; Cael says so, and it's remembered.
+    const gate = await ev(async () => {
+        await __skip(() => !__EL.story.talking);
+        __at(30, -70); await __W(1500);
+        await __skip(() => __EL.story.step === 'gone');
+        return { step: __EL.story.step, unready: __EL.prog.flags['act1.unready'], flag: __EL.prog.flags['act1.yard'] };
+    });
+    check(gate.step === 'gone' && gate.unready === true && gate.flag === 'done', `walk out of the yard before you're ready (Control 4 of 5): you go anyway, remembered (${JSON.stringify(gate)})`);
+    const ready = await ev(async () => {
+        __EL.prog.flags['act1.unready'] = undefined; __EL.story.go('ready'); __at(30, -38); await __W(600);
+        __EL.prog.els.earth.control = 0.4; await __W(800);
+        await __skip(() => __EL.story.step === 'gone');
+        return { step: __EL.story.step, unready: __EL.prog.flags['act1.unready'] ?? null, canCatch: __EL.prog.can('catch') };
+    });
+    check(ready.step === 'gone' && ready.unready === null && ready.canCatch, `at Control 5 Cael calls you ready, and a thrown stone can be caught (${JSON.stringify(ready)})`);
+
+    // The hunt: the boar in the north fields. Killed, it's remembered, the Reach cares, and Brask says so.
+    const hunt = await ev(async () => {
+        const boar = __EL.creatures.all.find(c => c.group.item.id === 'Fields_Boar');
+        if (!boar) return { boar: false };
+        const care0 = __EL.ledger.get('care', 'verdant'), p0 = __EL.prog.power('earth');
+        boar.react('impact', 9999, 'player');
+        await __W(400);
+        return { boar: true, flag: __EL.prog.flags['hunt.boar'], care: +(__EL.ledger.get('care', 'verdant') - care0).toFixed(2), power: +(__EL.prog.power('earth') - p0).toFixed(3) };
+    });
+    check(hunt.boar && hunt.flag === 'done' && hunt.care >= 1 && hunt.power >= 0.015, `the hunt: the boar in the north fields killed is remembered, the Reach cares, and the kill grows Earth (${JSON.stringify(hunt)})`);
 
     const reset = await ev(async () => {
         await __W(9000);

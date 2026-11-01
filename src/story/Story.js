@@ -39,6 +39,9 @@ const EVENTS = {
     earthRaised: [[EV.EARTH_RAISED, e => e.cause === 'player']],
     stoneCaught: [[EV.STONE_CAUGHT, () => true]],
     pulledThrow: [[EV.OBJECT_THROWN, e => /^Pulled_|_stone_/.test(e.id || '')]],
+    gentleSet:   [[EV.PLATE, e => e.gentle]],          // a stone set down softly on a plate (the yard's drill)
+    roughSet:    [[EV.PLATE, e => !e.gentle]],         // …dropped or thrown onto one
+    creatureDown: [[EV.CREATURE, e => e.to === 'dead' && e.cause === 'player']],   // `match: { species }` for one kind
 };
 
 export class Story {
@@ -67,7 +70,10 @@ export class Story {
         this.reactions = (script.reactions || []).map(r => ({ ...r, saidAt: -99, said: 0 }));
         this.off = [];
         for (const r of this.reactions) {
-            for (const [type, ok] of EVENTS[r.on] || []) this.off.push(EventBus.on(type, e => { if (ok(e)) this._react(r); }));
+            // `match` picks events by their fields (a creature's species); `when` is a condition that must hold.
+            for (const [type, ok] of EVENTS[r.on] || []) this.off.push(EventBus.on(type, e => {
+                if (ok(e) && (!r.match || Object.entries(r.match).every(([k, v]) => e[k] === v)) && (!r.when || this.test(r.when))) this._react(r);
+            }));
         }
         EventBus.emit(EV.LESSON, { id: this.id, step: 'start' });
         // Resuming: at the checkpoint's step; a story already finished stays finished.
@@ -130,6 +136,7 @@ export class Story {
     _react(r) {
         if (r.count) this.counters[r.count] = (this.counters[r.count] || 0) + 1;
         if (r.flag) this.prog.flags[r.flag.name] = (this.prog.flags[r.flag.name] || 0) + r.flag.add;
+        this.act(r.do);                     // its actions, every time (a drill's Control, a hunt's reward)
         if (this.time - r.saidAt < (r.throttle ?? 0)) return;
         const lines = r.lines || [];
         if (!lines.length) return;
@@ -152,6 +159,7 @@ export class Story {
         switch (k) {
         case 'talking': return this.talking === !!v;
         case 'time': return this.t >= v;
+        case 'level': return this.prog.level(v.el, v.track || 'control') >= (v.atLeast ?? 1);     // an element's level, 1 … 11
         case 'held': return v === '*' ? !!held : held === v;
         case 'heldFor': return this.heldT >= v.secs;
         case 'signal': return this.world.signal(v.obj, v.name);
@@ -262,10 +270,27 @@ export class Story {
     }
 
     _objective(s, progress = null) {
-        if (!s?.objective) { this.hud.objective(null); return; }
+        if (!s?.objective) { this._objKey = null; this.hud.objective(null); return; }
         const hf = this._heldFor(s);
-        const text = hf ? s.objective.replace('{held}', Math.min(hf.secs, this.heldT).toFixed(1)) : s.objective;
+        const text = this.fill(hf ? s.objective.replace('{held}', Math.min(hf.secs, this.heldT).toFixed(1)) : s.objective);
+        // A step waiting on a level (a drill) shows how far there is to go: the bar fills toward it.
+        const lv = this._levelGoal(s);
+        if (lv) { const e = this.prog.els[lv.el], at = Math.min(e[lv.track || 'control'], 0.999) * 10 + 1; progress = Math.min(1, (at - 1) / Math.max(1, (lv.atLeast ?? 1) - 1)); }
+        const key = text + (hf ? this.heldT.toFixed(1) : '') + (progress ?? '');
+        if (key === this._objKey) return;
+        this._objKey = key;
         this.hud.objective(text, hf ? Math.min(1, this.heldT / hf.secs) : progress);
+    }
+
+    /** The `level` condition a step's endings wait on, if any (its `until`, or its first ending). */
+    _levelGoal(s) {
+        const find = c => {
+            if (!c) return null;
+            if (c.level) return c.level;
+            for (const k of ['all', 'any']) if (c[k]) for (const x of c[k]) { const f = find(x); if (f) return f; }
+            return null;
+        };
+        return find(s.until) || find(s.ends?.[0]?.when);
     }
 
     _heldFor(s) {
@@ -293,8 +318,8 @@ export class Story {
             const held = this.channel.held?.entry?.id === hf.obj;
             if (held) this.heldT += dt;
             else if (this.heldT > 0.3) { this.heldT = 0; this.say(hf.lost); }
-            this._objective(s);
         }
+        if (hf || this._levelGoal(s) || /\{/.test(s.objective || '')) this._objective(s);       // live: a timer, a level, a filled value
 
         (s.waiting || []).forEach((w, i) => {
             const now = this.test(w.when), was = this.edges.get(i) || false;

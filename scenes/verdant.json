@@ -6712,6 +6712,53 @@
    "role": "idle"
   },
   {
+   "id": "Yard_Plate_1",
+   "type": "plate",
+   "x": 28.5,
+   "y": 0,
+   "z": -44,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.3,
+   "gentleHeight": 0.6,
+   "chainTo": ""
+  },
+  {
+   "id": "Yard_Plate_2",
+   "type": "plate",
+   "x": 28.5,
+   "y": 0,
+   "z": -38,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.3,
+   "gentleHeight": 0.6,
+   "chainTo": ""
+  },
+  {
+   "id": "Yard_Plate_3",
+   "type": "plate",
+   "x": 28.5,
+   "y": 0,
+   "z": -32,
+   "rotY": 0,
+   "radius": 0.75,
+   "height": 1.3,
+   "gentleHeight": 0.6,
+   "chainTo": ""
+  },
+  {
+   "id": "Zone_Yard",
+   "type": "trigger",
+   "x": 30,
+   "y": 0,
+   "z": -38,
+   "rotY": 0,
+   "width": 30,
+   "depth": 26,
+   "height": 6
+  },
+  {
    "id": "Watchstone",
    "type": "standing_stone",
    "x": 34,
@@ -7026,6 +7073,85 @@
      []
     ],
     "cycle": false
+   },
+   {
+    "on": "gentleSet",
+    "count": "gentleSets",
+    "when": {
+     "not": {
+      "level": {
+       "el": "earth",
+       "atLeast": 6
+      }
+     }
+    },
+    "do": [
+     {
+      "grant": {
+       "el": "earth",
+       "track": "control",
+       "amount": 0.03
+      }
+     }
+    ],
+    "lines": [
+     [
+      "@Cael Softly. Like that."
+     ],
+     [],
+     [
+      "@Brask Steady hands."
+     ],
+     [],
+     [],
+     [
+      "@Cael Again. The same."
+     ]
+    ],
+    "cycle": false
+   },
+   {
+    "on": "roughSet",
+    "lines": [
+     [
+      "@Cael That was a drop. A drop teaches nothing."
+     ],
+     [
+      "@Cael Lower. Then let go."
+     ]
+    ],
+    "cycle": true,
+    "throttle": 6
+   },
+   {
+    "on": "creatureDown",
+    "match": {
+     "species": "bristleback"
+    },
+    "when": {
+     "not": {
+      "flag": {
+       "name": "hunt.boar"
+      }
+     }
+    },
+    "do": [
+     {
+      "setFlag": {
+       "name": "hunt.boar",
+       "value": "done"
+      }
+     },
+     {
+      "ledger": {
+       "tally": "care",
+       "add": 1
+      }
+     },
+     {
+      "hint": "The boar in the north fields is down. Brask will want to hear."
+     }
+    ]
    },
    {
     "on": "pulledThrow",
@@ -7697,6 +7823,32 @@
     }
    },
    {
+    "id": "drill",
+    "do": [
+     {
+      "hint": "Lift a stone and set it down on a plate: lower it close, then let go slowly. A drop doesn’t count."
+     }
+    ],
+    "say": [
+     "@Cael Throwing is the easy half.",
+     "@Cael Out there you’ll hold a stone over someone’s head and not drop it. Set them on the plates. Softly.",
+     "@Brask And when your hands are steady, there’s a boar tearing up the north fields. Nobody’s paid to see to it."
+    ],
+    "objective": "Set stones softly on the plates · Earth Control {earth.control} of 3",
+    "mark": "Yard_Plate_2",
+    "until": {
+     "level": {
+      "el": "earth",
+      "atLeast": 3
+     }
+    },
+    "then": {
+     "say": [
+      "@Cael There. Your hands are listening."
+     ]
+    }
+   },
+   {
     "id": "ground",
     "do": [
      {
@@ -7751,6 +7903,28 @@
     ],
     "objective": "Raise a column of earth",
     "mark": "Yard_Pile",
+    "waiting": [
+     {
+      "when": {
+       "all": [
+        {
+         "time": 6
+        },
+        {
+         "not": {
+          "level": {
+           "el": "earth",
+           "atLeast": 4
+          }
+         }
+        }
+       ]
+      },
+      "say": [
+       "@Cael Your hold isn’t sure enough for that yet. Back to the plates."
+      ]
+     }
+    ],
     "until": {
      "count": {
       "name": "raised",
@@ -7760,25 +7934,92 @@
     "then": {
      "say": [
       "@Cael Now imagine they throw back.",
-      "@Cael They will. Watch their hands: when a stone goes up, move. Or catch it, if you’re quick; touch it as it comes.",
-      "@Cael I’ll go ahead to the ruin. North, past the fields. Come when you’re ready; the yard’s here if you want more."
+      "@Cael They will. Watch their hands: when a stone goes up, move. Or catch it: touch it as it comes. That takes a sure hold."
      ],
      "do": [
       {
        "setFlag": {
-        "name": "act1.yard",
-        "value": "done"
-       }
-      },
-      {
-       "npc": {
-        "id": "Cael",
-        "role": "lead",
-        "route": "30,-48; 34,-80; 31,-92"
+        "name": "learned.catch",
+        "value": "yes"
        }
       }
      ]
     }
+   },
+   {
+    "id": "ready",
+    "objective": "Practise on the plates until you’re sure (Earth Control {earth.control} of 5), or go north to the ruin",
+    "mark": "Yard_Plate_2",
+    "say": [
+     "@Cael The Stonebound won’t be straw men.",
+     "@Cael Practise until a caught stone doesn’t frighten you. Or go now. It’s your neck."
+    ],
+    "ends": [
+     {
+      "when": {
+       "level": {
+        "el": "earth",
+        "atLeast": 5
+       }
+      },
+      "say": [
+       "@Cael That’s a sure hand.",
+       "@Cael I’ll go ahead to the ruin. North, past the fields. The yard’s here if you want more."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "act1.yard",
+         "value": "done"
+        }
+       },
+       {
+        "npc": {
+         "id": "Cael",
+         "role": "lead",
+         "route": "30,-48; 34,-80; 31,-92"
+        }
+       }
+      ],
+      "next": "gone"
+     },
+     {
+      "when": {
+       "not": {
+        "signal": {
+         "obj": "Zone_Yard",
+         "name": "inside"
+        }
+       }
+      },
+      "say": [
+       "@Cael Going already? You’re not ready for them.",
+       "@Cael …Then stay behind me when it starts."
+      ],
+      "do": [
+       {
+        "setFlag": {
+         "name": "act1.unready",
+         "value": "true"
+        }
+       },
+       {
+        "setFlag": {
+         "name": "act1.yard",
+         "value": "done"
+        }
+       },
+       {
+        "npc": {
+         "id": "Cael",
+         "role": "lead",
+         "route": "30,-48; 34,-80; 31,-92"
+        }
+       }
+      ],
+      "next": "gone"
+     }
+    ]
    },
    {
     "id": "gone",
@@ -7936,6 +8177,16 @@
       "say": [
        "@Cael_Ruin Watch their hands. When the stone goes up, move. When they raise a slab, wait for it to drop."
       ]
+     },
+     {
+      "when": {
+       "flag": {
+        "name": "act1.unready"
+       }
+      },
+      "say": [
+       "@Cael_Ruin Stay behind me. You came before you were ready."
+      ]
      }
     ],
     "until": {
@@ -7978,6 +8229,15 @@
      "@Cael_Ruin Because they think we’re the problem.",
      "@you Are we?",
      "@Cael_Ruin Not yet."
+    ],
+    "do": [
+     {
+      "grant": {
+       "el": "earth",
+       "track": "control",
+       "amount": 0.05
+      }
+     }
     ],
     "until": {
      "talking": false
@@ -8094,15 +8354,30 @@
     {
      "when": {
       "flag": {
+       "name": "hunt.boar"
+      }
+     },
+     "say": [
+      [
+       "Heard you put the boar down. The north fields’ll be planted by spring."
+      ],
+      [
+       "Maren’s grateful. In his way. He wrote it down."
+      ]
+     ]
+    },
+    {
+     "when": {
+      "flag": {
        "name": "act1.yard"
       }
      },
      "say": [
       [
-       "Come back any time. The straw men don’t mind."
+       "Come back any time. The straw men don’t mind, and the plates don’t lie."
       ],
       [
-       "Good arm. Better than my lads."
+       "There’s still that boar in the north fields, if you want the practice. Mind the tusks."
       ]
      ]
     },

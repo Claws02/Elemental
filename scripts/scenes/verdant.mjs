@@ -145,6 +145,10 @@ for (let i = 0; i < 4; i++) S.add(`Yard_Dummy_${i + 1}`, 'dummy', YARD.x + 5 + (
 S.add('Yard_Fence_N', 'b_fence', YARD.x, YARD.z - 10, 0, { length: 18, height: 1.1, seed: 7 }, 1);
 S.add('Yard_Fence_S', 'b_fence', YARD.x, YARD.z + 10, 0, { length: 18, height: 1.1, seed: 8 }, 1);
 S.add('Brask', 'npc', YARD.x - 7, YARD.z - 4, Math.PI / 2, { name: 'Sergeant Brask', look: 'verdant_guard', role: 'idle' });
+// The drill (docs/GROWTH_AND_COMBAT.md §2.3): three plates at eye level. A stone set down softly on one is Earth
+// Control; a drop isn't. The yard is the ground the soft gate before the Watchstone reads (Zone_Yard).
+for (let i = 0; i < 3; i++) S.add(`Yard_Plate_${i + 1}`, 'plate', YARD.x - 1.5, YARD.z - 6 + i * 6, 0, { radius: 0.75, height: 1.3, gentleHeight: 0.6, chainTo: '' }, 1.5);
+S.add('Zone_Yard', 'trigger', YARD.x, YARD.z, 0, { width: 30, depth: 26, height: 6 });
 
 // The Watchstone: an Oruun ruin north of the fields, its stone cracked on purpose; the Stonebound who keep it.
 const WATCH = { x: 34, z: -100 };
@@ -170,6 +174,13 @@ const script = {
     reactions: [
         { on: 'targetDown', count: 'yardHits', lines: [['@Cael One.'], ['@Cael Two. Again.'], ['@Cael Three.'], ['@Brask Good arm.']], cycle: false },
         { on: 'earthPulled', count: 'pulled', lines: [['@Brask Well, I\u2019ll be.'], [], []], cycle: false },
+        // The drill: a stone set down softly is Control (up to level 6: past that, the yard has nothing left to teach).
+        { on: 'gentleSet', count: 'gentleSets', when: { not: { level: { el: 'earth', atLeast: 6 } } }, do: [{ grant: { el: 'earth', track: 'control', amount: 0.03 } }],
+          lines: [['@Cael Softly. Like that.'], [], ['@Brask Steady hands.'], [], [], ['@Cael Again. The same.']], cycle: false },
+        { on: 'roughSet', lines: [['@Cael That was a drop. A drop teaches nothing.'], ['@Cael Lower. Then let go.']], cycle: true, throttle: 6 },
+        // The hunt: the boar in the north fields (optional; Brask asks).
+        { on: 'creatureDown', match: { species: 'bristleback' }, when: { not: { flag: { name: 'hunt.boar' } } },
+          do: [{ setFlag: { name: 'hunt.boar', value: 'done' } }, { ledger: { tally: 'care', add: 1 } }, { hint: 'The boar in the north fields is down. Brask will want to hear.' }] },
         { on: 'pulledThrow', count: 'pulledThrows', lines: [] },
         { on: 'earthRaised', count: 'raised', lines: [['@Cael Cover. Remember it\u2019s there.'], []], cycle: false },
         { on: 'stoneCaught', count: 'caught', throttle: 6, lines: [['@Cael_Ruin Ha! Now send it home.'], ['@Cael_Ruin Again.'], ['@Varn …They catch them?'], []] },
@@ -244,6 +255,13 @@ const script = {
           waiting: [{ when: { time: 40 }, say: ['@Brask Aim at the chest, not the head. And put your arm into it.'] },
                     { when: { time: 80 }, say: ['@Cael Closer, if you need to. Nobody\u2019s counting the distance. Yet.'] }],
           until: { many: { prefix: 'Yard_Dummy_', type: 'dummy', signal: 'hit', min: 3 } } },
+        // Throwing is the easy half: the drill, until the hold is sure enough to pull a stone from the ground (Control 3).
+        { id: 'drill', do: [{ hint: 'Lift a stone and set it down on a plate: lower it close, then let go slowly. A drop doesn\u2019t count.' }],
+          say: ['@Cael Throwing is the easy half.', '@Cael Out there you\u2019ll hold a stone over someone\u2019s head and not drop it. Set them on the plates. Softly.',
+                '@Brask And when your hands are steady, there\u2019s a boar tearing up the north fields. Nobody\u2019s paid to see to it.'],
+          objective: 'Set stones softly on the plates · Earth Control {earth.control} of 3', mark: 'Yard_Plate_2',
+          until: { level: { el: 'earth', atLeast: 3 } },
+          then: { say: ['@Cael There. Your hands are listening.'] } },
         // The ground is full of stones: pull one up and throw it; hold on, and the earth rises as cover.
         { id: 'ground', do: [{ setFlag: { name: 'learned.pull', value: 'yes' } }, { hint: 'Hold your finger still on open ground: a stone tears up into your hand. Flick to throw it.' }],
           say: ['@Cael Good. Now, the pile is a crutch. Out there, nobody leaves you a pile.', '@Cael The ground is full of stones. Put your hand on it, hold still, and ask.'],
@@ -253,9 +271,21 @@ const script = {
         { id: 'cover', do: [{ setFlag: { name: 'learned.raise', value: 'yes' } }, { hint: 'Hold still longer: the stone sinks back and the ground rises as a column. Keep holding to raise it higher.' }],
           say: ['@Cael And if you don\u2019t let go, the ground keeps coming.', '@Cael Hold still past the stone. Make a wall to stand behind.'],
           objective: 'Raise a column of earth', mark: 'Yard_Pile',
+          // Raising needs Earth Control 4: not there yet, back to the plates.
+          waiting: [{ when: { all: [{ time: 6 }, { not: { level: { el: 'earth', atLeast: 4 } } }] }, say: ['@Cael Your hold isn\u2019t sure enough for that yet. Back to the plates.'] }],
           until: { count: { name: 'raised', min: 1 } },
-          then: { say: ['@Cael Now imagine they throw back.', '@Cael They will. Watch their hands: when a stone goes up, move. Or catch it, if you\u2019re quick; touch it as it comes.', '@Cael I\u2019ll go ahead to the ruin. North, past the fields. Come when you\u2019re ready; the yard\u2019s here if you want more.'],
-                  do: [{ setFlag: { name: 'act1.yard', value: 'done' } }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }] } },
+          then: { say: ['@Cael Now imagine they throw back.', '@Cael They will. Watch their hands: when a stone goes up, move. Or catch it: touch it as it comes. That takes a sure hold.'],
+                  do: [{ setFlag: { name: 'learned.catch', value: 'yes' } }] } },
+        // The soft gate (docs/GROWTH_AND_COMBAT.md §4): Earth Control 5 is ready for the Stonebound; walk out of the yard
+        // before that and you go anyway, and Cael says so.
+        { id: 'ready', objective: 'Practise on the plates until you\u2019re sure (Earth Control {earth.control} of 5), or go north to the ruin', mark: 'Yard_Plate_2',
+          say: ['@Cael The Stonebound won\u2019t be straw men.', '@Cael Practise until a caught stone doesn\u2019t frighten you. Or go now. It\u2019s your neck.'],
+          ends: [{ when: { level: { el: 'earth', atLeast: 5 } },
+                   say: ['@Cael That\u2019s a sure hand.', '@Cael I\u2019ll go ahead to the ruin. North, past the fields. The yard\u2019s here if you want more.'],
+                   do: [{ setFlag: { name: 'act1.yard', value: 'done' } }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }], next: 'gone' },
+                 { when: { not: { signal: { obj: 'Zone_Yard', name: 'inside' } } },
+                   say: ['@Cael Going already? You\u2019re not ready for them.', '@Cael …Then stay behind me when it starts.'],
+                   do: [{ setFlag: { name: 'act1.unready', value: 'true' } }, { setFlag: { name: 'act1.yard', value: 'done' } }, { npc: { id: 'Cael', role: 'lead', route: ROUTES.north } }], next: 'gone' }] },
         // He goes on ahead to the ruin; there he waits (Cael_Ruin, revealed now and remembered).
         { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }, { reveal: ['Cael_Ruin'] }, { checkpoint: true }] } },
         // ---- Act I's end: the Watchstone, cracked on purpose; the Stonebound ----
@@ -278,12 +308,14 @@ const script = {
         { id: 'fight', do: [{ do: { obj: 'Stonebound', action: 'hold' } }, { hint: 'A stone thrown at you can be caught: touch it in the air, then flick it back. Or hold the ground for one of your own.' }],
           say: ['@Cael_Ruin I’ll hold this one. The others are yours. Don’t kill them. Make them stop.', '@Cael_Ruin Stone answers stone. Throw.'],
           objective: 'Make the Stonebound yield', mark: 'Stonebound',
-          waiting: [{ when: { time: 25 }, say: ['@Cael_Ruin Watch their hands. When the stone goes up, move. When they raise a slab, wait for it to drop.'] }],
+          waiting: [{ when: { time: 25 }, say: ['@Cael_Ruin Watch their hands. When the stone goes up, move. When they raise a slab, wait for it to drop.'] },
+                    { when: { flag: { name: 'act1.unready' } }, say: ['@Cael_Ruin Stay behind me. You came before you were ready.'] }],
           until: { signal: { obj: 'Stonebound', name: 'yielded' } },
           then: { do: [{ do: { obj: 'Stonebound', action: 'yieldAll' } }, { protect: 0 }, { npc: { id: 'Cael_Ruin', role: 'walk', target: { x: WATCH.x, z: WATCH.z - 6 } } }] } },
         { id: 'ended',
           say: ['@Cael_Ruin Enough.', '@Varn …You held Hollin without a scratch on him. What are you?', '@Cael_Ruin Someone who doesn’t need to break anything to win.',
                 '@you Why are these people attacking us?', '@Cael_Ruin Because they think we’re the problem.', '@you Are we?', '@Cael_Ruin Not yet.'],
+          do: [{ grant: { el: 'earth', track: 'control', amount: 0.05 } }],         // they yielded, nobody died: a clean fight is Control
           until: { talking: false } },
         { id: 'judgement', say: ['@Varn Well? We’re yours to deal with.'],
           choices: [
@@ -308,7 +340,8 @@ const folk = [
 ];
 script.talk = {
     Brask: [
-        { when: { flag: { name: 'act1.yard' } }, say: [['Come back any time. The straw men don\u2019t mind.'], ['Good arm. Better than my lads.']] },
+        { when: { flag: { name: 'hunt.boar' } }, say: [['Heard you put the boar down. The north fields\u2019ll be planted by spring.'], ['Maren\u2019s grateful. In his way. He wrote it down.']] },
+        { when: { flag: { name: 'act1.yard' } }, say: [['Come back any time. The straw men don\u2019t mind, and the plates don\u2019t lie.'], ['There\u2019s still that boar in the north fields, if you want the practice. Mind the tusks.']] },
         { say: [['Lift from the pile, throw at the straw. The pile never runs dry; don\u2019t ask me how.'], ['Aim at the chest. A straw man falls from the middle.'], ['A slow throw bumps. A fast one drops them.']] },
     ],
     Cael_Ruin: [

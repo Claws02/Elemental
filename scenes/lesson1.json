@@ -587,7 +587,7 @@
        "grant": {
         "el": "earth",
         "track": "control",
-        "amount": 0.15
+        "amount": 0.05
        }
       }
      ],
@@ -652,7 +652,7 @@
        "grant": {
         "el": "earth",
         "track": "control",
-        "amount": 0.15
+        "amount": 0.05
        }
       },
       {
@@ -849,7 +849,7 @@
         "grant": {
          "el": "earth",
          "track": "control",
-         "amount": 0.3
+         "amount": 0.1
         }
        },
        {

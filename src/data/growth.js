@@ -101,9 +101,12 @@ export const SURGE = {
 // elements usable (not locked, not stilled by the charm) and, in the story, to
 // have been learned: the story sets flag `learned.<ability>` (the sandbox knows
 // them all). docs/ABILITIES.md.
+// `control`: the Control level of the first element it needs before it answers at all, learned or not
+// (docs/GROWTH_AND_COMBAT.md §2.2): Power alone never unlocks a technique.
 export const ABILITIES = {
-    raise:     { name: 'Raise stone', needs: ['earth'] },
-    pull:      { name: 'Pull stone',  needs: ['earth'] },
+    pull:      { name: 'Pull stone',  needs: ['earth'], control: 3 },
+    raise:     { name: 'Raise stone', needs: ['earth'], control: 4 },
+    catch:     { name: 'Catch stone', needs: ['earth'], control: 5 },
     freeze:    { name: 'Ice',         needs: ['water', 'air'] },
     lava:      { name: 'Lava',        needs: ['earth', 'fire'] },
     firestorm: { name: 'Firestorm',   needs: ['fire', 'air'] },

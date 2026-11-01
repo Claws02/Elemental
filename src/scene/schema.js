@@ -343,6 +343,7 @@ export const CONDITIONS = {
     count:    { label: 'Counter ≥', arg: { name: 'text', min: 'int' } },
     flag:     { label: 'Saved flag', arg: { name: 'text', is: 'text' } },
     state:    { label: 'World state', arg: { id: 'ref', is: 'text' } },
+    level:    { label: 'Element level ≥', arg: { el: 'text', track: 'text', atLeast: 'int' } },
     ledger:   { label: 'The ledger', arg: { tally: 'tally', min: 'number' } },
     standing: { label: 'How a kingdom sees you', arg: { region: 'region', atLeast: 'int' } },
     many:     { label: 'How many objects give a signal', arg: { prefix: 'text', type: 'text', signal: 'text', min: 'int', max: 'int' } },
@@ -395,6 +396,9 @@ export const REACTION_EVENTS = {
     earthRaised: 'The player raises a column of earth',
     stoneCaught: 'The player catches a stone thrown at them',
     pulledThrow: 'The player throws a stone they pulled from the ground, or caught',
+    gentleSet: 'The player sets a stone down softly on a plate',
+    roughSet: 'The player drops or throws a stone onto a plate',
+    creatureDown: 'The player kills a creature (match: { species } for one kind)',
 };
 
 /** A new object of `type` with every prop at its default. */

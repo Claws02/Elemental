@@ -32,7 +32,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     await ev(() => localStorage.clear());
     await page.goto(`${BASE}?scene=gate`, { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => window.__EL?.ready, null, { timeout: 90000 });
-    await ev(() => { const f = __EL.prog.flags; Object.assign(f, { lesson1: { outcome: 'quiet' }, prologue: 'done', 'thornwick.started': 'true', 'thornwick.mill': 'quiet', 'act1.mill': 'done' }); __EL.prog.setState('earth', 'trained'); __EL.prog._save(); __EL.travel('verdant', 'from_gate'); });
+    await ev(() => { const f = __EL.prog.flags; Object.assign(f, { lesson1: { outcome: 'quiet' }, prologue: 'done', 'thornwick.started': 'true', 'thornwick.mill': 'quiet', 'act1.mill': 'done', 'act1.yard': 'done', 'learned.pull': 'yes', 'learned.raise': 'yes', 'learned.catch': 'yes' }); __EL.prog.setState('earth', 'trained'); __EL.prog.els.earth.control = 0.4; /* the yard's drill done (Control 5) */ __EL.prog._save(); __EL.travel('verdant', 'from_gate'); });
     await page.waitForFunction(() => window.__EL?.mode === 'verdant' && window.__EL?.ready, null, { timeout: 90000 });
     await page.waitForTimeout(1200);
     await ev(() => {
@@ -90,8 +90,10 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         // Send it home: at a Stonebound Cael isn't holding.
         const foe = __EL.creatures.all.find(c => c.id.startsWith('Stonebound') && c.state !== 'held' && c.state !== 'yield');
         const hits = []; const off = __EL.EventBus.on('Creature', e => { if (e.id === foe.id) hits.push(e.to); });
-        const hp0 = foe.hp;
         __EL.channel.let(); __EL.intent._cancel();
+        // A Stonebound raises a slab at a stone you hold; this checks the stone, not the slab: let it drop first.
+        foe.shieldCd = 99; if (foe.shield) foe.shield.t = 0; await __W(300);
+        const hp0 = foe.hp;
         const fp = foe.body.position, b = held.body;
         b.position.set(fp.x - 3, fp.y + 0.6, fp.z); b.velocity.set(0, 0, 0);
         __EL.channel.throwEntry(held, new __EL.THREE.Vector3(1, 0.05, 0).normalize(), 18, 'earth');

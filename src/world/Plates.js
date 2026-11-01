@@ -134,7 +134,8 @@ export class Plate {
             this.weighted = on;
             const lg = on && this.letGo.get(on);
             this.gentle = !!on && !!lg && !lg.thrown && lg.h < this.gentleHeight;
-            if (on) EventBus.emit(EV.PLATE, { id: this.id, rock: on.id, gentle: this.gentle });
+            // Once per let-go: a stone that settles in a jitter is still one placement (the yard's drill counts them).
+            if (on && !lg?.told) { if (lg) lg.told = true; EventBus.emit(EV.PLATE, { id: this.id, rock: on.id, gentle: this.gentle }); }
         }
         const lit = !!this.weighted;
         const pulse = this.hint && !lit ? 0.5 + 0.5 * Math.sin(this.time * 3) : 0;

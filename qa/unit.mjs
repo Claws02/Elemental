@@ -130,7 +130,10 @@ const check = (ok, msg) => (ok ? pass : fail).push(msg);
     p.flags.charm = 'refused';
     const before = p.can('raise');
     p.flags['learned.raise'] = true;
-    check(!before && p.can('raise') && !p.can('lava'), 'in the story an ability needs learning; a combination needs both its elements usable too');
+    p.els.earth.control = 0.2;                       // level 3: raise needs 4
+    const unsure = p.can('raise');
+    p.els.earth.control = 0.3;                       // level 4
+    check(!before && !unsure && p.can('raise') && !p.can('lava'), 'in the story an ability needs learning, and its Control level (raise: Earth Control 4); a combination needs both its elements usable too');
     const sb = new Progression('sandbox');
     check(['raise', 'freeze', 'lava', 'firestorm', 'mud', 'glide'].every(a => sb.can(a)), 'the sandbox knows every ability');
 }

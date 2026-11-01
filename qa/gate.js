@@ -73,18 +73,28 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
     const quiet = await ev(async () => {
         __EL.story.go('trial'); await __W(500);
         __EL.world.act('TestRoom_Barricade_01', 'raise');
-        await __skip(() => __EL.story.step === 'onward');
+        await __skip(() => __EL.story.step === 'road2');
         const step = __EL.story.step, outcome = __EL.prog.flags.lesson1?.outcome, role = __EL.world.objects.get('Cael').npc.role;
+        const walk = async to => {
+            dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+            const t = performance.now();
+            while (performance.now() - t < 25000 && __EL.player.body.position.x < to) { __EL.cam.yaw = -Math.PI / 2 + __EL.player.body.position.z * 0.05; await __W(40); }
+            dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+        };
         __at(20, 0); await __W(300);
-        dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
-        const t = performance.now();
-        while (performance.now() - t < 25000 && __EL.player.body.position.x < 62) { __EL.cam.yaw = -Math.PI / 2 + __EL.player.body.position.z * 0.05; await __W(40); }
-        dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+        // Out of the pass, the Thornhounds come (the first fight on the road): beat them, and the road goes on.
+        await walk(46); await __skip(() => !__EL.story.talking);
+        const fight = __EL.story.step, hounds = __EL.creatures.all.filter(c => c.group.item.id === 'Gate_Hounds');
+        const ready = hounds.length > 0 && hounds.every(c => !c.gone);
+        for (const c of hounds) c.react('impact', 9999, 'player');
+        await __skip(() => __EL.story.step === 'onward');
+        const after = __EL.story.step;
+        await walk(62);
         await __W(800);
-        return { step, outcome, role, x: +__EL.player.body.position.x.toFixed(1), end: __EL.story.step };
+        return { step, outcome, role, fight, hounds: hounds.length, ready, after, x: +__EL.player.body.position.x.toFixed(1), end: __EL.story.step };
     });
-    check(quiet.step === 'onward' && quiet.outcome === 'quiet' && quiet.role === 'lead' && quiet.x > 60 && quiet.end === 'done',
-        `the barricade raised: the quiet way; Cael leads on, and through the gorge the story's told (${JSON.stringify(quiet)})`);
+    check(quiet.step === 'road2' && quiet.outcome === 'quiet' && quiet.role === 'lead' && quiet.fight === 'hounds' && quiet.ready && quiet.after === 'onward' && quiet.x > 60 && quiet.end === 'done',
+        `the barricade raised: the quiet way; Cael leads on; out of the pass the Thornhounds come, and once they're down the road goes on and the story's told (${JSON.stringify(quiet)})`);
 
     await open();
     const over = await ev(async () => {

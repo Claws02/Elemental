@@ -51,7 +51,9 @@ export class Progression {
     can(ability) {
         const a = ABILITIES[ability];
         if (!a || !a.needs.every(el => this.has(el))) return false;
-        return this.profile === 'sandbox' || !!this.flags['learned.' + ability];
+        if (this.profile === 'sandbox') return true;
+        if (a.control && this.level(a.needs[0], 'control') < a.control) return false;      // not sure enough yet
+        return !!this.flags['learned.' + ability];
     }
 
     /** A number from data/growth.js for this element's current Power or Control (the curve names its track). */
