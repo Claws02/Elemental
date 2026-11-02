@@ -78,6 +78,7 @@ CI runs all of them but the model sheet on every push (`.github/workflows/ci.yml
 | [`docs/CHECKLIST.md`](docs/CHECKLIST.md) | The master checklist. One task at a time |
 | [`docs/SCENES.md`](docs/SCENES.md) | The scene format: objects, puzzle wires, story scripts; how scenes come from the editor |
 | [`docs/PROGRESSION.md`](docs/PROGRESSION.md) | Element states, Power and Control, Wild Fire, Lesson I |
+| [`docs/CONTROLS_WORKSHOP.md`](docs/CONTROLS_WORKSHOP.md) | Holding, moving and throwing: why it felt hard, what other games do, the aim-assist settings |
 | [`docs/GROWTH_AND_COMBAT.md`](docs/GROWTH_AND_COMBAT.md) | The plan for slower, earned growth: every level does something, techniques by Control, drills, a fight on every road |
 | [`docs/CONTEXT_CONTROLS.md`](docs/CONTEXT_CONTROLS.md) | How the element is chosen: material + gesture, hold times per material |
 | [`docs/TECH_ARCHITECTURE.md`](docs/TECH_ARCHITECTURE.md) | The stack, the Unity → web mapping, the frame, physics tiers, risks |
