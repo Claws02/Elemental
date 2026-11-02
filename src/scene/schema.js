@@ -122,8 +122,8 @@ export const TYPES = {
     // ---- props ------------------------------------------------------------------------
     crate: { label: 'Crate', group: 'Props', props: { size: num('Size', 0.9, 0.4, 2, 0.05), seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned', 'moved'] },
     barrel: { label: 'Oil barrel', group: 'Props', props: { seed: SEED, hidden: HIDDEN }, signals: ['burning', 'burned', 'moved'] },
-    dummy: { label: 'Training dummy', group: 'Props', props: { seed: SEED, practice: bool('Practice: stands back up; counts hits', false), hidden: HIDDEN }, signals: ['burning', 'burned', 'moved', 'hit', 'down'],
-        note: 'A practice dummy stands back up a few seconds after it falls; "hit" = knocked down by your throw at least once.' },
+    dummy: { label: 'Training dummy', group: 'Props', props: { seed: SEED, practice: bool('Practice: stands back up; counts hits', false), slide: num('Slides side to side (m, 0 = still)', 0, 0, 8, 0.5), slideSpeed: num('Slide speed (m/s)', 1.5, 0.3, 5, 0.1), hidden: HIDDEN }, signals: ['burning', 'burned', 'moved', 'hit', 'down'],
+        note: 'A practice dummy stands back up a few seconds after it falls; "hit" = knocked down by your throw at least once. With `slide` it moves side to side along its own width while it stands: a target to lead.' },
     stall: {
         label: 'Market stall', group: 'Props',
         props: { width: num('Width', 2.4, 1.2, 5, 0.1), awning: select('Awning', 'red', ['red', 'blue', 'green', 'ochre']), seed: SEED, hidden: HIDDEN },

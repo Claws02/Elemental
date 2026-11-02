@@ -196,9 +196,23 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .hud-levelup b { display: block; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--rune, #ffb347); }
 .hud-levelup span { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-dim, #cfc6b4); }
 
-/* ---- aim assist: a small button top-right that cycles Off / Assist / Lock (docs/CONTROLS_WORKSHOP.md) ---- */
-.hud-aim { position: absolute; right: calc(env(safe-area-inset-right) + 16px); top: calc(env(safe-area-inset-top) + 14px);
-  padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: rgba(14,12,10,.55);
-  color: rgba(244,236,220,.9); font: 600 12px/1 inherit; letter-spacing: .04em; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
-.hud-aim[data-mode="lock"] { border-color: #ffb347; color: #ffb347; }
-.hud-aim[data-mode="off"] { opacity: .7; }
+/* ---- the settings button and the pause menu (docs/CONTROLS_WORKSHOP.md): aim assist lives here ---- */
+.hud-gear { position: absolute; right: calc(env(safe-area-inset-right) + 16px); top: calc(env(safe-area-inset-top) + 12px);
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.3); background: rgba(14,12,10,.55);
+  display: grid; place-items: center; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.hud-gear svg { width: 22px; height: 22px; fill: rgba(244,236,220,.9); }
+.hud-menu { position: absolute; inset: 0; display: none; place-items: center; background: rgba(8,7,6,.55); backdrop-filter: blur(3px); z-index: 30; }
+.hud-menu.on { display: grid; }
+.hud-menu .panel { width: min(88vw, 360px); max-height: 86vh; overflow: auto; padding: 18px 18px 14px; border-radius: 16px;
+  background: rgba(24,21,18,.94); border: 1px solid rgba(255,255,255,.14); color: #f4ecdc; }
+.hud-menu h2 { margin: 0 0 12px; font-size: 16px; letter-spacing: .18em; text-transform: uppercase; text-align: center; }
+.hud-menu .items { display: flex; flex-direction: column; gap: 8px; }
+.hud-menu button { padding: 11px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(244,236,220,.08);
+  color: inherit; font: 600 14px/1.2 inherit; text-align: left; cursor: pointer; }
+.hud-menu button small { display: block; margin-top: 2px; font-weight: 400; font-size: 12px; color: var(--ink-dim, #cfc6b4); }
+.hud-menu button.primary { background: rgba(255,179,71,.18); border-color: rgba(255,179,71,.6); text-align: center; }
+.hud-menu .label { margin-top: 6px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim, #cfc6b4); }
+.hud-menu .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.hud-menu .seg button { text-align: center; }
+.hud-menu .seg button.on { background: rgba(255,179,71,.22); border-color: #ffb347; color: #ffb347; }
+.hud-menu .note { font-size: 12px; color: var(--ink-dim, #cfc6b4); }

@@ -90,16 +90,28 @@ const SHOTS = process.env.QA_SHOTS || path.join(__dirname, 'shots');
     check(!hit(off10) && hit(assist10), `the same flick 10° off a hound: Off goes where it was flicked (a miss), Assist bends it on (${JSON.stringify([off10, assist10])})`);
     check(!hit(assist30) && hit(lock30) && lock30.lockRing, `30° off: Assist leaves it alone; Lock finds it, and the lock wore its ring while the stone was held (${JSON.stringify([assist30, lock30])})`);
 
-    // 3. Saved; the button cycles it.
+    // 3. The settings button: it pauses; aim assist is set there and saved on the device; Resume carries on.
     const setting = await ev(async () => {
         __EL.assist.setMode('assist');
         const saved = localStorage.getItem('elemental.aim');
-        const b = document.getElementById('hud-aim');
-        b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-        await __W(100);
-        return { saved, now: __EL.assist.mode, label: b.textContent, stored: localStorage.getItem('elemental.aim') };
+        document.getElementById('hud-gear').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        await __W(200);
+        const menu = document.getElementById('hud-menu'), open = menu.classList.contains('on'), paused = __EL.isPaused();
+        const t0 = __EL.juice.t; await __W(500); const still = __EL.juice.t === t0;
+        const lock = [...menu.querySelectorAll('.seg button')].find(b => /lock/i.test(b.textContent));
+        lock.click(); await __W(100);
+        const chosen = menu.querySelector('.seg button.on')?.textContent, note = menu.querySelector('.note')?.textContent;
+        const save = [...menu.querySelectorAll('button')].find(b => /^Save/.test(b.textContent) && !/quit/.test(b.textContent));
+        save.click(); await __W(100);
+        const saveSays = save.querySelector('small').textContent;
+        [...menu.querySelectorAll('button')].find(b => /Resume/.test(b.textContent)).click();
+        await __W(400);
+        return { saved, open, paused, still, chosen, note, saveSays, now: __EL.assist.mode, stored: localStorage.getItem('elemental.aim'), resumed: !menu.classList.contains('on') && !__EL.isPaused() && __EL.juice.t > t0 };
     });
-    check(setting.saved === 'assist' && setting.now === 'lock' && /lock/i.test(setting.label) && setting.stored === 'lock', `the setting is saved on the device; the HUD button cycles it (${JSON.stringify(setting)})`);
+    await page.screenshot({ path: path.join(SHOTS, 'controls-menu.png') });
+    check(setting.saved === 'assist' && setting.open && setting.paused && setting.still, `the settings button opens the menu and the world holds still (${JSON.stringify(setting)})`);
+    check(setting.chosen === 'Lock' && setting.now === 'lock' && setting.stored === 'lock' && /ring/.test(setting.note) && /test scene/.test(setting.saveSays) && setting.resumed,
+        `aim assist is set in the menu and saved on the device; Save says what it did; Resume carries on (${JSON.stringify(setting)})`);
 
     // 4. The first road fight after the yard: Thornhounds on the way north.
     await ev(() => { localStorage.clear(); });

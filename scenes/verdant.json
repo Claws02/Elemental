@@ -6679,6 +6679,32 @@
    "practice": true
   },
   {
+   "id": "Yard_Mover_1",
+   "type": "dummy",
+   "x": 39,
+   "y": 0,
+   "z": -42,
+   "rotY": -1.571,
+   "seed": 80,
+   "practice": true,
+   "slide": 3,
+   "slideSpeed": 1.4,
+   "hidden": true
+  },
+  {
+   "id": "Yard_Mover_2",
+   "type": "dummy",
+   "x": 41,
+   "y": 0,
+   "z": -34,
+   "rotY": -1.571,
+   "seed": 81,
+   "practice": true,
+   "slide": 3.5,
+   "slideSpeed": 2.4,
+   "hidden": true
+  },
+  {
    "id": "Yard_Fence_N",
    "type": "b_fence",
    "x": 30,
@@ -7847,6 +7873,49 @@
     }
    },
    {
+    "id": "moving",
+    "do": [
+     {
+      "reveal": [
+       "Yard_Mover_1",
+       "Yard_Mover_2"
+      ]
+     },
+     {
+      "hint": "They move. Throw a little ahead of them, where they’ll be when the stone gets there."
+     }
+    ],
+    "say": [
+     "@Brask Standing still’s easy. Nothing out there stands still.",
+     "@Brask These walk. Throw where they’ll be, not where they are."
+    ],
+    "objective": "Knock down both moving straw men",
+    "mark": "Yard_Mover_1",
+    "waiting": [
+     {
+      "when": {
+       "time": 40
+      },
+      "say": [
+       "@Cael Lead it. Look where it’s going, and throw there."
+      ]
+     }
+    ],
+    "until": {
+     "many": {
+      "prefix": "Yard_Mover_",
+      "type": "dummy",
+      "signal": "hit",
+      "min": 2
+     }
+    },
+    "then": {
+     "say": [
+      "@Brask Ha! Better than my lads, and they’ve had a year."
+     ]
+    }
+   },
+   {
     "id": "drill",
     "do": [
      {
@@ -8091,7 +8160,7 @@
       ]
      },
      {
-      "hint": "Thornhounds! Lift a stone and flick it at one. With aim assist on (top right), a flick that’s close finds its mark."
+      "hint": "Thornhounds! Lift a stone and flick it at one. With aim assist on (settings, top right), a flick that’s close finds its mark."
      }
     ],
     "objective": "Drive off the Thornhounds",

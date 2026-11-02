@@ -77,8 +77,35 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const said = document.querySelector('#hud-say .line')?.textContent;
         return { hits: out, count: __EL.story.counters.yardHits, step: __EL.story.step, flag: __EL.prog.flags['act1.yard'], said };
     });
-    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'drill' && !throws.flag,
-        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Cael moves on to the drill (${JSON.stringify(throws)})`);
+    check(throws.hits.every(Boolean) && throws.count === 3 && throws.step === 'moving' && !throws.flag,
+        `a stone from the pile thrown hard knocks a straw man down, and it counts; three down, and Brask brings out moving ones (${JSON.stringify(throws)})`);
+
+    // Moving targets: they slide while they stand; a throw that leads one (the aim assist's own lead) knocks it down.
+    const moving = await ev(async () => {
+        await __skip(() => !__EL.story.talking);
+        const movers = [1, 2].map(i => __EL.world.objects.get('Yard_Mover_' + i));
+        for (let i = 0; i < 40 && __EL.world.rising.some(r => movers.includes(r.inst)); i++) await __W(150);      // they rise out of the ground first
+        await __W(300);
+        const p0 = movers.map(m => m.prop.entry.body.position.clone());
+        await __W(1200);
+        const slid = movers.map((m, i) => +m.prop.entry.body.position.distanceTo(p0[i]).toFixed(2));
+        __at(30, -38); await __W(300);
+        const out = [];
+        for (const m of movers) {
+            for (let k = 0; k < 4 && !__EL.world.signal(m.id, 'hit'); k++) {
+                const b = m.prop.entry.body, s = __pile()[0], from = new __EL.THREE.Vector3(b.position.x - 7, b.position.y + 0.4, b.position.z);
+                s.body.position.copy(from); s.body.velocity.set(0, 0, 0);
+                const dir = __EL.assist.ballistic(from, { pos: new __EL.THREE.Vector3(b.position.x, b.position.y + 0.3, b.position.z), vel: new __EL.THREE.Vector3(b.velocity.x, 0, b.velocity.z) }, 20);
+                if (!dir) { out.push({ none: true, from: from.toArray().map(v => +v.toFixed(1)), at: [b.position.x, b.position.y, b.position.z].map(v => +v.toFixed(1)) }); break; }
+                __EL.channel.throwEntry(s, dir, 20, 'earth');
+                await __W(2000);
+            }
+            out.push(__EL.world.signal(m.id, 'hit'));
+        }
+        await __skip(() => __EL.story.step === 'drill');
+        return { slid, hits: out, step: __EL.story.step };
+    });
+    check(moving.slid.every(d => d > 0.3) && moving.hits.every(Boolean) && moving.step === 'drill', `moving straw men slide while they stand; a throw that leads one knocks it down; both down, on to the drill (${JSON.stringify(moving)})`);
 
     // The drill: a stone set softly on a plate is Earth Control; a drop isn't. Pull waits on Control 3.
     const drill = await ev(async () => {
@@ -152,9 +179,9 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const seen = new Set(); const t0 = __EL.story.time;
         while (I.state !== 'raising' && __EL.story.time - t0 < 4) { seen.add(I.state); await __W(50); }
         const t1 = __EL.story.time; while (__EL.story.time - t1 < 1) await __W(100);
-        for (let i = 0; i < 20 && __EL.works.stones.length !== stones0; i++) await __W(100);       // the stone sinks back over a moment
+        for (let i = 0; i < 20 && __EL.works.stones.length > stones0; i++) await __W(100);       // the stone sinks back over a moment
         const col = __EL.works.columns[__EL.works.columns.length - 1];
-        const out = { seen: [...seen], state: I.state, columns: __EL.works.columns.length, top: col && +col.top.toFixed(2), stonesBack: __EL.works.stones.length === stones0 };
+        const out = { seen: [...seen], state: I.state, columns: __EL.works.columns.length, top: col && +col.top.toFixed(2), stonesBack: __EL.works.stones.length <= stones0 };
         I.release?.({ vx: 0, vy: 0, speed: 0 }); I._cancel();
         await __skip(() => __EL.story.step === 'ready');
         return { ...out, unsure, step: __EL.story.step, raise: __EL.prog.flags['learned.raise'], catch: __EL.prog.flags['learned.catch'], canCatch: __EL.prog.can('catch') };

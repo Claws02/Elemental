@@ -42,7 +42,8 @@ export class Hud {
             <div class="hud-choices" id="hud-choices"></div>
             <div class="hud-tip" id="hud-tip"></div>
             <button class="hud-charm" id="hud-charm" type="button" aria-label="Cael's charm"></button>
-            <button class="hud-aim" id="hud-aim" type="button" aria-label="Aim assist"><span></span></button>
+            <button class="hud-gear" id="hud-gear" type="button" aria-label="Settings and pause"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4L6.6 11a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>
+            <div class="hud-menu" id="hud-menu" role="dialog" aria-label="Paused"><div class="panel"><h2>Paused</h2><div class="items"></div></div></div>
             <button class="hud-jump" id="hud-jump" type="button" aria-label="Jump"><svg viewBox="0 0 24 24"><path d="M12 5l-6 7h4v6h4v-6h4z"/></svg></button>
             <div class="hud-vignette" id="hud-vignette"></div>
             <div class="hud-died" id="hud-died"><span></span></div>`;
@@ -272,12 +273,40 @@ export class Hud {
         }).join('');
     }
 
-    /** The aim-assist button (input/AimAssist.js): shows the setting; a tap cycles Off → Assist → Lock. */
-    aim(assist) {
-        const el = this.el('hud-aim'), label = { off: 'Aim: off', assist: 'Aim: assist', lock: 'Aim: lock' };
-        const show = () => { el.querySelector('span').textContent = label[assist.mode]; el.dataset.mode = assist.mode; };
-        el.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); assist.cycle(); show(); this.log(label[assist.mode]); };
-        show();
+    /**
+     * The settings button (top right): opens the pause menu and pauses the game. Resume; Save (here and now);
+     * Aim assist (input/AimAssist.js: Off / Assist / Lock, saved on the device); Save and quit to the title.
+     * `o`: { assist, pause(bool), save() → true when written, quit() or null (no title to go back to) }.
+     */
+    menu(o) {
+        const gear = this.el('hud-gear'), box = this.el('hud-menu'), items = box.querySelector('.items');
+        const btn = (text, sub, fn, cls = '') => {
+            const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = text;
+            if (sub) { const s = document.createElement('small'); s.textContent = sub; b.append(s); }
+            b.onclick = e => { e.stopPropagation(); fn(b); };
+            return b;
+        };
+        const AIM = { off: ['Off', 'exactly where you flick'], assist: ['Assist', 'a throw that\u2019s close bends onto its target'], lock: ['Lock', 'a ring on the target in front; flick roughly toward it'] };
+        const render = () => {
+            items.replaceChildren(
+                btn('Resume', '', close, 'primary'),
+                btn('Save', 'here, now', b => { const ok = o.save(); b.querySelector('small').textContent = ok ? 'saved' : 'not saved (a test scene)'; }),
+                Object.assign(document.createElement('div'), { className: 'label', textContent: 'Aim assist' }),
+                (() => { const row = document.createElement('div'); row.className = 'seg';
+                    for (const m of ['off', 'assist', 'lock']) row.append(btn(AIM[m][0], '', () => { o.assist.setMode(m); render(); }, o.assist.mode === m ? 'on' : ''));
+                    return row; })(),
+                Object.assign(document.createElement('div'), { className: 'note', textContent: AIM[o.assist.mode][1] }),
+                ...(o.quit ? [btn('Save and quit', 'to the title', () => { o.save(); close(); o.quit(); })] : []));
+        };
+        const open = () => { render(); box.classList.add('on'); o.pause(true); };
+        const close = () => { box.classList.remove('on'); o.pause(false); };
+        gear.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); box.classList.contains('on') ? close() : open(); };
+        box.onpointerdown = e => e.stopPropagation();          // the menu is not the world: no orbit, no grab
+        this.menuOpen = open; this.menuClose = close;
+        // At a desk, Escape opens and closes it.
+        removeEventListener('keydown', this._esc || (() => {}));
+        this._esc = e => { if (e.code === 'Escape') { e.preventDefault(); box.classList.contains('on') ? close() : open(); } };
+        addEventListener('keydown', this._esc);
     }
 
     /** The health bar: 0..1. Flashes when it drops. */

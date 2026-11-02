@@ -142,6 +142,10 @@ L.flatten(YARD.x, YARD.z, 13, 7.7, 0.75);
 L.paintCircle(YARD.x, YARD.z, 10, 'dirt');
 S.add('Yard_Pile', 'rock_pile', YARD.x - 6, YARD.z, 0, { count: 4, radius: 0.42, seed: 610 }, 2);
 for (let i = 0; i < 4; i++) S.add(`Yard_Dummy_${i + 1}`, 'dummy', YARD.x + 5 + (i % 2) * 1.5, YARD.z - 6 + i * 4, -Math.PI / 2, { seed: 70 + i, practice: true }, 1);
+// Moving targets, after the standing ones (docs/CONTROLS_WORKSHOP.md): straw men that slide up and down the yard on
+// Brask's runners, one slow, one quick. Throw where they'll be.
+S.add('Yard_Mover_1', 'dummy', YARD.x + 9, YARD.z - 4, -Math.PI / 2, { seed: 80, practice: true, slide: 3, slideSpeed: 1.4, hidden: true }, 1);
+S.add('Yard_Mover_2', 'dummy', YARD.x + 11, YARD.z + 4, -Math.PI / 2, { seed: 81, practice: true, slide: 3.5, slideSpeed: 2.4, hidden: true }, 1);
 S.add('Yard_Fence_N', 'b_fence', YARD.x, YARD.z - 10, 0, { length: 18, height: 1.1, seed: 7 }, 1);
 S.add('Yard_Fence_S', 'b_fence', YARD.x, YARD.z + 10, 0, { length: 18, height: 1.1, seed: 8 }, 1);
 S.add('Brask', 'npc', YARD.x - 7, YARD.z - 4, Math.PI / 2, { name: 'Sergeant Brask', look: 'verdant_guard', role: 'idle' });
@@ -259,6 +263,13 @@ const script = {
           waiting: [{ when: { time: 40 }, say: ['@Brask Aim at the chest, not the head. And put your arm into it.'] },
                     { when: { time: 80 }, say: ['@Cael Closer, if you need to. Nobody\u2019s counting the distance. Yet.'] }],
           until: { many: { prefix: 'Yard_Dummy_', type: 'dummy', signal: 'hit', min: 3 } } },
+        // Then targets that move: lead them.
+        { id: 'moving', do: [{ reveal: ['Yard_Mover_1', 'Yard_Mover_2'] }, { hint: 'They move. Throw a little ahead of them, where they\u2019ll be when the stone gets there.' }],
+          say: ['@Brask Standing still\u2019s easy. Nothing out there stands still.', '@Brask These walk. Throw where they\u2019ll be, not where they are.'],
+          objective: 'Knock down both moving straw men', mark: 'Yard_Mover_1',
+          waiting: [{ when: { time: 40 }, say: ['@Cael Lead it. Look where it\u2019s going, and throw there.'] }],
+          until: { many: { prefix: 'Yard_Mover_', type: 'dummy', signal: 'hit', min: 2 } },
+          then: { say: ['@Brask Ha! Better than my lads, and they\u2019ve had a year.'] } },
         // Throwing is the easy half: the drill, until the hold is sure enough to pull a stone from the ground (Control 3).
         { id: 'drill', do: [{ hint: 'Lift a stone and set it down on a plate: lower it close, then let go slowly. A drop doesn\u2019t count.' }],
           say: ['@Cael Throwing is the easy half.', '@Cael Out there you\u2019ll hold a stone over someone\u2019s head and not drop it. Set them on the plates. Softly.',
@@ -294,7 +305,7 @@ const script = {
         { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }, { reveal: ['Cael_Ruin'] }, { checkpoint: true }] } },
         // ---- Act I's end: the Watchstone, cracked on purpose; the Stonebound ----
         { id: 'ruinroad', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_NorthRoad', name: 'entered' } } },
-        { id: 'hounds', do: [{ checkpoint: true }, { reveal: ['North_Hounds'] }, { hint: 'Thornhounds! Lift a stone and flick it at one. With aim assist on (top right), a flick that\u2019s close finds its mark.' }],
+        { id: 'hounds', do: [{ checkpoint: true }, { reveal: ['North_Hounds'] }, { hint: 'Thornhounds! Lift a stone and flick it at one. With aim assist on (settings, top right), a flick that\u2019s close finds its mark.' }],
           objective: 'Drive off the Thornhounds', mark: 'North_Hounds', fight: ['North_Hounds'],
           until: { signal: { obj: 'North_Hounds', name: 'gone' } } },
         { id: 'ruinroad2', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_Ruin', name: 'inside' } } },

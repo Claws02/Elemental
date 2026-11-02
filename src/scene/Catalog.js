@@ -388,8 +388,21 @@ export const CATALOG = {
             b.addEventListener('collide', e => { const o = e.body.userData; if (o?.data?.thrownBy === 'player') hitAt = t; });
             const base = inst.signal;
             inst.signal = (name, sys) => name === 'hit' ? hit : name === 'down' ? down > 0 : base(name, sys);
+            // A moving target (`slide` metres either way along its own width, at `slideSpeed`): while it stands and
+            // nobody's just hit it, its place slides; a hit stops it there, so it can fall, and it stands up where it was.
+            const rest = prop.home.p.clone(), across = new THREE.Vector3(Math.cos(it.rotY || 0), 0, -Math.sin(it.rotY || 0));
+            const w = it.slide ? (it.slideSpeed || 1.5) / it.slide : 0;
+            let phase = 0;
             inst.update = dt => {
                 t += dt;
+                if (w && !down && t - hitAt > 2) {         // a hit stops it long enough to topple
+                    phase += dt * w;
+                    const s = Math.sin(phase) * it.slide, v = Math.cos(phase) * it.slide * w;
+                    prop.home.p.copy(rest).addScaledVector(across, s);
+                    b.position.x = prop.home.p.x; b.position.z = prop.home.p.z;
+                    b.velocity.x = across.x * v; b.velocity.z = across.z * v;
+                    b.quaternion.copy(prop.home.q); b.angularVelocity.set(0, 0, 0);       // on its runners: upright until a stone says otherwise
+                }
                 const up = new THREE.Vector3(0, 1, 0).applyQuaternion(b.quaternion).y;
                 const fallen = up < 0.6 || b.position.distanceTo(prop.home.p) > 0.8;
                 if (fallen && t - hitAt < 4 && !down) { down = t; if (!hit) { hit = true; EventBus.emit(EV.TARGET_DOWN, { id: it.id, cause: 'player' }); } }

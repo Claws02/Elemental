@@ -52,6 +52,8 @@ async function play(id, opts = {}) {
         canvas, hudEl: document.getElementById('hud'), data, session, ...opts,
         onDeath: () => backToCheckpoint(),
         onTravel: (to, at) => play(to, { fresh: true, at }).catch(fail),
+        // Save and quit (the settings menu): back to the title. A test scene (?scene=) has no title to go back to.
+        onQuit: session?.persist ? () => { if (game) { game.stop(); game = null; } title(); } : null,
     });
     // QA handle: the tests drive the game through this, never through private state.
     window.__EL = { ...game.api, mode: id, restart: backToCheckpoint };

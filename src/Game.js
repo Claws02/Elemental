@@ -74,7 +74,7 @@ import { FlameJet } from './elements/FlameJet.js';
  * @param {Function} [o.onDeath]  the hero died: (cause) → the caller goes back to the checkpoint
  * @param {Function} [o.onTravel] an exit or the story leads to another scene: (sceneId, at)
  */
-export function startGame({ canvas, hudEl, data, onLink = null, session = null, fresh = true, at = 'start', spawnAt = null, step = null, onDeath = null, onTravel = null }) {
+export function startGame({ canvas, hudEl, data, onLink = null, session = null, fresh = true, at = 'start', spawnAt = null, step = null, onDeath = null, onTravel = null, onQuit = null }) {
     EventBus.reset();
     const { renderer, scene, camera } = Renderer.init(canvas);
     Physics.init();
@@ -190,7 +190,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
-    hud.aim?.(assist);
+    // The settings button: pause, save here and now, aim assist, and back to the title.
+    hud.menu?.({ assist, pause: v => { paused = v; }, save: () => { if (vitals.dead) return false; checkpoint(); return session.persist !== false; }, quit: onQuit || null });
     if (data.script) EventBus.on(EV.LESSON, e => { if (e.step === 'done') session.setState(toldKey, 'done'); });
     // A story can wait on the world: `script.when` (a showWhen expression, e.g. "lesson1") must hold for it to run.
     const storyOn = data.script && (!data.script.when || whenHolds(data.script.when, { flag: n => prog.flags[n], state: id => session.state(id) }));
@@ -264,7 +265,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
 
     const _size = new THREE.Vector2();
     const frameInfo = { held: null, hero: player.position };
-    let last = performance.now(), raf = 0, running = true;
+    let last = performance.now(), raf = 0, running = true, paused = false;
     let swumOnce = false;          // the swimming hint, said once
     // A hand on a standing stone: the hero turns to it and lays a hand on it.
     const offTouch = EventBus.on(EV.STONE_TOUCHED, e => {
@@ -280,6 +281,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const ease = (k, v) => { perf[k] += (v - perf[k]) * 0.1; };
     function frame(now) {
         if (!running) return;
+        // Paused (the settings menu): the world holds still and the last frame stays on screen.
+        if (paused) { last = now; raf = requestAnimationFrame(frame); return; }
         const t0 = performance.now();
         // Capped at 0.1 s: Physics sub-steps cover that without slow motion, and
         // a longer hitch is treated as a pause rather than a teleport. Never
@@ -375,6 +378,8 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         ready: true,
         THREE, Physics, EventBus, world, room: world, player, channel, assist, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles, elementFx,
         session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
+        pause: v => { paused = !!v; },
+        isPaused: () => paused,          // a function: main.js copies the api, which would freeze a getter
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
         setView: far => Renderer.setView(far),

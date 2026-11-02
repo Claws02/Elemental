@@ -41,7 +41,7 @@ On a phone on the same network, open `http://<your-computer's-IP>:8140` It plays
 | Touch the hero and flick | Same | A gust |
 | Drag | Drag | Move what you're holding; walk and it comes with you |
 | Flick and let go | Flick the mouse and release | Throw it; with aim assist on, a flick that's close lands on its target |
-| Tap **Aim** (top right) | Click **Aim** | Cycle aim assist: Off / Assist (the default) / Lock |
+| Tap the **gear** (top right) | Esc, or click the gear | Pause: resume, save, aim assist (Off / Assist, the default / Lock), save and quit |
 | Let go slowly | Release slowly | Drop it |
 | Drag empty world | Drag empty world | Look around |
 | Pinch | Mouse wheel | Zoom |
@@ -63,7 +63,7 @@ npm run bestiary   # the twelve creatures and their weaknesses
 npm run world      # every region loads, every road leads both ways, bridges walk, creature tiers
 npm run movement   # jump, the stick's corner, climbing, full speed on stone and past people
 npm run buildings  # houses burn and break true to material, landmarks, the wooden bridge and the ford
-npm run controls   # carrying, aim assist off / assist / lock, the first road fight after the yard
+npm run controls   # carrying, aim assist off / assist / lock, the pause menu, the first road fight after the yard
 npm run growth     # every level does something: the curves, fight gains, the level-up banner and rings
 npm run bench      # the benchmark headless (on a phone: open index.html?bench); docs/PERFORMANCE.md
 npm run sheet      # model review screenshots → qa/shots/sheet-*.png
