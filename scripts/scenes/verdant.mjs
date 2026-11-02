@@ -163,6 +163,10 @@ for (let i = 0; i < 9; i++) { const a = i * 2.39, d = 4 + (i % 3) * 2.5; S.add(`
 S.add('Stonebound', 'creature', WATCH.x, WATCH.z - 9, 0, { species: 'stonebound', count: 3, spread: 4, aggressive: true, elite: true, tier: 'always', hidden: true, holder: 'Cael_Ruin' });
 S.add('Cael_Ruin', 'npc', WATCH.x - 4, WATCH.z + 3, -2.2, { name: 'Cael', look: 'cael', role: 'idle', hidden: true, showWhen: 'lesson1, !act1.ruin' });
 S.add('Zone_Ruin', 'trigger', WATCH.x, WATCH.z, 0, { width: 26, depth: 26, height: 6 });
+// The first fight on a road (docs/CONTROLS_WORKSHOP.md §4): Thornhounds out of the long grass on the way north, after
+// the yard has taught throwing, not before.
+S.add('Zone_NorthRoad', 'trigger', 32, -62, 0, { width: 24, depth: 6, height: 6 });
+S.add('North_Hounds', 'creature', 44, -72, -Math.PI / 2, { species: 'thornhound', count: 3, spread: 4, aggressive: true, hidden: true });
 S.add('Zone_Plaza', 'trigger', TW.x - 4, TW.z, 0, { width: 16, depth: 16, height: 4 });
 S.add('Zone_Hall', 'trigger', 18, -11, 0, { width: 9, depth: 9, height: 4 });
 S.add('Zone_Slide', 'trigger', DX + 10, DZ - 1, 0, { width: 10, depth: 16, height: 6 });
@@ -289,7 +293,11 @@ const script = {
         // He goes on ahead to the ruin; there he waits (Cael_Ruin, revealed now and remembered).
         { id: 'gone', until: { time: 14 }, then: { do: [{ hide: ['Cael'] }, { reveal: ['Cael_Ruin'] }, { checkpoint: true }] } },
         // ---- Act I's end: the Watchstone, cracked on purpose; the Stonebound ----
-        { id: 'ruinroad', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_Ruin', name: 'inside' } } },
+        { id: 'ruinroad', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_NorthRoad', name: 'entered' } } },
+        { id: 'hounds', do: [{ checkpoint: true }, { reveal: ['North_Hounds'] }, { hint: 'Thornhounds! Lift a stone and flick it at one. With aim assist on (top right), a flick that\u2019s close finds its mark.' }],
+          objective: 'Drive off the Thornhounds', mark: 'North_Hounds', fight: ['North_Hounds'],
+          until: { signal: { obj: 'North_Hounds', name: 'gone' } } },
+        { id: 'ruinroad2', objective: 'Follow the road north to the Oruun ruin', mark: 'Cael_Ruin', until: { signal: { obj: 'Zone_Ruin', name: 'inside' } } },
         { id: 'watch', do: [{ npc: { id: 'Cael_Ruin', role: 'walk', target: { x: WATCH.x - 3, z: WATCH.z + 2.5 } } }],
           say: ['@Cael_Ruin You came. Good.', '@Cael_Ruin Look at the stone. Put your hand on it. Tell me what you feel.'],
           objective: 'Touch the cracked stone', mark: 'Watchstone', until: { signal: { obj: 'Watchstone', name: 'touched' } } },

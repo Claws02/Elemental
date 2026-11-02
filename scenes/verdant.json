@@ -7002,6 +7002,30 @@
    "height": 6
   },
   {
+   "id": "Zone_NorthRoad",
+   "type": "trigger",
+   "x": 32,
+   "y": 0,
+   "z": -62,
+   "rotY": 0,
+   "width": 24,
+   "depth": 6,
+   "height": 6
+  },
+  {
+   "id": "North_Hounds",
+   "type": "creature",
+   "x": 44,
+   "y": 0,
+   "z": -72,
+   "rotY": -1.571,
+   "species": "thornhound",
+   "count": 3,
+   "spread": 4,
+   "aggressive": true,
+   "hidden": true
+  },
+  {
    "id": "Zone_Plaza",
    "type": "trigger",
    "x": 14,
@@ -8046,6 +8070,44 @@
    },
    {
     "id": "ruinroad",
+    "objective": "Follow the road north to the Oruun ruin",
+    "mark": "Cael_Ruin",
+    "until": {
+     "signal": {
+      "obj": "Zone_NorthRoad",
+      "name": "entered"
+     }
+    }
+   },
+   {
+    "id": "hounds",
+    "do": [
+     {
+      "checkpoint": true
+     },
+     {
+      "reveal": [
+       "North_Hounds"
+      ]
+     },
+     {
+      "hint": "Thornhounds! Lift a stone and flick it at one. With aim assist on (top right), a flick that’s close finds its mark."
+     }
+    ],
+    "objective": "Drive off the Thornhounds",
+    "mark": "North_Hounds",
+    "fight": [
+     "North_Hounds"
+    ],
+    "until": {
+     "signal": {
+      "obj": "North_Hounds",
+      "name": "gone"
+     }
+    }
+   },
+   {
+    "id": "ruinroad2",
     "objective": "Follow the road north to the Oruun ruin",
     "mark": "Cael_Ruin",
     "until": {

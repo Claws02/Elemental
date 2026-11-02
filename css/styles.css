@@ -195,3 +195,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1712; col
 .hud-levelup.on { opacity: 1; transform: translate(-50%, 0); }
 .hud-levelup b { display: block; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--rune, #ffb347); }
 .hud-levelup span { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-dim, #cfc6b4); }
+
+/* ---- aim assist: a small button top-right that cycles Off / Assist / Lock (docs/CONTROLS_WORKSHOP.md) ---- */
+.hud-aim { position: absolute; right: calc(env(safe-area-inset-right) + 16px); top: calc(env(safe-area-inset-top) + 14px);
+  padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); background: rgba(14,12,10,.55);
+  color: rgba(244,236,220,.9); font: 600 12px/1 inherit; letter-spacing: .04em; cursor: pointer; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.hud-aim[data-mode="lock"] { border-color: #ffb347; color: #ffb347; }
+.hud-aim[data-mode="off"] { opacity: .7; }

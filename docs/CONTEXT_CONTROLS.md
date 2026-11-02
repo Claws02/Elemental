@@ -98,6 +98,11 @@ What moving air does:
 - **Touch priority:** a touch squarely on a thing (a rock at the hero's feet) goes to that thing; otherwise a touch on the hero is Air; otherwise the fat-finger assist picks the nearest thing.
 - **Touching the hero wins over the move stick:** in portrait the hero stands at the move zone's edge, so a touch on the hero is Air even inside the move-stick corner. The hero's touch area is at least 60 px.
 
+## Holding, carrying, throwing (2026-11-02, `docs/CONTROLS_WORKSHOP.md`)
+
+- **Carried:** a held thing keeps its place relative to the hero, in the camera's frame. Walk and it comes with you; turn the camera and it swings round you; drag to move it. Holding something light, the hero walks at 85% pace (a heavy stone, down to 50%); a stream or the wind still slows you to 45%.
+- **Aim assist** (`src/input/AimAssist.js`; the **Aim** button, top right; saved on the device): **Off**, exactly where you flicked; **Assist** (the default), a throw within 15° of a creature in the fight or a standing straw man bends onto it; **Lock**, the best target in front of the camera wears a ring while you hold something, and a flick within 40° of it goes to it. An aimed throw leads its target and its arc is solved to reach it. The flick always chooses the direction; assist only finishes it.
+
 ## Where the Phase 3 element wheel fits
 
 It stops being how you choose an element. It becomes an **override** for the rare case context gets wrong, for example using Air on a stone to shove it rather than let Earth lift it.

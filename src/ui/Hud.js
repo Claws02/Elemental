@@ -42,6 +42,7 @@ export class Hud {
             <div class="hud-choices" id="hud-choices"></div>
             <div class="hud-tip" id="hud-tip"></div>
             <button class="hud-charm" id="hud-charm" type="button" aria-label="Cael's charm"></button>
+            <button class="hud-aim" id="hud-aim" type="button" aria-label="Aim assist"><span></span></button>
             <button class="hud-jump" id="hud-jump" type="button" aria-label="Jump"><svg viewBox="0 0 24 24"><path d="M12 5l-6 7h4v6h4v-6h4z"/></svg></button>
             <div class="hud-vignette" id="hud-vignette"></div>
             <div class="hud-died" id="hud-died"><span></span></div>`;
@@ -269,6 +270,14 @@ export class Hud {
             return `<div class="ring ${e.state}" style="--rune:${col}" title="${ELEMENT[k].name}: Power ${lv}, Control ${Math.floor(Math.min(e.control, 0.999) * 10) + 1}">`
                 + `<svg viewBox="0 0 32 32"><circle class="bg" r="14" cx="16" cy="16"/><circle class="bg" r="10" cx="16" cy="16"/><g class="p">${arc(14, e.power)}</g><g class="c">${arc(10, e.control)}</g></svg><span>${lv}</span></div>`;
         }).join('');
+    }
+
+    /** The aim-assist button (input/AimAssist.js): shows the setting; a tap cycles Off → Assist → Lock. */
+    aim(assist) {
+        const el = this.el('hud-aim'), label = { off: 'Aim: off', assist: 'Aim: assist', lock: 'Aim: lock' };
+        const show = () => { el.querySelector('span').textContent = label[assist.mode]; el.dataset.mode = assist.mode; };
+        el.onpointerdown = e => { e.stopPropagation(); e.preventDefault(); assist.cycle(); show(); this.log(label[assist.mode]); };
+        show();
     }
 
     /** The health bar: 0..1. Flashes when it drops. */

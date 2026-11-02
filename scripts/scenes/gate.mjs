@@ -48,11 +48,6 @@ Object.assign(cael, { x: -96, z: 3, rotY: Math.PI / 2, showWhen: '!lesson1' });
 S.add('Zone_Court', 'trigger', -12, 0, 0, { width: 10, depth: 30, height: 4 });
 S.add('Zone_Beyond', 'trigger', 34, 0, 0, { width: 6, depth: 14, height: 6 });
 S.add('Zone_East', 'trigger', 60, 0, 0, { width: 6, depth: 20, height: 6 });
-// The first fight on the road (docs/GROWTH_AND_COMBAT.md §2.4): Thornhounds come down off the pass where the road
-// drops into the Reach. Scree on the slope gives you stones: you can't pull your own from the ground yet.
-S.add('Zone_Ambush', 'trigger', 44, 0, 0, { width: 6, depth: 20, height: 6 });
-S.add('Gate_Hounds', 'creature', 62, -10, -Math.PI / 2, { species: 'thornhound', count: 3, spread: 4, aggressive: true, hidden: true });
-for (let i = 0; i < 7; i++) S.add(`Gate_Scree_${i + 1}`, 'rock', 42 + (i % 4) * 3.2, -5 + Math.floor(i / 4) * 9 + (i % 2), i * 0.9, { radius: 0.36 + (i % 3) * 0.03, seed: 700 + i * 5 });
 S.add('Spawn', 'spawn', -100, 0, Math.PI / 2, { name: 'start' });
 
 // ---- the road: Veyra in the west, the Reach in the east ----
@@ -80,15 +75,7 @@ s.steps = [
       until: { signal: { obj: 'Zone_Court', name: 'entered' } },
       then: { do: [{ npc: { id: 'Cael', role: 'walk', target: { x: -2.6, z: -0.4 } } }] } },
     ...s.steps.filter(st => st.id !== 'close'),
-    { id: 'close', until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: '10,0; 20,0; 32,0; 40,-1' } }], next: 'road2' } },
-    { id: 'road2', objective: 'Follow Cael east, out of the pass', mark: 'Cael', until: { signal: { obj: 'Zone_Ambush', name: 'entered' } } },
-    { id: 'hounds', do: [{ checkpoint: true }, { reveal: ['Gate_Hounds'] }, { npc: { id: 'Cael', role: 'idle', at: { x: 40, z: 3 } } },
-                         { hint: 'Lift a stone from the scree and flick it at a hound. Hit hard, and keep moving.' }],
-      say: ['@Cael Thornhounds. Off the pass.', '@Cael Stones, not fire. The scree, there. Make them run, or make them stop.'],
-      objective: 'Drive off the Thornhounds', mark: 'Gate_Hounds', fight: ['Gate_Hounds'],
-      waiting: [{ when: { time: 30 }, say: ['@Cael Don\u2019t let them circle you. Back to the rock, and throw.'] }],
-      until: { signal: { obj: 'Gate_Hounds', name: 'gone' } },
-      then: { say: ['@Cael Good. You\u2019ll meet worse. You\u2019ll be better.'], do: [{ npc: { id: 'Cael', role: 'lead', route: '50,-1; 70,-2; 92,-1; 106,0' } }], next: 'onward' } },
+    { id: 'close', until: { talking: false }, then: { do: [{ npc: { id: 'Cael', role: 'lead', route: '10,0; 20,0; 32,0; 50,-1; 70,-2; 92,-1; 106,0' } }], next: 'onward' } },
     { id: 'onward', objective: 'Follow Cael on into the Verdant Reach', mark: 'Cael', until: { signal: { obj: 'Zone_East', name: 'entered' } } },
 ];
 s.card = null;

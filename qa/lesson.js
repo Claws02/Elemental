@@ -129,7 +129,7 @@ const SHOTS = path.join(__dirname, 'shots');
     const dropped = await page.evaluate(async () => {
         const L = __LS, h = __EL.channel.held, p = L.plateA.pos;
         if (!h) return { lost: true, step: L.step, intent: __EL.intent.state, pos: __EL.room.rocks[1].body.position.toArray?.() };
-        h.target.set(p.x, L.plateA.top + 2.2, p.z);   // high over the plate
+        __EL.channel.holdAt(new __EL.THREE.Vector3(p.x, L.plateA.top + 2.2, p.z));   // high over the plate
         await new Promise(r => setTimeout(r, 1500));
         __touch('pointerup', 71, __s71.x, __s71.y);   // let go from up there (no flick: same spot it went down)
         await new Promise(r => setTimeout(r, 2500));
@@ -146,7 +146,7 @@ const SHOTS = path.join(__dirname, 'shots');
         __touch('pointerdown', 72, s.x, s.y);
         await new Promise(r => setTimeout(r, 200));
         const p = L.plateA.pos;
-        __EL.channel.held.target.set(p.x, L.plateA.top + e.data.radius + 0.1, p.z);  // lowered right onto it
+        __EL.channel.holdAt(new __EL.THREE.Vector3(p.x, L.plateA.top + e.data.radius + 0.1, p.z));  // lowered right onto it
         await new Promise(r => setTimeout(r, 1800));
         __touch('pointerup', 72, s.x, s.y);
         await new Promise(r => setTimeout(r, 2500));

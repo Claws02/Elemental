@@ -50,6 +50,7 @@ import { Juice } from './art/Juice.js';
 import { nextHop, NAMES } from './data/world.js';
 import { Ground } from './world/Ground.js';
 import { ELEMENT } from './art/Palette.js';
+import { AimAssist } from './input/AimAssist.js';
 import { Particles } from './art/Particles.js';
 import { ElementFx, fireShellMaterial } from './art/ElementFx.js';
 import { Ice } from './elements/Ice.js';
@@ -134,7 +135,11 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         return exit ? { to, at: exit.item, text: `Journey: ${NAMES[to] || to} (by way of ${NAMES[hop] || hop})`.replace(` (by way of ${NAMES[to] || to})`, '') } : null;
     };     // shake, flashes, flares, shockwaves, marks on the ground
     const ice = new Ice({ scene, fire, fx, creatures });
-    Object.assign(creatures, { ice, water });          // the frostmaw's walls, the brinecoil's charged streams
+    Object.assign(creatures, { ice, water });
+    // Aim assist: a flick that's nearly on a target lands on it (Lock / Assist / Off, saved on the device).
+    const assist = new AimAssist({ scene, camera, hero: player, world });
+    assist.creatures = creatures;
+    channel.assist = assist;          // the frostmaw's walls, the brinecoil's charged streams
     const storm = new Firestorm({ fire, fx, creatures });
     const mud = new Mud({ scene, fire, creatures, player });
     const glide = new Glide({ player, prog, fire });
@@ -185,6 +190,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     const intent = new Intent({ camera, hero: player, channel, interactables, fire, earth, water, air, prog, works, ice, storm, mud, jet, creatures });
     const hud = new Hud(hudEl);
     hud.onLink = onLink;
+    hud.aim?.(assist);
     if (data.script) EventBus.on(EV.LESSON, e => { if (e.step === 'done') session.setState(toldKey, 'done'); });
     // A story can wait on the world: `script.when` (a showWhen expression, e.g. "lesson1") must hold for it to run.
     const storyOn = data.script && (!data.script.when || whenHolds(data.script.when, { flag: n => prog.flags[n], state: id => session.state(id) }));
@@ -288,6 +294,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
 
         intent.update(dt);
         channel.update(dt);
+        assist.update(dt, !!channel.held);
         earth.update(dt);
         player.rig.setElement(intent.element);
         const pose = channel.pose();
@@ -366,7 +373,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
     // QA handle: the tests drive the game through this, never through private state.
     const api = {
         ready: true,
-        THREE, Physics, EventBus, world, room: world, player, channel, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles, elementFx,
+        THREE, Physics, EventBus, world, room: world, player, channel, assist, earth, fire, water, air, fx, intent, interactables, cam, input, prog, story, hud, data, juice, particles, elementFx,
         session, ledger, talk, vitals, creatures, surges, works, ice, lava, storm, mud, glide, jet, wearCharm, checkpoint, travel,
         renderInfo: () => ({ ...Renderer.info(), pixelRatio: Renderer.quality.pixelRatio, level: Renderer.quality.level }),
         perf,
@@ -391,6 +398,7 @@ export function startGame({ canvas, hudEl, data, onLink = null, session = null, 
         juice.dispose();
         offGauge();
         offGrowth();
+        assist.dispose();
         particles.dispose();
         elementFx.dispose();
         ice.dispose();

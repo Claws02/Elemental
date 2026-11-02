@@ -39,7 +39,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         window.__W = ms => new Promise(r => setTimeout(r, ms));
         window.__skip = async until => { for (let i = 0; i < 160 && !until(); i++) { __EL.hud.skipLine = true; await __W(120); } };
         window.__at = (x, z) => { const B = __EL.player.body, T = __EL.world.terrain; B.position.set(x, T.height(x, z) + 0.6, z); B.velocity.set(0, 0, 0); };
-        __EL.world.reveal('Cael_Ruin'); __EL.story.go('ruinroad');
+        __EL.world.reveal('Cael_Ruin'); __EL.story.go('ruinroad2');      // past the hounds on the north road (qa/controls.js)
     });
 
     const stone = await ev(async () => {

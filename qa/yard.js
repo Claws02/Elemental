@@ -88,7 +88,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
             const s = __pile()[0];
             s.body.position.set(p.x + 1.2, p.y + 0.8, p.z); s.body.velocity.set(0, 0, 0);
             ch.grab(s, 'earth');
-            ch.held.target.set(p.x, plate.top + s.data.radius + (gentle ? 0.1 : 2.2), p.z);
+            ch.holdAt(new __EL.THREE.Vector3(p.x, plate.top + s.data.radius + (gentle ? 0.1 : 2.2), p.z));
             await __W(1800);
             ch.release({});
             await __W(2200);
@@ -152,6 +152,7 @@ const BASE = (process.env.QA_BASE || 'http://127.0.0.1:8140/index.html').replace
         const seen = new Set(); const t0 = __EL.story.time;
         while (I.state !== 'raising' && __EL.story.time - t0 < 4) { seen.add(I.state); await __W(50); }
         const t1 = __EL.story.time; while (__EL.story.time - t1 < 1) await __W(100);
+        for (let i = 0; i < 20 && __EL.works.stones.length !== stones0; i++) await __W(100);       // the stone sinks back over a moment
         const col = __EL.works.columns[__EL.works.columns.length - 1];
         const out = { seen: [...seen], state: I.state, columns: __EL.works.columns.length, top: col && +col.top.toFixed(2), stonesBack: __EL.works.stones.length === stones0 };
         I.release?.({ vx: 0, vy: 0, speed: 0 }); I._cancel();

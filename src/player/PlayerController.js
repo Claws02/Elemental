@@ -112,7 +112,7 @@ export class PlayerController {
         const mag = Math.hypot(ix, iz);
         // Channelling slows the hero: you cannot sprint and hold a boulder.
         const top = this.swimming ? SWIM.speed * (channel ? 0.6 : 1)
-            : (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? 0.45 : 1) * (this.mired > 0 ? MUD.slow : 1) * (this.gliding ? GLIDE.speed : 1) * (this.wading ? WADE.slow : 1);
+            : (move.run > 0.85 ? RUN : WALK + (RUN - WALK) * Math.max(0, (move.run - 0.3) / 0.55)) * (channel ? channel.carry ?? 0.45 : 1) * (this.mired > 0 ? MUD.slow : 1) * (this.gliding ? GLIDE.speed : 1) * (this.wading ? WADE.slow : 1);
         let tx = mag > 0.05 ? (ix / mag) * top * Math.min(1, mag) : 0;
         let tz = mag > 0.05 ? (iz / mag) * top * Math.min(1, mag) : 0;
         // Walking into a person: step round them at full speed instead of pushing against them.

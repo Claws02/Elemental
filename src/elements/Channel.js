@@ -7,7 +7,10 @@
 //
 //   HOLD     the object follows the finger across a plane facing the camera,
 //            pulled by a spring (never teleported), kept within the hero's
-//            reach and above the ground, with gravity cancelled
+//            reach and above the ground, with gravity cancelled. Its place is
+//            kept RELATIVE TO THE HERO, in the camera's frame: walk and it comes
+//            with you; turn the camera and it swings round you; drag to move it
+//            (docs/CONTROLS_WORKSHOP.md)
 //   THROW    a fast release: swipe direction on screen → world direction
 //            (up = away), swipe speed → throw speed
 //   DROP     a slow release: it falls where it is
@@ -33,6 +36,7 @@ export { HOLD };
 const _ray = new THREE.Raycaster();
 const _v2 = new THREE.Vector2();
 const _p = new THREE.Vector3();
+const _n = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3();
 
 export class Channel {
     constructor({ camera, hero, prog }) {
@@ -56,10 +60,17 @@ export class Channel {
         // It rises first, so the grab reads before the first drag.
         const target = entry.mesh.position.clone();
         target.y = Math.max(target.y + lift, 1.4);
-        this.held = { entry, target, plane, element };
+        this.held = { entry, target, plane, element, local: this._toLocal(target, new THREE.Vector3()) };
         this.aim = null;
         this.hero.faceTarget = target;
         EventBus.emit(EV.OBJECT_GRABBED, { id: entry.id, element });
+    }
+
+    /** Hold it at a world point (from here on carried there, relative to the hero). The QA entry point for placing. */
+    holdAt(world) {
+        if (!this.held) return;
+        this.held.target.copy(world);
+        this._toLocal(world, this.held.local);
     }
 
     /** Reach toward something without holding it. `null` stops. */
@@ -72,8 +83,36 @@ export class Channel {
         if (!this.held) return;
         _v2.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1);
         _ray.setFromCamera(_v2, this.camera);
+        // The plane through the held thing, facing the camera: it moves as the hero carries it.
+        const n = this.camera.getWorldDirection(_n).negate();
+        this.held.plane.setFromNormalAndCoplanarPoint(n, this.held.entry.mesh.position);
         const hit = _ray.ray.intersectPlane(this.held.plane, _p);
-        if (hit) this.held.target.copy(hit);
+        if (hit) { this.held.target.copy(hit); this._toLocal(hit, this.held.local); }
+    }
+
+    // A held thing's place relative to the hero: (right, up, forward) in the camera's frame, and back.
+    _frame() {
+        const f = this.camera.getWorldDirection(_f); f.y = 0;
+        if (f.lengthSq() < 1e-6) f.set(0, 0, -1);
+        f.normalize();
+        return { f, r: _r.set(-f.z, 0, f.x) };
+    }
+    _toLocal(world, out) {
+        const { f, r } = this._frame(), h = this.hero.body.position;
+        const dx = world.x - h.x, dz = world.z - h.z;
+        return out.set(dx * r.x + dz * r.z, world.y - h.y, dx * f.x + dz * f.z);
+    }
+    _fromLocal(local, out) {
+        const { f, r } = this._frame(), h = this.hero.body.position;
+        return out.set(h.x + r.x * local.x + f.x * local.z, h.y + local.y, h.z + r.z * local.x + f.z * local.z);
+    }
+
+    /** How fast the hero moves while holding this (share of a walk): light things barely slow you, heavy ones do. */
+    get carry() {
+        if (!this.held) return 1;
+        if (this.held.element !== 'earth') return 0.85;
+        const k = Math.min(1, (this.held.entry.body.mass || 1) / Math.max(1, this.prog.earth('maxMass')));
+        return 0.85 - 0.35 * k;
     }
 
     release({ flick = false, vx = 0, vy = 0 } = {}) {
@@ -92,7 +131,9 @@ export class Channel {
             const max = element === 'earth' ? this.prog.earth('throwMax') : HOLD.throwMax;
             // Swimming, there's nothing to throw from: weaker.
             const speed = (HOLD.throwMin + (max - HOLD.throwMin) * Math.min(1, Math.max(0, (len - 900) / 2600))) * (this.hero.swimming ? SWIM.weak : 1);
-            this.throwEntry(entry, dir, speed, element);
+            // Aim assist (input/AimAssist.js): the flick chooses; assist finishes it onto a target it was already near.
+            const aimed = this.assist ? this.assist.resolve(entry.body.position, dir, speed) : dir;
+            this.throwEntry(entry, aimed, speed, element);
         } else {
             entry.data.droppedAt = performance.now();
             // A slow release is a set-down: it stops following the finger
@@ -135,7 +176,7 @@ export class Channel {
         const pitch = Math.atan2(t.y - (hp.y + 1.35), Math.max(0.3, Math.hypot(dx, dz)));
         let yaw = Math.atan2(dx, dz) - this.hero.facing;
         yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
-        return { pitch: Math.max(-0.8, Math.min(1.2, pitch)), yaw, element: this.held?.element || this.aim?.element || null, mode: this.held ? 'holding' : null };
+        return { pitch: Math.max(-0.8, Math.min(1.2, pitch)), yaw, element: this.held?.element || this.aim?.element || null, mode: this.held ? 'holding' : null, carry: this.held ? this.carry : 0.45 };
     }
 
     update(dt) {
@@ -146,6 +187,7 @@ export class Channel {
             if (entry.data.gone || !b.world) { this.let(); }
             else if (b.position.distanceTo(this.hero.body.position) > HOLD.range + 2) { this.let(); }
             else {
+                this._fromLocal(this.held.local, target);           // carried: its place goes where the hero goes
                 const hand = this.hero.handPoint(new THREE.Vector3());
                 const off = target.clone().sub(hand);
                 if (off.length() > HOLD.reach) target.copy(hand).addScaledVector(off.normalize(), HOLD.reach);

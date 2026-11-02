@@ -216,7 +216,7 @@ const SHOTS = path.join(__dirname, 'shots');
         await new Promise(r => setTimeout(r, 600));
         const aim = s;
         const hb = __EL.player.body.position;
-        __EL.channel.held.target.set(hb.x + dir.x * 2, 1.3, hb.z + dir.z * 2);     // held out in front, toward the hay
+        __EL.channel.holdAt(new __EL.THREE.Vector3(hb.x + dir.x * 2, 1.3, hb.z + dir.z * 2));     // held out in front, toward the hay
         await new Promise(r => setTimeout(r, 900));
         const hound = __EL.creatures.all.find(c => c.sp.behaviour === 'pack' && c.state !== 'dead');
         const hero = __EL.player.body.position;

@@ -39,6 +39,7 @@ jobs:
           node qa/movement.js
           node qa/buildings.js
           node qa/growth.js
+          node qa/controls.js
       - name: Keep the screenshots
         if: always()
         uses: actions/upload-artifact@v4

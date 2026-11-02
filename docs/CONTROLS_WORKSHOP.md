@@ -2,7 +2,7 @@
 
 Your notes: it's hard to control the elements and use them the way you mean to; a held rock should move with you when you walk; players should learn to throw before anything attacks them; maybe an aim lock that can be switched on and off.
 
-This is what the build does, why it feels hard, what other games do, and the options; the decisions are in §4.
+This is what the build did, why it felt hard, what other games do, and the options; the decisions are in §4. **Built 2026-11-02:** carrying (3.1), the three aim settings (3.2, without the throw preview arc), and the Thornhounds moved to the road north of the yard (`qa/controls.js`). Not yet: the preview arc, the stream and wind following the lock, the yard's moving targets.
 
 ## 1. Why it feels hard (`src/elements/Channel.js`, `src/input/Intent.js`)
 

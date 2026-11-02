@@ -64,7 +64,7 @@ Cael (and later Kestrel and the Tidekeepers) teach each one in a short lesson wh
 
 > ✅ **Water built:** the smoke from the burning camp draws a flock of Emberwings (required): a stream grounds them.
 >
-> ✅ **Earth built:** the Oruun Gate's road fight (three Thornhounds off the pass, scree to throw: required). The Thornwick hunt (Brask asks about the boar in the north fields: optional; killed, it's `hunt.boar`, care in the Reach, Brask's lines change). Making the Stonebound yield is +0.05 Earth Control: a clean fight.
+> ✅ **Earth built:** the first road fight (three Thornhounds, required) is on the road north from the Thornwick yard to the Watchstone: moved there from the Oruun Gate on 2026-11-02 so throwing is taught before anything attacks (`CONTROLS_WORKSHOP.md`). The Thornwick hunt (Brask asks about the boar in the north fields: optional; killed, it's `hunt.boar`, care in the Reach, Brask's lines change). Making the Stonebound yield is +0.05 Earth Control: a clean fight.
 
 - **A fight on every road.** Each road chapter gets an encounter built for its lesson. At the Oruun Gate, Thornhounds test your stone throwing. On the cistern road, Mudlings test the new Water. At the Cold Forge, Cindermites test held Fire.
 - **Work in every town.** A guard or the ruler posts a hunt: clear the boar out of the fields, the hounds out of the forest. These are optional, but they're where most Power comes from.
