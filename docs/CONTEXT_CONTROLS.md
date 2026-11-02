@@ -101,7 +101,7 @@ What moving air does:
 ## Holding, carrying, throwing (2026-11-02, `docs/CONTROLS_WORKSHOP.md`)
 
 - **Carried:** a held thing keeps its place relative to the hero, in the camera's frame. Walk and it comes with you; turn the camera and it swings round you; drag to move it. Holding something light, the hero walks at 85% pace (a heavy stone, down to 50%); a stream or the wind still slows you to 45%.
-- **Aim assist** (`src/input/AimAssist.js`; set in the pause menu, the gear top right or Esc; saved on the device): **Off**, exactly where you flicked; **Assist** (the default), a throw within 15° of a creature in the fight or a standing straw man bends onto it; **Lock**, the best target in front of the camera wears a ring while you hold something, and a flick within 40° of it goes to it. An aimed throw leads its target and its arc is solved to reach it. The flick always chooses the direction; assist only finishes it.
+- **Aim assist** (`src/input/AimAssist.js`; set in the pause menu, the gear top right or Esc; saved on the device): **Off**, exactly where you flicked; **Assist** (the default), a throw within 10° of a creature in the fight or a standing straw man bends onto it; **Lock**, the best target in front of the camera wears a ring while you hold something, and a flick within 40° of it goes to it. An aimed throw leads its target and its arc is solved to reach it. The flick always chooses the direction; assist only finishes it.
 
 ## Where the Phase 3 element wheel fits
 

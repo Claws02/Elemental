@@ -3,7 +3,7 @@
 //
 //   1. a held stone comes with you: walk, and it keeps its place beside you;
 //      light in the hand, you walk at most of your pace
-//   2. aim assist, the same flick 10° off a hound: Off misses, Assist hits;
+//   2. aim assist, the same flick 8° off a hound: Off misses, Assist hits;
 //      30° off: Assist leaves it alone (a miss), Lock finds it; the lock wears
 //      a ring while you hold something
 //   3. the setting is saved on the device; the HUD button cycles it
@@ -84,10 +84,10 @@ const SHOTS = process.env.QA_SHOTS || path.join(__dirname, 'shots');
         while (performance.now() - t < 1600) { closest = Math.min(closest, r.body.position.distanceTo(__hound.body.position)); await __W(20); }
         return { mode, offDeg, closest: +closest.toFixed(2), lockRing };
     }, { mode, offDeg });
-    const off10 = await shot('off', 10), assist10 = await shot('assist', 10), assist30 = await shot('assist', 30), lock30 = await shot('lock', 30);
+    const off10 = await shot('off', 8), assist10 = await shot('assist', 8), assist30 = await shot('assist', 30), lock30 = await shot('lock', 30);
     await page.screenshot({ path: path.join(SHOTS, 'controls-lock.png') });
     const hit = s => s.closest < 1.2;
-    check(!hit(off10) && hit(assist10), `the same flick 10° off a hound: Off goes where it was flicked (a miss), Assist bends it on (${JSON.stringify([off10, assist10])})`);
+    check(!hit(off10) && hit(assist10), `the same flick 8° off a hound: Off goes where it was flicked (a miss), Assist bends it on (${JSON.stringify([off10, assist10])})`);
     check(!hit(assist30) && hit(lock30) && lock30.lockRing, `30° off: Assist leaves it alone; Lock finds it, and the lock wore its ring while the stone was held (${JSON.stringify([assist30, lock30])})`);
 
     // 3. The settings button: it pauses; aim assist is set there and saved on the device; Resume carries on.

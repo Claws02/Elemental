@@ -2,7 +2,7 @@
 
 Your notes: it's hard to control the elements and use them the way you mean to; a held rock should move with you when you walk; players should learn to throw before anything attacks them; maybe an aim lock that can be switched on and off.
 
-This is what the build did, why it felt hard, what other games do, and the options; the decisions are in §4. **Built 2026-11-02:** carrying (3.1), the three aim settings (3.2, without the throw preview arc), and the Thornhounds moved to the road north of the yard (`qa/controls.js`). Then (2026-11-02, your notes): no preview arc; the yard gets **moving targets** after the standing ones (two straw men on runners, one slow, one quick; `dummy` `slide`); aim assist moves into a **pause menu** (the gear, top right, or Esc): Resume, Save here and now, Aim assist, Save and quit. Not yet: the stream and wind following the lock.
+This is what the build did, why it felt hard, what other games do, and the options; the decisions are in §4. **Built 2026-11-02:** carrying (3.1), the three aim settings (3.2, without the throw preview arc), and the Thornhounds moved to the road north of the yard (`qa/controls.js`). Then (2026-11-02, your notes): no preview arc; the yard gets **moving targets** after the standing ones (two straw men on runners, one slow, one quick; `dummy` `slide`); aim assist moves into a **pause menu** (the gear, top right, or Esc): Resume, Save here and now, Aim assist, Save and quit. Assist stays with thrown things (decided 2026-11-02): streams and wind are aimed by hand.
 
 ## 1. Why it feels hard (`src/elements/Channel.js`, `src/input/Intent.js`)
 
@@ -40,7 +40,7 @@ Sources: [Game Informer: Control review](https://www.gameinformer.com/review/con
   | Setting | What it does |
   |---|---|
   | **Lock** | The nearest thing worth hitting in front of you (a creature in the fight, a straw man, the objective's mark) gets a ring. Flick anywhere roughly toward it (within ~40°) and the throw goes to it, leading a moving target. Tap a different creature to move the lock. |
-  | **Assist** (the default) | No lock ring; a throw within ~15° of a target bends onto it (magnetism). |
+  | **Assist** (the default) | No lock ring; a throw within 10° of a target bends onto it (magnetism). |
   | **Off** | Exactly where you flicked. |
 
 - ~~**Tap to throw**~~ (decided against: a flick is the throw).
@@ -62,3 +62,4 @@ Sources: [Game Informer: Control review](https://www.gameinformer.com/review/con
 2. **Aim assist: Lock / Assist / Off, Assist by default.** A toggle on the HUD and in settings.
 3. **No tap-to-throw.** A flick is the throw.
 4. **Lesson I stays as it is; the Thornhounds move** from the Oruun Gate's road to after the Thornwick yard, on the way north to the Watchstone, so throwing is taught before the first fight.
+5. **Tuned after the pause menu (2026-11-02):** Assist bends within **10°** (was 15°: subtler, your aim matters); Lock stays as built (nearest in view, sticky); assist is for **thrown things only** (stones, fireballs, orbs), not streams or wind; new players start on **Assist**.

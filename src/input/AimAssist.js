@@ -5,7 +5,7 @@
 // Three settings, saved on the device (Assist by default):
 //
 //   off      a throw goes exactly where the flick sent it
-//   assist   a throw within ASSIST.bend of something worth hitting bends onto it
+//   assist   a throw within ASSIST.bend (10°) of something worth hitting bends onto it
 //            (magnetism: it never pulls a throw that wasn't already close)
 //   lock     the best target in front of the camera wears a ring; a flick within
 //            ASSIST.lockCone of it goes to it
@@ -22,7 +22,7 @@ import { ELEMENT } from '../art/Palette.js';
 
 export const ASSIST = {
     modes: ['off', 'assist', 'lock'],
-    bend: 15 * Math.PI / 180,       // assist: how close a throw must already be
+    bend: 10 * Math.PI / 180,       // assist: how close a throw must already be (decided 2026-11-02: subtle)
     lockCone: 40 * Math.PI / 180,   // lock: how roughly a flick must point at the lock
     range: 28,                      // metres: nothing further is considered
     lockView: 0.62,                 // lock: how far off the camera's centre (radians) a target can be picked
